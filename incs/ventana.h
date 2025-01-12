@@ -1,8 +1,10 @@
-#ifndef "VENTANA.h"
-#define "VENTANA.h"
+#ifndef VENTANA_H
+#define VENTANA_H
 
-#include <stdio.h>
 #include <allegro5/allegro.h>
-#include <allegro5/allegro_primitives.h>
+
+int init_allegro();
+ALLEGRO_DISPLAY *crear_ventana(int ancho, int largo, const char *titulo);
+void destruir_ventana(ALLEGRO_DISPLAY *ventana);
 
 #endif
