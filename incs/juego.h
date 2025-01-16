@@ -6,6 +6,9 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 
+#define NUM_ASTEROIDES 5
+#define FPS 60
+
 /*Estructuras usadas en el juego*/
 typedef struct
 {
@@ -27,9 +30,9 @@ typedef struct
 /*Funciones*/
 Nave init_nave(float x, float y, float ancho, float largo);
 Asteroide init_asteroide(float x, float y, float velocidad, float ancho, float largo);
-void actualizar_juego(Nave* nave, Asteroide* asteroide);
+void actualizar_asteroide(Asteroide* asteroide);
 bool detectar_colision(Nave nave, Asteroide asteroide);
 void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave);
-void dibujar_juego(Nave nave, Asteroide asteroide);
+void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides);
 
 #endif
