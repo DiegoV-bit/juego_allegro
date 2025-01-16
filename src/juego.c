@@ -35,19 +35,24 @@ Nave init_nave(float x, float y, float ancho, float largo)
  */ 
 Asteroide init_asteroide(float x, float y, float velocidad, float ancho, float largo)
 {
-    Asteroide asteroide = {x, y, velocidad, ancho, largo};
+    Asteroide asteroide;
+    asteroide.x = x;
+    asteroide.y = y;
+    asteroide.velocidad = velocidad;
+    asteroide.ancho = ancho;
+    asteroide.alto = largo;
     return asteroide;
 }
 
 
-void actualizar_juego(Nave* nave, Asteroide* asteroide)
+void actualizar_asteroide(Asteroide* asteroide)
 {
     asteroide->y += asteroide->velocidad;
 
     if (asteroide->y > 600)
     {
-        asteroide->y = -50;
-        asteroide->y = rand() % 750;
+        asteroide->y = -asteroide->alto;
+        asteroide->y = rand() % (800 - (int)asteroide->ancho);
     }
 }
 
@@ -79,10 +84,16 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave)
 }
 
 
-void dibujar_juego(Nave nave, Asteroide asteroide)
+void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
 {
-    al_clear_to_color(al_map_rgb(0,0,0));
     al_draw_filled_rectangle(nave.x, nave.y, nave.x + nave.ancho, nave.y + nave.largo, al_map_rgb(0, 255, 0));
-    al_draw_filled_rectangle(asteroide.x, asteroide.y, asteroide.x + asteroide.ancho, asteroide.y + asteroide.alto, al_map_rgb(255, 0, 0));
-    al_flip_display();
+
+    for (int i = 0; i < num_asteroides; i++)
+    {
+        al_draw_filled_rectangle(
+            asteroides[i].x, asteroides[i].y,
+            asteroides[i].x + asteroides[i].ancho, asteroides[i].y + asteroides[i].alto,
+            al_map_rgb(255, 0, 0));
+    }
+    
 }
