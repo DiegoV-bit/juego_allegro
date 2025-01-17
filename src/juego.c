@@ -33,15 +33,16 @@ Nave init_nave(float x, float y, float ancho, float largo)
  * @param ancho Anchura de los asteroides.
  * @param largo Largo de los asteorides.
  */ 
-Asteroide init_asteroide(float x, float y, float velocidad, float ancho, float largo)
+void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana, int alto_ventana)
 {
-    Asteroide asteroide;
-    asteroide.x = x;
-    asteroide.y = y;
-    asteroide.velocidad = velocidad;
-    asteroide.ancho = ancho;
-    asteroide.alto = largo;
-    return asteroide;
+    for (int i = 0; i < num_asteroides; i++)
+    {
+        asteroides[i].x = rand() % (ancho_ventana - 50);
+        asteroides[i].y = 0;
+        asteroides[i].velocidad = (rand() % 3) + 1;
+        asteroides[i].ancho = 50;
+        asteroides[i].alto = 50;
+    }
 }
 
 /**

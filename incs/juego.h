@@ -3,6 +3,7 @@
 
 /*Bibliotecas usadas*/
 #include <stdio.h>
+#include <stdlib.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 
@@ -29,7 +30,7 @@ typedef struct
 
 /*Funciones*/
 Nave init_nave(float x, float y, float ancho, float largo);
-Asteroide init_asteroide(float x, float y, float velocidad, float ancho, float largo);
+void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana, int alto_ventana);
 void actualizar_asteroide(Asteroide* asteroide);
 bool detectar_colision(Nave nave, Asteroide asteroide);
 void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[]);

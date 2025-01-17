@@ -3,6 +3,7 @@
 
 int main() {
     bool teclas[ALLEGRO_KEY_MAX] = {false};
+    srand(time(NULL));
 
     if (init_allegro() != 0) {
         return -1;
@@ -41,11 +42,7 @@ int main() {
     Nave nave = init_nave(375, 500, 50, 20);
     
     Asteroide asteroide[NUM_ASTEROIDES];
-    for (int i = 0; i < NUM_ASTEROIDES; i++)
-    {
-        asteroide[i] = init_asteroide(rand() % 750, -(rand() % 600), 2 + rand() % 3, 50, 50);
-    }
-    
+    init_asteroides(asteroide, NUM_ASTEROIDES, 800, 600);
 
     bool jugando = true;
     while (jugando) {
