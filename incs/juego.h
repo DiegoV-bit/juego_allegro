@@ -34,6 +34,6 @@ void actualizar_asteroide(Asteroide* asteroide);
 bool detectar_colision(Nave nave, Asteroide asteroide);
 void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[]);
 void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides);
-void actualizar_nave(Nave* nave, bool teclas[]);
+void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides);
 
 #endif

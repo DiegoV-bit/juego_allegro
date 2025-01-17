@@ -73,10 +73,8 @@ void actualizar_asteroide(Asteroide* asteroide)
    */
 bool detectar_colision(Nave nave, Asteroide asteroide)
 {
-    return !(nave.x + nave.ancho < asteroide.x ||
-             nave.x > asteroide.x + asteroide.ancho ||
-             nave.y + nave.largo < asteroide.y ||
-             nave.y > asteroide.y + asteroide.alto);
+    return nave.x < asteroide.x + asteroide.ancho && nave.x + nave.ancho > asteroide.x &&
+           nave.y < asteroide.y + asteroide.alto && nave.y + nave.largo > asteroide.y;
 }
 
 /**
@@ -123,7 +121,7 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
 }
 
 
-void actualizar_nave(Nave* nave, bool teclas[])
+void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides)
 {
     if (teclas[ALLEGRO_KEY_LEFT])
     {
@@ -133,5 +131,13 @@ void actualizar_nave(Nave* nave, bool teclas[])
     if (teclas[ALLEGRO_KEY_RIGHT])
     {
         nave->x += 10;
+    }
+
+    for (int i = 0; i < NUM_ASTEROIDES; i++)
+    {
+        if (detectar_colision(*nave, asteroides[i]))
+        {
+            printf("Colisión detectada con el asteroide %d\n", i);
+        }        
     }
 }

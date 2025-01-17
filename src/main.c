@@ -63,7 +63,7 @@ int main() {
 
         if (evento.type == ALLEGRO_EVENT_TIMER)
         {
-            actualizar_nave(&nave, teclas);
+            actualizar_nave(&nave, teclas, asteroide, NUM_ASTEROIDES);
             for (int i = 0; i < NUM_ASTEROIDES; i++)
             {
                 actualizar_asteroide(&asteroide[i]);
