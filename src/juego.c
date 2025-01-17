@@ -18,7 +18,12 @@
  */
 Nave init_nave(float x, float y, float ancho, float largo)
 {
-    Nave nave = {x, y, ancho, largo};
+    Nave nave;
+    nave.x = x;
+    nave.y = y;
+    nave.ancho = ancho;
+    nave.largo = largo;
+    nave.vida = 10;
     return nave;
 }
 
@@ -29,7 +34,7 @@ Nave init_nave(float x, float y, float ancho, float largo)
  * 
  * @param x Posicion en el eje x.
  * @param y posicion en el eje y.
- * @param velocidad
+ * @param velocidad Velocidad del asteroides.
  * @param ancho Anchura de los asteroides.
  * @param largo Largo de los asteorides.
  */ 
@@ -121,7 +126,14 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
     }
 }
 
-
+/**
+ * @brief Permite actualizar la posición de la nave y detectar colisiones con los asteroides.
+ * 
+ * @param nave Puntero a la nave que se va a mover
+ * @param teclas Arreglo de teclas presionadas
+ * @param asteroides Arreglo de asteroides
+ * @param num_asteroides Número de asteroides en el arreglo
+ */
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides)
 {
     if (teclas[ALLEGRO_KEY_LEFT])
@@ -139,6 +151,24 @@ void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_
         if (detectar_colision(*nave, asteroides[i]))
         {
             printf("Colisión detectada con el asteroide %d\n", i);
+            nave->vida -= 1;
+            if (nave->vida <= 0)
+            {
+                printf("Nave destruida\n");
+                // implementar codigo para finalizar el juego
+            }
         }        
     }
+}
+
+/**
+ * @brief Dibuja la barra de vida de la nave.
+ * 
+ * @param nave Nave a la que se le va a dibujar la barra de vida.
+ */
+void dibujar_barra_vida(Nave nave)
+{
+    float procentaje_vida = (float)nave.vida / 10.0;
+    al_draw_filled_rectangle(10, 10, 10 + 100 * procentaje_vida, 20, al_map_rgb(0, 255, 0));
+    al_draw_rectangle(10, 10, 110, 20, al_map_rgb(255, 255, 255), 2);
 }

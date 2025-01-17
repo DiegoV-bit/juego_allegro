@@ -1,6 +1,15 @@
 #ifndef VENTANA_H
 #define VENTANA_H
 
+/**
+ * @file ventana.h
+ * @brief Biblioteca que contiene las funciones para crear y destruir la ventana del juego.
+ * @version 0.1
+ * @date 2025-01-17
+ * 
+ * 
+ */
+
 /*Bibliotecas usadas*/
 #include <stdio.h>
 #include <allegro5/allegro.h>

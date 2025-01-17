@@ -1,6 +1,14 @@
 #include "ventana.h"
 #include "juego.h"
 
+/**
+ * @file main.c 
+ *
+ * @brief Funcion main en donde se ejecutara todo el juego
+ * 
+ * @return int 
+ */
+
 int main() {
     bool teclas[ALLEGRO_KEY_MAX] = {false};
     srand(time(NULL));
@@ -69,6 +77,7 @@ int main() {
         
         al_clear_to_color(al_map_rgb(0, 0, 0));
         dibujar_juego(nave, asteroide, NUM_ASTEROIDES);
+        dibujar_barra_vida(nave);
         al_flip_display();
     }
 

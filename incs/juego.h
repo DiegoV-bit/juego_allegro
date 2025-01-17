@@ -1,6 +1,17 @@
 #ifndef JUEGO_H
 #define JUEGO_H
 
+/**
+ * @file juego.h
+ * @author DiegoV-bit (you@domain.com)
+ * @brief Biblioteca que contiene las funciones y estructuras del juego.
+ * @version 0.1
+ * @date 2025-01-17
+ * 
+ * @copyright Copyright (c) 2025
+ * 
+ */
+
 /*Bibliotecas usadas*/
 #include <stdio.h>
 #include <stdlib.h>
@@ -17,6 +28,7 @@ typedef struct
     float y; //Posicion en el eje y
     float ancho; //Ancho de la nave
     float largo; //Largo de la nave
+    int vida; //Vida de la nave
 } Nave;
 
 typedef struct
@@ -36,5 +48,6 @@ bool detectar_colision(Nave nave, Asteroide asteroide);
 void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[]);
 void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides);
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides);
+void dibujar_barra_vida(Nave nave);
 
 #endif
