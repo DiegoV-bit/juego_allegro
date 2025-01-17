@@ -2,6 +2,8 @@
 #include "juego.h"
 
 int main() {
+    bool teclas[ALLEGRO_KEY_MAX] = {false};
+
     if (init_allegro() != 0) {
         return -1;
     }
@@ -56,11 +58,12 @@ int main() {
 
         if (evento.type == ALLEGRO_EVENT_KEY_DOWN || evento.type == ALLEGRO_EVENT_KEY_UP)
         {
-            manejar_eventos(evento, &nave);
+            manejar_eventos(evento, &nave, teclas);
         }
 
         if (evento.type == ALLEGRO_EVENT_TIMER)
         {
+            actualizar_nave(&nave, teclas);
             for (int i = 0; i < NUM_ASTEROIDES; i++)
             {
                 actualizar_asteroide(&asteroide[i]);

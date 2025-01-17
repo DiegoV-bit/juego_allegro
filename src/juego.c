@@ -87,20 +87,16 @@ bool detectar_colision(Nave nave, Asteroide asteroide)
    * @param evento El evento de teclado que se va a manejar.
    * @param nave Puntero a la nave que se va a mover.
    */
-void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave)
+void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[])
 {
     if (evento.type == ALLEGRO_EVENT_KEY_DOWN)
     {
-        switch (evento.keyboard.keycode)
-        {
-        case ALLEGRO_KEY_LEFT:
-            nave->x -= 10;
-            break;
-        
-        case ALLEGRO_KEY_RIGHT:
-            nave->x += 10;
-            break;
-        }
+        teclas[evento.keyboard.keycode] = true;
+    }
+
+    if (evento.type == ALLEGRO_EVENT_KEY_UP)
+    {
+        teclas[evento.keyboard.keycode] = false;
     }
 }
 
@@ -124,5 +120,18 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
             asteroides[i].x + asteroides[i].ancho, asteroides[i].y + asteroides[i].alto,
             al_map_rgb(255, 0, 0));
     }
+}
+
+
+void actualizar_nave(Nave* nave, bool teclas[])
+{
+    if (teclas[ALLEGRO_KEY_LEFT])
+    {
+        nave->x -= 10;
+    }
     
+    if (teclas[ALLEGRO_KEY_RIGHT])
+    {
+        nave->x += 10;
+    }
 }

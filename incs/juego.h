@@ -32,7 +32,8 @@ Nave init_nave(float x, float y, float ancho, float largo);
 Asteroide init_asteroide(float x, float y, float velocidad, float ancho, float largo);
 void actualizar_asteroide(Asteroide* asteroide);
 bool detectar_colision(Nave nave, Asteroide asteroide);
-void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave);
+void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[]);
 void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides);
+void actualizar_nave(Nave* nave, bool teclas[]);
 
 #endif
