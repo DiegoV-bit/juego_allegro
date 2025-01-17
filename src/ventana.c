@@ -2,9 +2,22 @@
 #include <allegro5/allegro.h>
 #include "ventana.h"
 
+/**
+ * @file ventana.c
+ * @brief Este archivo contiene todas las funciones referentes a la ventana del juego
+ * 
+ */
+
 ALLEGRO_DISPLAY *ventana = NULL;
 ALLEGRO_EVENT_QUEUE *cola_eventos = NULL;
 
+/**
+ * @brief Inicializa la biblioteca Allegro.
+ *
+ * Esta función inicializa Allegro y sus complementos necesarios, como el teclado y los primitivos.
+ * 
+ * @return 0 si la inicialización fue exitosa, -1 en caso de error.
+ */
 int init_allegro() {
     if (!al_init()) {
         fprintf(stderr, "Error al inicializar Allegro.\n");
@@ -24,6 +37,16 @@ int init_allegro() {
     return 0;
 }
 
+/**
+ * @brief Crea una ventana de visualización.
+ *
+ * Esta función crea una ventana con el tamaño y título especificados.
+ *
+ * @param ancho Ancho de la ventana.
+ * @param largo Alto de la ventana.
+ * @param titulo Título de la ventana.
+ * @return Puntero a la ventana creada, o NULL en caso de error.
+ */
 ALLEGRO_DISPLAY *crear_ventana(int ancho, int largo, const char *titulo) {
     ventana = al_create_display(ancho, largo);
     if (!ventana) {
@@ -43,6 +66,12 @@ ALLEGRO_DISPLAY *crear_ventana(int ancho, int largo, const char *titulo) {
     return ventana;
 }
 
+/**
+ * @brief Muestra la ventana y maneja los eventos.
+ *
+ * Esta función entra en un bucle que espera eventos y actualiza la ventana.
+ * Se cierra cuando se recibe un evento de cierre de ventana.
+ */
 void mostrar_ventana() {
     
     if (!cola_eventos) {
@@ -65,6 +94,11 @@ void mostrar_ventana() {
     }
 }
 
+/**
+ * @brief Libera los recursos de la ventana.
+ *
+ * Esta función destruye la ventana y la cola de eventos, liberando los recursos utilizados.
+ */
 void destruir_ventana() {
     if (ventana) {
         al_destroy_display(ventana);
