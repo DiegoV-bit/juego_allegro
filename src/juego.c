@@ -48,7 +48,7 @@ void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_venta
     {
         asteroides[i].x = rand() % (ancho_ventana - 50);
         asteroides[i].y = 0;
-        asteroides[i].velocidad = (rand() % 5) + 1;
+        asteroides[i].velocidad = 4.5;
         asteroides[i].ancho = 50;
         asteroides[i].alto = 50;
     }
@@ -74,17 +74,20 @@ void actualizar_asteroide(Asteroide* asteroide)
 }
 
 /**
-   * @brief Maneja los eventos de teclado para mover la nave.
-   *
-   * Esta función actualiza la posición de la nave en función de las teclas presionadas.
-   *
-   * @param evento El evento de teclado que se va a manejar.
-   * @param nave Puntero a la nave que se va a mover.
-   */
+ * @brief Detecta colisiones entre la nave y un asteroide.
+ *
+ * Esta función verifica si la nave y el asteroide se están tocando.
+ *
+ * @param nave La nave a verificar.
+ * @param asteroide El asteroide a verificar.
+ * @return true si hay colisión, false en caso contrario.
+ */
 bool detectar_colision(Nave nave, Asteroide asteroide)
 {
-    return nave.x < asteroide.x + asteroide.ancho && nave.x + nave.ancho > asteroide.x &&
-           nave.y < asteroide.y + asteroide.alto && nave.y + nave.largo > asteroide.y;
+    return nave.x < asteroide.x + asteroide.ancho &&
+           nave.x + nave.ancho > asteroide.x &&
+           nave.y < asteroide.y + asteroide.alto &&
+           nave.y + nave.largo > asteroide.y;
 }
 
 /**
@@ -144,11 +147,19 @@ void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_
     if (teclas[ALLEGRO_KEY_LEFT])
     {
         nave->x -= 10;
+        if (nave->x < 0)
+        {
+            nave->x = 0;
+        }
     }
     
     if (teclas[ALLEGRO_KEY_RIGHT])
     {
         nave->x += 10;
+        if (nave->x + nave->ancho > 800)
+        {
+            nave->x = 800 - nave->ancho;
+        }
     }
 
     for (int i = 0; i < NUM_ASTEROIDES; i++)
@@ -156,8 +167,8 @@ void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_
         if (detectar_colision(*nave, asteroides[i]))
         {
             printf("Colisión detectada con el asteroide %d\n", i);
-            nave->vida -= 10;
-            nave->tiempo_invulnerable = tiempo_actual + 5;
+            nave->vida -= 5;
+            nave->tiempo_invulnerable = tiempo_actual + 10;
             if (nave->vida <= 0)
             {
                 printf("Nave destruida\n");
