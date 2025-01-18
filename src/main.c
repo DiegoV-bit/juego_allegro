@@ -10,8 +10,8 @@
  */
 
 int main() {
+    srand(time(NULL)); // Inicializa el generador de números aleatorios
     bool teclas[ALLEGRO_KEY_MAX] = {false};
-    srand(time(NULL));
 
     if (init_allegro() != 0) {
         return -1;
@@ -30,32 +30,34 @@ int main() {
         return -1;
     }
 
-    ALLEGRO_TIMER* timer = NULL;
-
-    timer = al_create_timer(1.0/FPS);
-    if (!timer)
+    ALLEGRO_TIMER* temporizador = al_create_timer(1.0 / 60); // 60 FPS
+    if (!temporizador)
     {
-        fprintf(stderr, "Error: No se pudo crear el temporizador.\n");
+        fprintf(stderr, "Error: no se pudo crear el temporizador.\n");
         al_destroy_event_queue(cola_eventos);
         al_destroy_display(ventana);
         return -1;
     }
 
     al_register_event_source(cola_eventos, al_get_display_event_source(ventana));
-    al_register_event_source(cola_eventos, al_get_timer_event_source(timer));
+    al_register_event_source(cola_eventos, al_get_timer_event_source(temporizador));
     al_register_event_source(cola_eventos, al_get_keyboard_event_source());
 
-    al_start_timer(timer);
+    al_start_timer(temporizador);
 
-    Nave nave = init_nave(375, 500, 50, 20);
-    
-    Asteroide asteroide[NUM_ASTEROIDES];
-    init_asteroides(asteroide, NUM_ASTEROIDES, 800, 600);
+    // Inicializar asteroides
+    Asteroide asteroides[NUM_ASTEROIDES];
+    init_asteroides(asteroides, NUM_ASTEROIDES, 800, 600);
+
+    // Inicializar nave
+    Nave nave = init_nave(400, 500, 50, 50);
 
     bool jugando = true;
     while (jugando) {
         ALLEGRO_EVENT evento;
         al_wait_for_event(cola_eventos, &evento);
+
+        double tiempo_actual = al_get_time(); // Obtener el tiempo actual
 
         if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
             jugando = false;
@@ -68,21 +70,21 @@ int main() {
 
         if (evento.type == ALLEGRO_EVENT_TIMER)
         {
-            actualizar_nave(&nave, teclas, asteroide, NUM_ASTEROIDES);
+            actualizar_nave(&nave, teclas, asteroides, NUM_ASTEROIDES, tiempo_actual);
             for (int i = 0; i < NUM_ASTEROIDES; i++)
             {
-                actualizar_asteroide(&asteroide[i]);
-            }        
+                actualizar_asteroide(&asteroides[i]);
+            }
+            al_clear_to_color(al_map_rgb(0, 0, 0));
+            dibujar_juego(nave, asteroides, NUM_ASTEROIDES);
+            dibujar_barra_vida(nave); // Dibujar la barra de vida
+            al_flip_display();
         }
-        
-        al_clear_to_color(al_map_rgb(0, 0, 0));
-        dibujar_juego(nave, asteroide, NUM_ASTEROIDES);
-        dibujar_barra_vida(nave);
-        al_flip_display();
     }
 
     al_destroy_event_queue(cola_eventos);
-    destruir_ventana();
-    
+    al_destroy_display(ventana);
+    al_destroy_timer(temporizador);
+
     return 0;
 }

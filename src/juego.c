@@ -15,6 +15,9 @@
  * @param y posicion en el eje y.
  * @param ancho Anchura de la nave.
  * @param largo Largo de la nave. 
+ * @param vida Vida de la nave.
+ * @param tiempo_invulnerable Tiempo que la nave es invulnerable.
+ * @return Nave inicializada.
  */
 Nave init_nave(float x, float y, float ancho, float largo)
 {
@@ -23,7 +26,8 @@ Nave init_nave(float x, float y, float ancho, float largo)
     nave.y = y;
     nave.ancho = ancho;
     nave.largo = largo;
-    nave.vida = 10;
+    nave.vida = 100;
+    nave.tiempo_invulnerable = 0;
     return nave;
 }
 
@@ -44,7 +48,7 @@ void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_venta
     {
         asteroides[i].x = rand() % (ancho_ventana - 50);
         asteroides[i].y = 0;
-        asteroides[i].velocidad = (rand() % 3) + 1;
+        asteroides[i].velocidad = (rand() % 5) + 1;
         asteroides[i].ancho = 50;
         asteroides[i].alto = 50;
     }
@@ -133,8 +137,9 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
  * @param teclas Arreglo de teclas presionadas
  * @param asteroides Arreglo de asteroides
  * @param num_asteroides Número de asteroides en el arreglo
+ * @param tiempo_actual Tiempo actual en segundos
  */
-void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides)
+void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, double tiempo_actual)
 {
     if (teclas[ALLEGRO_KEY_LEFT])
     {
@@ -151,7 +156,8 @@ void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_
         if (detectar_colision(*nave, asteroides[i]))
         {
             printf("Colisión detectada con el asteroide %d\n", i);
-            nave->vida -= 1;
+            nave->vida -= 10;
+            nave->tiempo_invulnerable = tiempo_actual + 5;
             if (nave->vida <= 0)
             {
                 printf("Nave destruida\n");
@@ -168,7 +174,7 @@ void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_
  */
 void dibujar_barra_vida(Nave nave)
 {
-    float procentaje_vida = (float)nave.vida / 10.0;
-    al_draw_filled_rectangle(10, 10, 10 + 100 * procentaje_vida, 20, al_map_rgb(0, 255, 0));
-    al_draw_rectangle(10, 10, 110, 20, al_map_rgb(255, 255, 255), 2);
+    float porcentaje_vida = (float)nave.vida / 100.0;
+    al_draw_filled_rectangle(10, 10, 10 + (200 * porcentaje_vida), 30, al_map_rgb(255, 0, 0));
+    al_draw_rectangle(10, 10, 210, 30, al_map_rgb(255, 255, 255), 2);
 }

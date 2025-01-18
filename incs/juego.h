@@ -3,7 +3,7 @@
 
 /**
  * @file juego.h
- * @author DiegoV-bit (you@domain.com)
+ * @author DiegoV-bit (diegoandresvidalmunoz21@gmail.com)
  * @brief Biblioteca que contiene las funciones y estructuras del juego.
  * @version 0.1
  * @date 2025-01-17
@@ -18,7 +18,7 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 
-#define NUM_ASTEROIDES 5
+#define NUM_ASTEROIDES 10
 #define FPS 60
 
 /*Estructuras usadas en el juego*/
@@ -29,6 +29,7 @@ typedef struct
     float ancho; //Ancho de la nave
     float largo; //Largo de la nave
     int vida; //Vida de la nave
+    double tiempo_invulnerable; //Tiempo que la nave es invulnerable
 } Nave;
 
 typedef struct
@@ -47,7 +48,7 @@ void actualizar_asteroide(Asteroide* asteroide);
 bool detectar_colision(Nave nave, Asteroide asteroide);
 void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[]);
 void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides);
-void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides);
+void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, double tiempo_actual);
 void dibujar_barra_vida(Nave nave);
 
 #endif
