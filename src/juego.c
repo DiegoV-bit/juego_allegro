@@ -27,7 +27,8 @@ Nave init_nave(float x, float y, float ancho, float largo)
     nave.ancho = ancho;
     nave.largo = largo;
     nave.vida = 100;
-    nave.tiempo_invulnerable = 0;
+    nave.tiempo_invulnerable = 2.0;
+    nave.tiempo_ultimo_dano = -nave.tiempo_invulnerable;
     return nave;
 }
 
@@ -82,12 +83,28 @@ void actualizar_asteroide(Asteroide* asteroide)
  * @param asteroide El asteroide a verificar.
  * @return true si hay colisión, false en caso contrario.
  */
-bool detectar_colision(Nave nave, Asteroide asteroide)
+bool detectar_colision(Nave* nave, Asteroide asteroide)
 {
-    return nave.x < asteroide.x + asteroide.ancho &&
-           nave.x + nave.ancho > asteroide.x &&
-           nave.y < asteroide.y + asteroide.alto &&
-           nave.y + nave.largo > asteroide.y;
+    double tiempo_actual = al_get_time();
+
+    if (tiempo_actual - nave->tiempo_invulnerable < 10)
+    {
+        return false;
+    }
+    
+    bool colision = nave->x < asteroide.x + asteroide.ancho &&
+                    nave->x + nave->ancho > asteroide.x &&
+                    nave->y < asteroide.y + asteroide.alto &&
+                    nave->y + nave->largo > asteroide.y;
+    
+    if (colision)
+    {
+        nave->vida -= 10;
+        nave->tiempo_invulnerable = tiempo_actual;
+        nave->tiempo_ultimo_dano = tiempo_actual;
+    }
+
+    return colision;
 }
 
 /**
@@ -190,7 +207,7 @@ void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double t
 
     for (int i = 0; i < NUM_ASTEROIDES; i++)
     {
-        if (detectar_colision(*nave, asteroides[i]))
+        if (detectar_colision(nave, asteroides[i]))
         {
             printf("Colisión detectada con el asteroide %d\n", i);
             nave->vida -= 5;
@@ -334,6 +351,7 @@ void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num
                 (*puntaje)++;
             }
         }
+        detectar_colision(nave, asteroides[i]);
     }
 }
 
