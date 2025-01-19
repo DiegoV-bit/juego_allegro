@@ -42,13 +42,13 @@ Nave init_nave(float x, float y, float ancho, float largo)
  * @param ancho Anchura de los asteroides.
  * @param largo Largo de los asteorides.
  */ 
-void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana, int alto_ventana)
+void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana)
 {
     for (int i = 0; i < num_asteroides; i++)
     {
         asteroides[i].x = rand() % (ancho_ventana - 50);
-        asteroides[i].y = 0;
-        asteroides[i].velocidad = 4.5;
+        asteroides[i].y = rand() % 600 - 600;
+        asteroides[i].velocidad = 1.5;
         asteroides[i].ancho = 50;
         asteroides[i].alto = 50;
     }
@@ -69,7 +69,7 @@ void actualizar_asteroide(Asteroide* asteroide)
     if (asteroide->y > 600)
     {
         asteroide->y = -asteroide->alto;
-        asteroide->y = rand() % (800 - (int)asteroide->ancho);
+        asteroide->x = rand() % (800 - (int)asteroide->ancho);
     }
 }
 
@@ -175,7 +175,7 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
  * @param num_asteroides Número de asteroides en el arreglo
  * @param tiempo_actual Tiempo actual en segundos
  */
-void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, double tiempo_actual)
+void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double tiempo_actual)
 {
     if (teclas[0]) nave->y -= 5;
     if (teclas[1]) nave->y += 5;
@@ -319,7 +319,7 @@ bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo)
  */
 void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje)
 {
-    actualizar_nave(nave, teclas, asteroides, num_asteroides, al_get_time());
+    actualizar_nave(nave, teclas, asteroides, al_get_time());
     actualizar_disparos(disparos, num_disparos);
     for (int i = 0; i < num_asteroides; i++)
     {

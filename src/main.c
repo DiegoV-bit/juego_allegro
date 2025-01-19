@@ -47,7 +47,7 @@ int main() {
 
     // Inicializar asteroides
     Asteroide asteroides[NUM_ASTEROIDES];
-    init_asteroides(asteroides, NUM_ASTEROIDES, 800, 600);
+    init_asteroides(asteroides, NUM_ASTEROIDES, 800);
 
     // Inicializar nave
     Nave nave = init_nave(400, 500, 50, 50);
@@ -58,11 +58,9 @@ int main() {
     init_disparos(disparos, 10);
 
     bool jugando = true;
-    while (true) {
+    while (jugando) {
         ALLEGRO_EVENT evento;
         al_wait_for_event(cola_eventos, &evento);
-
-        double tiempo_actual = al_get_time(); // Obtener el tiempo actual
 
         if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
             jugando = false;
