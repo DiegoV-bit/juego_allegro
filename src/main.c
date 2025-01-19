@@ -52,8 +52,13 @@ int main() {
     // Inicializar nave
     Nave nave = init_nave(400, 500, 50, 50);
 
+    Disparo disparos[10];
+    int puntaje = 0;
+
+    init_disparos(disparos, 10);
+
     bool jugando = true;
-    while (jugando) {
+    while (true) {
         ALLEGRO_EVENT evento;
         al_wait_for_event(cola_eventos, &evento);
 
@@ -65,18 +70,19 @@ int main() {
 
         if (evento.type == ALLEGRO_EVENT_KEY_DOWN || evento.type == ALLEGRO_EVENT_KEY_UP)
         {
-            manejar_eventos(evento, &nave, teclas);
+            manejar_eventos(evento, &nave, teclas, disparos, 10);
         }
 
         if (evento.type == ALLEGRO_EVENT_TIMER)
         {
-            actualizar_nave(&nave, teclas, asteroides, NUM_ASTEROIDES, tiempo_actual);
+            actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje);
             for (int i = 0; i < NUM_ASTEROIDES; i++)
             {
                 actualizar_asteroide(&asteroides[i]);
             }
             al_clear_to_color(al_map_rgb(0, 0, 0));
-            dibujar_juego(nave, asteroides, NUM_ASTEROIDES);
+            dibujar_juego(nave, asteroides, 10);
+            dibujar_disparos(disparos, 10);
             dibujar_barra_vida(nave); // Dibujar la barra de vida
             al_flip_display();
         }

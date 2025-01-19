@@ -97,17 +97,50 @@ bool detectar_colision(Nave nave, Asteroide asteroide)
    *
    * @param evento El evento de teclado que se va a manejar.
    * @param nave Puntero a la nave que se va a mover.
+   * @param teclas Arreglo de teclas presionadas.
+   * @param disparos Arreglo de disparos.
+   * @param num_disparos Número de disparos en el arreglo.
    */
-void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[])
+void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo disparos[], int num_disparos)
 {
     if (evento.type == ALLEGRO_EVENT_KEY_DOWN)
     {
-        teclas[evento.keyboard.keycode] = true;
+        switch (evento.keyboard.keycode)
+        {
+        case ALLEGRO_KEY_UP:
+            teclas[0] = true;
+            break;
+        case ALLEGRO_KEY_DOWN:
+            teclas[1] = true;
+            break;
+        case ALLEGRO_KEY_LEFT:
+            teclas[2] = true;
+            break;
+        case ALLEGRO_KEY_RIGHT:
+            teclas[3] = true;
+            break;
+        case ALLEGRO_KEY_SPACE:
+            disparar(disparos, num_disparos, *nave);
+            break;
+        }
     }
-
-    if (evento.type == ALLEGRO_EVENT_KEY_UP)
+    else if (evento.type == ALLEGRO_EVENT_KEY_UP)
     {
-        teclas[evento.keyboard.keycode] = false;
+        switch (evento.keyboard.keycode)
+        {
+        case ALLEGRO_KEY_UP:
+            teclas[0] = false;
+            break;
+        case ALLEGRO_KEY_DOWN:
+            teclas[1] = false;
+            break;
+        case ALLEGRO_KEY_LEFT:
+            teclas[2] = false;
+            break;
+        case ALLEGRO_KEY_RIGHT:
+            teclas[3] = false;
+            break;
+        }
     }
 }
 
@@ -144,23 +177,16 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
  */
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, double tiempo_actual)
 {
-    if (teclas[ALLEGRO_KEY_LEFT])
-    {
-        nave->x -= 10;
-        if (nave->x < 0)
-        {
-            nave->x = 0;
-        }
-    }
-    
-    if (teclas[ALLEGRO_KEY_RIGHT])
-    {
-        nave->x += 10;
-        if (nave->x + nave->ancho > 800)
-        {
-            nave->x = 800 - nave->ancho;
-        }
-    }
+    if (teclas[0]) nave->y -= 5;
+    if (teclas[1]) nave->y += 5;
+    if (teclas[2]) nave->x -= 5;
+    if (teclas[3]) nave->x += 5;
+
+    // Limitar el movimiento de la nave dentro de la ventana
+    if (nave->x < 0) nave->x = 0;
+    if (nave->x > 800 - nave->ancho) nave->x = 800 - nave->ancho;
+    if (nave->y < 0) nave->y = 0;
+    if (nave->y > 600 - nave->largo) nave->y = 600 - nave->largo;
 
     for (int i = 0; i < NUM_ASTEROIDES; i++)
     {
@@ -188,4 +214,125 @@ void dibujar_barra_vida(Nave nave)
     float porcentaje_vida = (float)nave.vida / 100.0;
     al_draw_filled_rectangle(10, 10, 10 + (200 * porcentaje_vida), 30, al_map_rgb(255, 0, 0));
     al_draw_rectangle(10, 10, 210, 30, al_map_rgb(255, 255, 255), 2);
+}
+
+/**
+ * @brief 
+ * 
+ * @param disparos Arreglo de disparos
+ * @param num_disparos Cantidad de disparos definida
+ */
+void init_disparos(Disparo disparos[], int num_disparos)
+{
+    for (int i = 0; i < num_disparos; i++)
+    {
+        disparos[i].activo = false;
+    }
+}
+
+/**
+ * @brief 
+ * 
+ * @param disparos Arreglo de disparos
+ * @param num_disparos Cantidad de disparos definida
+ */
+void actualizar_disparos(Disparo disparos[], int num_disparos)
+{
+    for (int i = 0; i < num_disparos; i++)
+    {
+        if (disparos[i].activo)
+        {
+            disparos[i].y -= disparos[i].velocidad;
+            if (disparos[i].y < 0)
+            {
+                disparos[i].activo = false;
+            }
+        }
+    }
+}
+
+/**
+ * @brief 
+ * 
+ * @param disparos Arreglo de disparos
+ * @param num_disparos Cantidad de disparos definida
+ */
+void dibujar_disparos(Disparo disparos[], int num_disparos)
+{
+    for (int i = 0; i < num_disparos; i++)
+    {
+        if (disparos[i].activo)
+        {
+            al_draw_filled_rectangle(disparos[i].x, disparos[i].y, disparos[i].x + 5, disparos[i].y + 10, al_map_rgb(255, 0, 0));
+        }
+    }
+}
+
+/**
+ * @brief Permite que la neve pueda disparar
+ * 
+ * @param disparos Arreglo de disparos
+ * @param num_disparos Cantidad de disparos definida
+ * @param nave Nave que ejecuta los disparos
+ */
+void disparar(Disparo disparos[], int num_disparos, Nave nave)
+{
+    for (int i = 0; i < num_disparos; i++)
+    {
+        if (!disparos[i].activo)
+        {
+            disparos[i].x = nave.x + nave.ancho / 2;
+            disparos[i].y = nave.y;
+            disparos[i].velocidad = 10;
+            disparos[i].activo = true;
+            break;
+        }
+    }
+}
+
+/**
+ * @brief Detecta colisiones entre un asteroide y un disparo.
+ * 
+ * @param asteroide Asteroide a verificar.
+ * @param disparo Disparo a verificar.
+ * 
+ */
+bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo)
+{
+    return disparo.x < asteroide.x + asteroide.ancho &&
+           disparo.x + 5 > asteroide.x &&
+           disparo.y < asteroide.y + asteroide.alto &&
+           disparo.y + 10 > asteroide.y;
+}
+
+/**
+ * @brief Actualiza la posición de la nave, los asteroides y los disparos.
+ * 
+ * @param nave Puntero a la nave que se va a mover
+ * @param teclas Arreglo de teclas presionadas
+ * @param asteroides Arreglo de asteroides
+ * @param num_asteroides Número de asteroides en el arreglo
+ * @param disparos Arreglo de disparos
+ * @param num_disparos Número de disparos en el arreglo
+ * @param puntaje Puntero al puntaje del jugador
+ * 
+ */
+void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje)
+{
+    actualizar_nave(nave, teclas, asteroides, num_asteroides, al_get_time());
+    actualizar_disparos(disparos, num_disparos);
+    for (int i = 0; i < num_asteroides; i++)
+    {
+        actualizar_asteroide(&asteroides[i]);
+        for (int j = 0; j < num_disparos; j++)
+        {
+            if (disparos[j].activo && detectar_colision_disparo(asteroides[i], disparos[j]))
+            {
+                disparos[j].activo = false;
+                asteroides[i].y = -asteroides[i].alto;
+                asteroides[i].x = rand() % (800 - (int)asteroides[i].ancho);
+                (*puntaje)++;
+            }
+        }
+    }
 }

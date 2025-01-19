@@ -41,14 +41,26 @@ typedef struct
     float alto;
 } Asteroide;
 
+typedef struct {
+    float x, y;
+    float velocidad;
+    bool activo;
+} Disparo;
+
 /*Funciones*/
 Nave init_nave(float x, float y, float ancho, float largo);
 void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana, int alto_ventana);
 void actualizar_asteroide(Asteroide* asteroide);
 bool detectar_colision(Nave nave, Asteroide asteroide);
-void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[]);
+void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo disparos[], int num_disparos);
 void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides);
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, double tiempo_actual);
 void dibujar_barra_vida(Nave nave);
+void init_disparos(Disparo disparos[], int num_disparos);
+void actualizar_disparos(Disparo disparos[], int num_disparos);
+void dibujar_disparos(Disparo disparos[], int num_disparos);
+void disparar(Disparo disparos[], int num_disparos, Nave nave);
+bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo);
+void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje);
 
 #endif
