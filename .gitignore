@@ -1,5 +1,4 @@
 *.out
 .vscode
 *.o
-html
 latex
