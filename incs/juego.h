@@ -23,6 +23,13 @@
 #define FPS 60
 
 /*Estructuras usadas en el juego*/
+/**
+ * @struct Nave
+ * @brief Estructura que representa una nave en el juego. 
+ * 
+ * La nave tiene una posicion en los ejes "x" e "y", al igual que un ancho y un largo.
+ * Además, tiene una vida, un tiempo invulnerable y un tiempo en el que recibio el ultimo dano.
+ */
 typedef struct
 {
     float x; //Posicion en el eje x
@@ -31,8 +38,15 @@ typedef struct
     float largo; //Largo de la nave
     int vida; //Vida de la nave
     double tiempo_invulnerable; //Tiempo que la nave es invulnerable
+    double tiempo_ultimo_dano; //Tiempo en el que la nave recibio el ultimo dano
 } Nave;
 
+/**
+ * @struct Asteroide
+ * @brief Estructura que representa un asteroide en el juego.
+ * 
+ * El asteroide tiene una posicion en los ejes "x" e "y", al igual que un ancho y un largo.
+ */
 typedef struct
 {
     float x;
@@ -42,6 +56,15 @@ typedef struct
     float alto;
 } Asteroide;
 
+/**
+ * @struct Disparo
+ * @brief Estructura que representa un disparo en el juego.
+ * 
+ * Caracteristicas de un disparo:
+ * - Posicion en los ejes "x" e "y".
+ * - Velocidad del disparo.
+ * - Estado del disparo (activo o inactivo).
+ */
 typedef struct {
     float x, y;
     float velocidad;
@@ -52,7 +75,7 @@ typedef struct {
 Nave init_nave(float x, float y, float ancho, float largo);
 void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana);
 void actualizar_asteroide(Asteroide* asteroide);
-bool detectar_colision(Nave nave, Asteroide asteroide);
+bool detectar_colision(Nave* nave, Asteroide asteroide);
 void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo disparos[], int num_disparos);
 void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides);
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double tiempo_actual);
