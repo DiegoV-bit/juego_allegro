@@ -336,3 +336,20 @@ void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num
         }
     }
 }
+
+
+void dibujar_puntaje(int puntaje)
+{
+    ALLEGRO_FONT* fuente = al_create_builtin_font();
+    if (!fuente)
+    {
+        fprintf(stderr, "Error: no se pudo cargar la fuente.\n");
+        return;
+    }
+    
+    char text_puntaje[20];
+    sprintf(text_puntaje, "Puntaje: %d", puntaje);
+    al_draw_text(fuente, al_map_rgb(255, 255, 255), 10, 40, ALLEGRO_ALIGN_LEFT, text_puntaje);
+
+    al_destroy_font(fuente);
+}
