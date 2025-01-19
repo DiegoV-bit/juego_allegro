@@ -337,7 +337,11 @@ void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num
     }
 }
 
-
+/**
+ * @brief Permite dibujar el puntaje que hace el jugador en la pantalla.
+ * 
+ * @param puntaje Puntaje que hace el jugador
+ */
 void dibujar_puntaje(int puntaje)
 {
     ALLEGRO_FONT* fuente = al_create_builtin_font();
