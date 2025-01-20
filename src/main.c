@@ -44,7 +44,7 @@ int main() {
 
     al_start_timer(temporizador);
 
-    ALLEGRO_FONT* fuente = al_load_ttf_font("/home/diegov/Descargas/pixel_arial_11/PIXEARG_.TTF", 24, 0);
+    ALLEGRO_FONT* fuente = al_load_ttf_font("pixel_arial_11/PIXEARG_.TTF", 24, 0);
     if (!fuente)
     {
         fprintf(stderr, "Error: no se pudo crear la fuente.\n");
