@@ -90,13 +90,13 @@ int main() {
                 en_menu = false;
                 al_destroy_display(ventana);
             }
+        }
 
-            if (evento.type == ALLEGRO_EVENT_TIMER)
-            {
-                al_clear_to_color(al_map_rgb(0, 0, 0));
-                dibujar_botones(botones, 3, fuente);
-                al_flip_display();
-            }
+        if (evento.type == ALLEGRO_EVENT_TIMER)
+        {
+            al_clear_to_color(al_map_rgb(0, 0, 0));
+            dibujar_botones(botones, 3, fuente);
+            al_flip_display();
         }
     }
     
