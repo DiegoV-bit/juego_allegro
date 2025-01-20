@@ -34,6 +34,8 @@ int main() {
     if (!temporizador)
     {
         fprintf(stderr, "Error: no se pudo crear el temporizador.\n");
+        al_destroy_event_queue(cola_eventos);
+        al_destroy_display(ventana);
         return -1;
     }
 
@@ -88,7 +90,8 @@ int main() {
             else if (boton_clicado == 2)
             {
                 en_menu = false;
-                al_destroy_display(ventana);
+                jugando = false;
+                ranking = false;
             }
         }
 
