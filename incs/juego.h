@@ -71,6 +71,15 @@ typedef struct {
     bool activo;
 } Disparo;
 
+typedef struct
+{
+    float x;
+    float y;
+    float ancho;
+    float alto;
+    char texto[20];
+} Boton;
+
 /*Funciones*/
 Nave init_nave(float x, float y, float ancho, float largo);
 void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana);
@@ -87,5 +96,8 @@ void disparar(Disparo disparos[], int num_disparos, Nave nave);
 bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo);
 void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje);
 void dibujar_puntaje(int puntaje);
+void init_botones(Boton botones[]);
+void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente);
+int detectar_click(Boton botones[], int num_botones, int x, int y);
 
 #endif

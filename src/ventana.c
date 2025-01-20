@@ -1,5 +1,3 @@
-#include <allegro5/allegro_primitives.h>
-#include <allegro5/allegro.h>
 #include "ventana.h"
 
 /**
@@ -31,6 +29,21 @@ int init_allegro() {
 
     if (!al_init_primitives_addon()) {
         fprintf(stderr, "Error: No se pudo inicializar los primitivos.\n");
+        return -1;
+    }
+
+    if (!al_install_mouse()) {
+        fprintf(stderr, "Error: No se pudo inicializar el mouse.\n");
+        return -1;
+    }
+
+    if (!al_init_font_addon()) {
+        fprintf(stderr, "Error: No se pudo inicializar las fuentes.\n");
+        return -1;
+    }
+    
+    if (!al_init_ttf_addon()) {
+        fprintf(stderr, "Error: No se pudo inicializar las fuentes TTF.\n");
         return -1;
     }
 

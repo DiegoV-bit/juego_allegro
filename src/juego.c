@@ -375,3 +375,49 @@ void dibujar_puntaje(int puntaje)
 
     al_destroy_font(fuente);
 }
+
+
+void init_botones(Boton botones[])
+{
+    strcpy(botones[0].texto, "Jugar");
+    botones[0].x = 300;
+    botones[0].y = 200;
+    botones[0].ancho = 200;
+    botones[0].alto = 50;
+
+    strcpy(botones[1].texto, "Ranking");
+    botones[1].x = 300;
+    botones[1].y = 300;
+    botones[1].ancho = 200;
+    botones[1].alto = 50;
+
+    strcpy(botones[2].texto, "Salir");
+    botones[2].x = 300;
+    botones[2].y = 400;
+    botones[2].ancho = 200;
+    botones[2].alto = 50;
+}
+
+
+void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente)
+{
+    for (int i = 0; i < num_botones; i++)
+    {
+        al_draw_filled_rectangle(botones[i].x, botones[i].y, botones[i].x + botones[i].ancho, botones[i].y + botones[i].alto, al_map_rgb(0, 0, 0));
+        al_draw_text(fuente, al_map_rgb(0, 255, 0), botones[i].x + botones[i].ancho / 2, botones[i].y + botones[i].alto / 2, ALLEGRO_ALIGN_CENTER, botones[i].texto);
+    }   
+}
+
+
+int detectar_click(Boton botones[], int num_botones, int x, int y)
+{
+    for (int i = 0; i < num_botones; i++)
+    {
+        if (x >= botones[i].x && x <= botones[i].x + botones[i].ancho &&
+            y >= botones[i].y && y <= botones[i].y + botones[i].alto)
+        {
+            return i;
+        }
+    }
+    return -1;
+}
