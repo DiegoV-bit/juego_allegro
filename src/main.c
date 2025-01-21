@@ -156,10 +156,7 @@ int main() {
         // Implementar código para mostrar el ranking
     }
 
-    al_destroy_event_queue(cola_eventos);
-    al_destroy_display(ventana);
-    al_destroy_timer(temporizador);
-    al_destroy_font(fuente);
+    destruir_recursos(ventana, cola_eventos, temporizador, fuente);
 
     return 0;
 }

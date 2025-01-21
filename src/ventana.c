@@ -107,19 +107,30 @@ void mostrar_ventana() {
     }
 }
 
-/**
- * @brief Libera los recursos de la ventana.
- *
- * Esta función destruye la ventana y la cola de eventos, liberando los recursos utilizados.
- */
-void destruir_ventana() {
-    if (ventana) {
+
+void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente)
+{
+    if (ventana) 
+    {
         al_destroy_display(ventana);
         ventana = NULL;
     }
 
-    if (cola_eventos) {
+    if (cola_eventos) 
+    {
         al_destroy_event_queue(cola_eventos);
         cola_eventos = NULL;
+    }
+
+    if (temporizador)
+    {
+        al_destroy_timer(temporizador);
+        temporizador = NULL;
+    }
+    
+    if (fuente)
+    {
+        al_destroy_font(fuente);
+        fuente = NULL;
     }
 }
