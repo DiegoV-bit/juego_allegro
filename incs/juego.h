@@ -90,7 +90,7 @@ typedef struct
 
 
 /*Funciones*/
-Nave init_nave(float x, float y, float ancho, float largo);
+Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable);
 void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana);
 void actualizar_asteroide(Asteroide* asteroide);
 bool detectar_colision(Nave* nave, Asteroide asteroide);
@@ -110,7 +110,7 @@ void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente);
 int detectar_click(Boton botones[], int num_botones, int x, int y);
 void guardar_puntaje(const char* nombre, int puntaje);
 void cargar_ranking(Jugador ranking[], int* num_jugadores);
-void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores);
+void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores, bool* volver_menu);
 void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre);
 
 #endif

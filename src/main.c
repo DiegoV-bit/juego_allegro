@@ -62,7 +62,7 @@ int main() {
 
     bool en_menu = true;
     bool jugando = false;
-    bool ranking = false;
+    bool mostrarRanking = false;
 
     while (en_menu)
     {
@@ -84,14 +84,14 @@ int main() {
             }
             else if (boton_clicado == 1)
             {
-                ranking = true;
+                mostrarRanking = true;
                 en_menu = false;
             }
             else if (boton_clicado == 2)
             {
                 en_menu = false;
                 jugando = false;
-                ranking = false;
+                mostrarRanking = false;
             }
         }
 
@@ -103,14 +103,14 @@ int main() {
         }
     }
     
-    if (jugando)
+    while (jugando)
     {
         // Inicializar asteroides
         Asteroide asteroides[NUM_ASTEROIDES];
         init_asteroides(asteroides, NUM_ASTEROIDES, 800);
 
         // Inicializar nave
-        Nave nave = init_nave(400, 500, 50, 50);
+        Nave nave = init_nave(400, 500, 50, 50, 100, 0.1);
 
         // Inicializar disparos
         Disparo disparos[10];
@@ -162,13 +162,18 @@ int main() {
         }
     }
 
-    if (ranking)
+    while (mostrarRanking)
     {
         Jugador ranking[MAX_JUGADORES];
         int num_jugadores;
+        bool volver_menu = false;
         cargar_ranking(ranking, &num_jugadores);
-        mostrar_ranking(fuente, ranking, num_jugadores);
-        al_rest(5);
+        mostrar_ranking(fuente, ranking, num_jugadores, &volver_menu);
+        if (volver_menu)
+        {
+            mostrarRanking = false;
+            en_menu = true;
+        }
     }
 
     destruir_recursos(ventana, cola_eventos, temporizador, fuente);

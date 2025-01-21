@@ -26,7 +26,7 @@ Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiem
     nave.y = y;
     nave.ancho = ancho;
     nave.largo = largo;
-    nave.vida = 100;
+    nave.vida = vida;
     nave.tiempo_invulnerable = tiempo_invulnerable;
     nave.tiempo_ultimo_dano = -nave.tiempo_invulnerable;
     return nave;
@@ -489,16 +489,49 @@ void cargar_ranking(Jugador ranking[], int* num_jugadores)
  * @param ranking Jugadores dentro del ranking
  * @param num_jugadores Numero de jugadores dentro del ranking
  */
-void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores)
+void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores, bool* volver_menu)
 {
-    al_clear_to_color(al_map_rgb(0, 0, 0));
-    for (int i = 0; i < num_jugadores; i++)
+    bool mostrar = true;
+    ALLEGRO_EVENT_QUEUE* cola_eventos = al_create_event_queue();
+    al_register_event_source(cola_eventos, al_get_mouse_event_source());
+
+    Boton boton_volver;
+    strcpy(boton_volver.texto, "Volver");
+    boton_volver.x = 350;
+    boton_volver.y = 500;
+    boton_volver.ancho = 100;
+    boton_volver.alto = 50;
+
+    while (mostrar)
     {
-        char texto[100];
-        sprintf(texto, "%d. %s - %d", i + 1, ranking[i].nombre, ranking[i].puntaje);
-        al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 50 + 1 * 30, ALLEGRO_ALIGN_CENTER, texto);
+        al_clear_to_color(al_map_rgb(0, 0, 0));
+        for (int i = 0; i < num_jugadores; i++)
+        {
+            char texto[100];
+            sprintf(texto, "%d. %s - %d", i + 1, ranking[i].nombre, ranking[i].puntaje);
+            al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 100 + 50 * i, ALLEGRO_ALIGN_CENTER, texto);
+        }
+        
+        al_draw_filled_rectangle(boton_volver.x, boton_volver.y, boton_volver.x + boton_volver.ancho, boton_volver.y + boton_volver.alto, al_map_rgb(0, 0, 0));
+        al_draw_text(fuente, al_map_rgb(0, 255, 0), boton_volver.x + boton_volver.ancho / 2, boton_volver.y + boton_volver.alto / 2, ALLEGRO_ALIGN_CENTER, boton_volver.texto);
+
+        al_flip_display();
+
+        ALLEGRO_EVENT evento;
+        al_wait_for_event(cola_eventos, &evento);
+
+        if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN)
+        {
+            if (evento.mouse.x >= boton_volver.x && evento.mouse.x <= boton_volver.x + boton_volver.ancho &&
+                evento.mouse.y >= boton_volver.y && evento.mouse.y <= boton_volver.y + boton_volver.alto)
+            {
+                mostrar = false;
+                *volver_menu = true;
+            }
+        }
     }
-    al_flip_display();
+    
+    al_destroy_event_queue(cola_eventos);
 }
 
 /**
