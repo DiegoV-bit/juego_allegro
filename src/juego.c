@@ -421,3 +421,90 @@ int detectar_click(Boton botones[], int num_botones, int x, int y)
     }
     return -1;
 }
+
+
+void guardar_puntaje(const char* nombre, int puntaje)
+{
+    FILE* archivo = fopen("ranking.txt", "a");
+    if (archivo)
+    {
+        fprintf(archivo, "%s %d\n", nombre, puntaje);
+        fclose(archivo);
+    }
+    else
+    {
+        fprintf(stderr, "Error: no se pudo abrir el archivo de ranking.\n");
+    }
+}
+
+
+void cargar_ranking(Jugador ranking[], int* num_jugadores)
+{
+    FILE* archivo = fopen("ranking.txt", "r");
+    *num_jugadores = 0;
+    if (archivo)
+    {
+        while (fscanf(archivo, "%s %d", ranking[*num_jugadores].nombre, &ranking[*num_jugadores].puntaje) != EOF && *num_jugadores < MAX_JUGADORES)
+        {
+            (*num_jugadores)++;
+        }
+        fclose(archivo);
+    }
+    else
+    {
+        fprintf(stderr, "Error: no se pudo abrir el archivo de ranking.\n");
+    }
+}
+
+
+void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores)
+{
+    al_clear_to_color(al_map_rgb(0, 0, 0));
+    for (int i = 0; i < num_jugadores; i++)
+    {
+        char texto[100];
+        sprintf(texto, "%d. %s - %d", i + 1, ranking[i].nombre, ranking[i].puntaje);
+        al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 50 + 1 * 30, ALLEGRO_ALIGN_CENTER, texto);
+    }
+    al_flip_display();
+}
+
+
+void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre)
+{
+    ALLEGRO_EVENT_QUEUE* cola_eventos = al_create_event_queue();
+    al_register_event_source(cola_eventos, al_get_keyboard_event_source());
+
+    int pos = 0;
+    nombre[0] = '\0';
+
+    while (true)
+    {
+        ALLEGRO_EVENT evento;
+        al_wait_for_event(cola_eventos, &evento);
+
+        if (evento.type == ALLEGRO_EVENT_KEY_CHAR)
+        {
+            if (evento.keyboard.unichar >= 'a' && evento.keyboard.unichar <= 'z' && pos < MAX_NOMBRE - 1)
+            {
+                nombre[pos++] = (char)evento.keyboard.unichar;
+                nombre[pos] = '\0';
+            }
+            else if (evento.keyboard.keycode == ALLEGRO_KEY_BACKSPACE && pos > 0)
+            {
+                nombre[--pos] = '\0';
+            }
+            else if (evento.keyboard.keycode == ALLEGRO_KEY_ENTER)
+            {
+                break;
+            }
+        }
+        
+        al_clear_to_color(al_map_rgb(0, 0, 0));
+        al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 300, ALLEGRO_ALIGN_CENTER, "Ingrese su nombre:");
+        al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 350, ALLEGRO_ALIGN_CENTER, nombre);
+        al_flip_display();
+    }
+    
+    al_destroy_event_queue(cola_eventos);
+}

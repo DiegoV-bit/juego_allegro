@@ -147,13 +147,28 @@ int main() {
                 dibujar_puntaje(puntaje);
                 dibujar_barra_vida(nave); // Dibujar la barra de vida
                 al_flip_display();
+
+                if (nave.vida <= 0)
+                {
+                    jugando = false;
+                }
             }
-        }    
+        }
+        if (nave.vida <= 0)
+        {
+            char nombre_jugador[MAX_NOMBRE];
+            capturar_nombre(fuente, nombre_jugador);
+            guardar_puntaje(nombre_jugador, puntaje);
+        }
     }
 
     if (ranking)
     {
-        // Implementar código para mostrar el ranking
+        Jugador ranking[MAX_JUGADORES];
+        int num_jugadores;
+        cargar_ranking(ranking, &num_jugadores);
+        mostrar_ranking(fuente, ranking, num_jugadores);
+        al_rest(5);
     }
 
     destruir_recursos(ventana, cola_eventos, temporizador, fuente);

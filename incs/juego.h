@@ -21,6 +21,8 @@
 
 #define NUM_ASTEROIDES 10
 #define FPS 60
+#define MAX_JUGADORES 50
+#define MAX_NOMBRE 40
 
 /*Estructuras usadas en el juego*/
 /**
@@ -80,6 +82,13 @@ typedef struct
     char texto[20];
 } Boton;
 
+typedef struct
+{
+    char nombre[MAX_NOMBRE];
+    int puntaje;
+} Jugador;
+
+
 /*Funciones*/
 Nave init_nave(float x, float y, float ancho, float largo);
 void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana);
@@ -99,5 +108,9 @@ void dibujar_puntaje(int puntaje);
 void init_botones(Boton botones[]);
 void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente);
 int detectar_click(Boton botones[], int num_botones, int x, int y);
+void guardar_puntaje(const char* nombre, int puntaje);
+void cargar_ranking(Jugador ranking[], int* num_jugadores);
+void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores);
+void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre);
 
 #endif
