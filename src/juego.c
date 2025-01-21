@@ -19,7 +19,7 @@
  * @param tiempo_invulnerable Tiempo que la nave es invulnerable.
  * @return Nave inicializada.
  */
-Nave init_nave(float x, float y, float ancho, float largo)
+Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable)
 {
     Nave nave;
     nave.x = x;
@@ -27,7 +27,7 @@ Nave init_nave(float x, float y, float ancho, float largo)
     nave.ancho = ancho;
     nave.largo = largo;
     nave.vida = 100;
-    nave.tiempo_invulnerable = 2.0;
+    nave.tiempo_invulnerable = tiempo_invulnerable;
     nave.tiempo_ultimo_dano = -nave.tiempo_invulnerable;
     return nave;
 }
@@ -37,11 +37,9 @@ Nave init_nave(float x, float y, float ancho, float largo)
  * 
  * Esta funcion inicializa los asteroides dandole una posicion en los ejes "x" e "y", al igual que le da un tamano
  * 
- * @param x Posicion en el eje x.
- * @param y posicion en el eje y.
- * @param velocidad Velocidad del asteroides.
+ * @param asteroides Arreglo de asteroides a inicializar.
+ * @param num_asteroides Numero de asteroides en el arreglo.
  * @param ancho Anchura de los asteroides.
- * @param largo Largo de los asteorides.
  */ 
 void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana)
 {
@@ -79,7 +77,7 @@ void actualizar_asteroide(Asteroide* asteroide)
  *
  * Esta función verifica si la nave y el asteroide se están tocando.
  *
- * @param nave La nave a verificar.
+ * @param nave Puntero a la nave a la que se verifica la colisión.
  * @param asteroide El asteroide a verificar.
  * @return true si hay colisión, false en caso contrario.
  */
@@ -376,7 +374,11 @@ void dibujar_puntaje(int puntaje)
     al_destroy_font(fuente);
 }
 
-
+/**
+ * @brief Inicializa los botones del menu principal.
+ * 
+ * @param botones Arreglo de los botones del menu principal
+ */
 void init_botones(Boton botones[])
 {
     strcpy(botones[0].texto, "Jugar");
@@ -398,7 +400,13 @@ void init_botones(Boton botones[])
     botones[2].alto = 50;
 }
 
-
+/**
+ * @brief Dibuja los botones del menu principal.
+ * 
+ * @param botones Arreglo de botones del menu principal
+ * @param num_botones Numero de botones del menu principal
+ * @param fuente Fuente de letra usada en el menu principal
+ */
 void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente)
 {
     for (int i = 0; i < num_botones; i++)
@@ -408,7 +416,15 @@ void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente)
     }   
 }
 
-
+/**
+ * @brief Permite detectar los clicks que hace el mouse en los botones del menu principal.
+ * 
+ * @param botones Arreglo de los botones del menu principal
+ * @param num_botones Numero de botones del menu principal
+ * @param x Posicion en el eje x del mouse
+ * @param y Posicion en el eje y del mouse
+ * @return int El numero de boton que se clickeo
+ */
 int detectar_click(Boton botones[], int num_botones, int x, int y)
 {
     for (int i = 0; i < num_botones; i++)
@@ -422,7 +438,12 @@ int detectar_click(Boton botones[], int num_botones, int x, int y)
     return -1;
 }
 
-
+/**
+ * @brief Guarda el puntaje obtenido en el juego a un archivo de texto.
+ * 
+ * @param nombre Nombre del jugador
+ * @param puntaje Puntaje del jugador respectivo
+ */
 void guardar_puntaje(const char* nombre, int puntaje)
 {
     FILE* archivo = fopen("ranking.txt", "a");
@@ -437,7 +458,12 @@ void guardar_puntaje(const char* nombre, int puntaje)
     }
 }
 
-
+/**
+ * @brief Carga el archivo en donde se guardan los puntajes de los jugadores.
+ * 
+ * @param ranking Jugador dentro del ranking
+ * @param num_jugadores Puntero al numero de jugadores
+ */
 void cargar_ranking(Jugador ranking[], int* num_jugadores)
 {
     FILE* archivo = fopen("ranking.txt", "r");
@@ -456,7 +482,13 @@ void cargar_ranking(Jugador ranking[], int* num_jugadores)
     }
 }
 
-
+/**
+ * @brief Muestra el ranking de los jugadores en la pantalla.
+ * 
+ * @param fuente Fuente de letra usada en el ranking
+ * @param ranking Jugadores dentro del ranking
+ * @param num_jugadores Numero de jugadores dentro del ranking
+ */
 void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores)
 {
     al_clear_to_color(al_map_rgb(0, 0, 0));
@@ -469,7 +501,12 @@ void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores)
     al_flip_display();
 }
 
-
+/**
+ * @brief Permite obtener el nombre del jugador una vez que este pierde.
+ * 
+ * @param fuente Fuente de letra a usar.
+ * @param nombre Puntero al nombre del jugador
+ */
 void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre)
 {
     ALLEGRO_EVENT_QUEUE* cola_eventos = al_create_event_queue();

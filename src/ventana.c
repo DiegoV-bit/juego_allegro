@@ -107,7 +107,14 @@ void mostrar_ventana() {
     }
 }
 
-
+/**
+ * @brief Destruye todos los recursos del juego una vez acabado de jugar
+ * 
+ * @param ventana Ventana del juego.
+ * @param cola_eventos Cola de eventos.
+ * @param temporizador Temporizador usado para los FPS
+ * @param fuente Fuente de letra usada en el juego
+ */
 void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente)
 {
     if (ventana) 
