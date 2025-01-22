@@ -63,6 +63,7 @@ int main() {
     bool en_menu = true;
     bool jugando = false;
     bool mostrarRanking = false;
+    bool volver_menu = false;
 
     while (true)
     {
@@ -74,6 +75,9 @@ int main() {
             if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
             {
                 en_menu = false;
+                jugando = false;
+                mostrarRanking = false;
+                break;
             }
         
             if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN)
@@ -86,14 +90,15 @@ int main() {
                 }
                 else if (boton_clicado == 1)
                 {
-                    mostrarRanking = true;
                     en_menu = false;
+                    mostrarRanking = true;
                 }
                 else if (boton_clicado == 2)
                 {
                     en_menu = false;
                     jugando = false;
                     mostrarRanking = false;
+                    break;
                 }
             }
 
@@ -129,6 +134,9 @@ int main() {
 
                 if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
                     jugando = false;
+                    en_menu = false;
+                    mostrarRanking = false;
+                    break;
                 }
 
                 if (evento.type == ALLEGRO_EVENT_KEY_DOWN || evento.type == ALLEGRO_EVENT_KEY_UP)
@@ -161,6 +169,7 @@ int main() {
                 char nombre_jugador[MAX_NOMBRE];
                 capturar_nombre(fuente, nombre_jugador);
                 guardar_puntaje(nombre_jugador, puntaje);
+                volver_menu = true;
             }
         }
 
@@ -168,14 +177,20 @@ int main() {
         {
             Jugador ranking[MAX_JUGADORES];
             int num_jugadores;
-            bool volver_menu = false;
+            bool volver_menu_ranking = false;
             cargar_ranking(ranking, &num_jugadores);
-            mostrar_ranking(fuente, ranking, num_jugadores, &volver_menu);
-            if (volver_menu)
+            mostrar_ranking(fuente, ranking, num_jugadores, &volver_menu_ranking);
+            if (volver_menu_ranking)
             {
                 mostrarRanking = false;
                 en_menu = true;
             }
+        }
+
+        if (volver_menu)
+        {
+            volver_menu = false;
+            en_menu = true;
         }
 
         if (!en_menu && !jugando && !mostrarRanking)

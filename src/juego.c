@@ -97,7 +97,7 @@ bool detectar_colision(Nave* nave, Asteroide asteroide)
     
     if (colision)
     {
-        nave->vida -= 10;
+        nave->vida -= 100; //para acabar rapido el juego el valor normal de daño es 10
         nave->tiempo_invulnerable = tiempo_actual;
         nave->tiempo_ultimo_dano = tiempo_actual;
     }
