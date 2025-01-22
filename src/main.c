@@ -64,117 +64,125 @@ int main() {
     bool jugando = false;
     bool mostrarRanking = false;
 
-    while (en_menu)
+    while (true)
     {
-        ALLEGRO_EVENT evento;
-        al_wait_for_event(cola_eventos, &evento);
-
-        if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
-        {
-            en_menu = false;
-        }
-        
-        if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN)
-        {
-            int boton_clicado = detectar_click(botones, 3, evento.mouse.x, evento.mouse.y);
-            if (boton_clicado == 0)
-            {
-                en_menu = false;
-                jugando = true;
-            }
-            else if (boton_clicado == 1)
-            {
-                mostrarRanking = true;
-                en_menu = false;
-            }
-            else if (boton_clicado == 2)
-            {
-                en_menu = false;
-                jugando = false;
-                mostrarRanking = false;
-            }
-        }
-
-        if (evento.type == ALLEGRO_EVENT_TIMER)
-        {
-            al_clear_to_color(al_map_rgb(0, 0, 0));
-            dibujar_botones(botones, 3, fuente);
-            al_flip_display();
-        }
-    }
-    
-    while (jugando)
-    {
-        // Inicializar asteroides
-        Asteroide asteroides[NUM_ASTEROIDES];
-        init_asteroides(asteroides, NUM_ASTEROIDES, 800);
-
-        // Inicializar nave
-        Nave nave = init_nave(400, 500, 50, 50, 100, 0.1);
-
-        // Inicializar disparos
-        Disparo disparos[10];
-        init_disparos(disparos, 10);
-
-        // Inicializar puntaje en 0
-        int puntaje = 0;
-
-        /*Bucle del juego*/
-        while (jugando) 
+        while (en_menu)
         {
             ALLEGRO_EVENT evento;
             al_wait_for_event(cola_eventos, &evento);
 
-            if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
-                jugando = false;
-            }
-
-            if (evento.type == ALLEGRO_EVENT_KEY_DOWN || evento.type == ALLEGRO_EVENT_KEY_UP)
+            if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
             {
-                manejar_eventos(evento, &nave, teclas, disparos, 10);
+                en_menu = false;
+            }
+        
+            if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN)
+            {
+                int boton_clicado = detectar_click(botones, 3, evento.mouse.x, evento.mouse.y);
+                if (boton_clicado == 0)
+                {
+                    en_menu = false;
+                    jugando = true;
+                }
+                else if (boton_clicado == 1)
+                {
+                    mostrarRanking = true;
+                    en_menu = false;
+                }
+                else if (boton_clicado == 2)
+                {
+                    en_menu = false;
+                    jugando = false;
+                    mostrarRanking = false;
+                }
             }
 
             if (evento.type == ALLEGRO_EVENT_TIMER)
             {
-                actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje);
-                for (int i = 0; i < NUM_ASTEROIDES; i++)
-                {
-                    actualizar_asteroide(&asteroides[i]);
-                }
                 al_clear_to_color(al_map_rgb(0, 0, 0));
-                dibujar_juego(nave, asteroides, 10);
-                dibujar_disparos(disparos, 10);
-                dibujar_puntaje(puntaje);
-                dibujar_barra_vida(nave); // Dibujar la barra de vida
+                dibujar_botones(botones, 3, fuente);
                 al_flip_display();
-
-                if (nave.vida <= 0)
-                {
-                    jugando = false;
-                }
             }
         }
-        if (nave.vida <= 0)
+    
+        if (jugando)
         {
-            char nombre_jugador[MAX_NOMBRE];
-            capturar_nombre(fuente, nombre_jugador);
-            guardar_puntaje(nombre_jugador, puntaje);
-        }
-    }
+            // Inicializar asteroides
+            Asteroide asteroides[NUM_ASTEROIDES];
+            init_asteroides(asteroides, NUM_ASTEROIDES, 800);
 
-    while (mostrarRanking)
-    {
-        Jugador ranking[MAX_JUGADORES];
-        int num_jugadores;
-        bool volver_menu = false;
-        cargar_ranking(ranking, &num_jugadores);
-        mostrar_ranking(fuente, ranking, num_jugadores, &volver_menu);
-        if (volver_menu)
-        {
-            mostrarRanking = false;
-            en_menu = true;
+            // Inicializar nave
+            Nave nave = init_nave(400, 500, 50, 50, 100, 0.1);
+
+            // Inicializar disparos
+            Disparo disparos[10];
+            init_disparos(disparos, 10);
+
+            // Inicializar puntaje en 0
+            int puntaje = 0;
+
+            /*Bucle del juego*/
+            while (jugando) 
+            {
+                ALLEGRO_EVENT evento;
+                al_wait_for_event(cola_eventos, &evento);
+
+                if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+                    jugando = false;
+                }
+
+                if (evento.type == ALLEGRO_EVENT_KEY_DOWN || evento.type == ALLEGRO_EVENT_KEY_UP)
+                {
+                    manejar_eventos(evento, &nave, teclas, disparos, 10);
+                }
+
+                if (evento.type == ALLEGRO_EVENT_TIMER)
+                {
+                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje);
+                    for (int i = 0; i < NUM_ASTEROIDES; i++)
+                    {
+                        actualizar_asteroide(&asteroides[i]);
+                    }
+                    al_clear_to_color(al_map_rgb(0, 0, 0));
+                    dibujar_juego(nave, asteroides, 10);
+                    dibujar_disparos(disparos, 10);
+                    dibujar_puntaje(puntaje);
+                    dibujar_barra_vida(nave); // Dibujar la barra de vida
+                    al_flip_display();
+
+                    if (nave.vida <= 0)
+                    {
+                        jugando = false;
+                    }
+                }
+            }
+            if (nave.vida <= 0)
+            {
+                char nombre_jugador[MAX_NOMBRE];
+                capturar_nombre(fuente, nombre_jugador);
+                guardar_puntaje(nombre_jugador, puntaje);
+            }
         }
-    }
+
+        if (mostrarRanking)
+        {
+            Jugador ranking[MAX_JUGADORES];
+            int num_jugadores;
+            bool volver_menu = false;
+            cargar_ranking(ranking, &num_jugadores);
+            mostrar_ranking(fuente, ranking, num_jugadores, &volver_menu);
+            if (volver_menu)
+            {
+                mostrarRanking = false;
+                en_menu = true;
+            }
+        }
+
+        if (!en_menu && !jugando && !mostrarRanking)
+        {
+            break;
+        }
+    }    
 
     destruir_recursos(ventana, cola_eventos, temporizador, fuente);
 
