@@ -39,7 +39,7 @@ Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiem
  * 
  * @param asteroides Arreglo de asteroides a inicializar.
  * @param num_asteroides Numero de asteroides en el arreglo.
- * @param ancho Anchura de los asteroides.
+ * @param ancho_ventana Anchura de los asteroides.
  */ 
 void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana)
 {
@@ -475,6 +475,9 @@ void cargar_ranking(Jugador ranking[], int* num_jugadores)
             (*num_jugadores)++;
         }
         fclose(archivo);
+
+        // Ordenar el ranking de mayor a menor puntaje
+        qsort(ranking, *num_jugadores, sizeof(Jugador), comparar_puntajes);
     }
     else
     {
@@ -488,6 +491,7 @@ void cargar_ranking(Jugador ranking[], int* num_jugadores)
  * @param fuente Fuente de letra usada en el ranking
  * @param ranking Jugadores dentro del ranking
  * @param num_jugadores Numero de jugadores dentro del ranking
+ * @param volver_menu Puntero a la variable que indica si se debe volver al menu principal
  */
 void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores, bool* volver_menu)
 {
@@ -577,4 +581,23 @@ void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre)
     }
     
     al_destroy_event_queue(cola_eventos);
+}
+
+/**
+ * @brief Compara los puntajes de dos jugadores.
+ *
+ * Esta función se utiliza para ordenar un arreglo de estructuras Jugador en orden descendente de puntaje.
+ *
+ * @param a Puntero al primer jugador.
+ * @param b Puntero al segundo jugador.
+ * @return int Un valor negativo si el puntaje del primer jugador es menor que el del segundo,
+ *             cero si los puntajes son iguales,
+ *             un valor positivo si el puntaje del primer jugador es mayor que el del segundo.
+ */
+int comparar_puntajes(const void* a, const void* b)
+{
+    Jugador* jugadorA = (Jugador*)a;
+    Jugador* jugadorB = (Jugador*)b;
+
+    return jugadorB->puntaje - jugadorA->puntaje;
 }
