@@ -19,9 +19,25 @@
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
 
+/**
+ * @def NUM_ASTEROIDES
+ * @brief Numero de asteroides del juego.
+ */
 #define NUM_ASTEROIDES 10
+/**
+ * @def FPS
+ * @brief Frames por segundo del juego.
+ */
 #define FPS 60
+/**
+ * @def MAX_JUGADORES
+ * @brief Numero maximo de jugadores en el ranking.
+ */
 #define MAX_JUGADORES 50
+/**
+ * @def MAX_NOMBRE
+ * @brief Longitud maxima del nombre del jugador.
+ */
 #define MAX_NOMBRE 40
 
 /*Estructuras usadas en el juego*/
@@ -34,13 +50,13 @@
  */
 typedef struct
 {
-    float x; //Posicion en el eje x
-    float y; //Posicion en el eje y
-    float ancho; //Ancho de la nave
-    float largo; //Largo de la nave
-    int vida; //Vida de la nave
-    double tiempo_invulnerable; //Tiempo que la nave es invulnerable
-    double tiempo_ultimo_dano; //Tiempo en el que la nave recibio el ultimo dano
+    float x; /**< Posicion en el eje x */
+    float y; /**< Posicion en el eje y */
+    float ancho; /** Ancho de la nave  */
+    float largo; /** Largo de la nave */
+    int vida; /** Vida de la nave */
+    double tiempo_invulnerable; /** Tiempo que la nave es invulnerable */
+    double tiempo_ultimo_dano; /** Tiempo en el que la nave recibio el ultimo dano */
 } Nave;
 
 /**
@@ -51,11 +67,11 @@ typedef struct
  */
 typedef struct
 {
-    float x;
-    float y;
-    float velocidad;
-    float ancho;
-    float alto;
+    float x; /** <posicion en el eje x */
+    float y; /** <posicion en el eje y */
+    float velocidad; /** <Velocidad de los asteroides */
+    float ancho; /** <Ancho de los asteroides */
+    float alto; /** <Alto de los asteroides */
 } Asteroide;
 
 /**
@@ -68,24 +84,25 @@ typedef struct
  * - Estado del disparo (activo o inactivo).
  */
 typedef struct {
-    float x, y;
-    float velocidad;
-    bool activo;
+    float x; /**< Posicion en el eje x */
+    float y; /**< Posicion en el eje y */
+    float velocidad; /** <Velocidad del disparo */
+    bool activo; /** <Actividad del disparo */
 } Disparo;
 
 typedef struct
 {
-    float x;
-    float y;
-    float ancho;
-    float alto;
-    char texto[20];
+    float x; /**< Posicion en el eje x del boton*/
+    float y; /**< Posicion en el eje y del boton*/
+    float ancho; /**<Ancho del boton */
+    float alto; /**<Alto del boton */
+    char texto[20]; /**<Texto del boton */
 } Boton;
 
 typedef struct
 {
-    char nombre[MAX_NOMBRE];
-    int puntaje;
+    char nombre[MAX_NOMBRE]; /**<Arreglo de caracteres que representa el nombre del jugador */
+    int puntaje; /**<Puntaje del jugador */
 } Jugador;
 
 
