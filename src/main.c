@@ -13,48 +13,12 @@ int main() {
     srand(time(NULL)); // Inicializa el generador de números aleatorios
     bool teclas[ALLEGRO_KEY_MAX] = {false};
 
-    if (init_allegro() != 0) {
-        return -1;
-    }
+    ALLEGRO_DISPLAY *ventana = NULL;
+    ALLEGRO_EVENT_QUEUE *cola_eventos = NULL;
+    ALLEGRO_TIMER *temporizador = NULL;
+    ALLEGRO_FONT *fuente = NULL;
 
-    ALLEGRO_DISPLAY *ventana = crear_ventana(800, 600, "Juego de Naves");
-    if (!ventana) {
-        return -1;
-    }
-
-    ALLEGRO_EVENT_QUEUE* cola_eventos = al_create_event_queue();
-    if (!cola_eventos)
-    {
-        fprintf(stderr, "Error: no se pudo crear la cola de eventos.\n");
-        al_destroy_display(ventana);
-        return -1;
-    }
-
-    ALLEGRO_TIMER* temporizador = al_create_timer(1.0 / 60); // 60 FPS
-    if (!temporizador)
-    {
-        fprintf(stderr, "Error: no se pudo crear el temporizador.\n");
-        al_destroy_event_queue(cola_eventos);
-        al_destroy_display(ventana);
-        return -1;
-    }
-
-    al_register_event_source(cola_eventos, al_get_display_event_source(ventana));
-    al_register_event_source(cola_eventos, al_get_timer_event_source(temporizador));
-    al_register_event_source(cola_eventos, al_get_keyboard_event_source());
-    al_register_event_source(cola_eventos, al_get_mouse_event_source());
-
-    al_start_timer(temporizador);
-
-    ALLEGRO_FONT* fuente = al_load_ttf_font("pixel_arial_11/PIXEARG_.TTF", 24, 0);
-    if (!fuente)
-    {
-        fprintf(stderr, "Error: no se pudo crear la fuente.\n");
-        al_destroy_event_queue(cola_eventos);
-        al_destroy_display(ventana);
-        al_destroy_timer(temporizador);
-        return -1;
-    }
+    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente) != 0) return -1; 
 
     /*Inicializar los botones del menu*/
     Boton botones[3];

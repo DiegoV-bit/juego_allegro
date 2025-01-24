@@ -141,3 +141,49 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
         fuente = NULL;
     }
 }
+
+
+int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente)
+{
+    if (init_allegro() != 0) {
+        return -1;
+    }
+
+    *ventana = crear_ventana(800, 600, "Juego de Naves");
+    if (!*ventana) {
+        return -1;
+    }
+
+    *cola_eventos = al_create_event_queue();
+    if (!*cola_eventos) {
+        fprintf(stderr, "Error: no se pudo crear la cola de eventos.\n");
+        al_destroy_display(*ventana);
+        return -1;
+    }
+
+    *temporizador = al_create_timer(1.0 / 60); // 60 FPS
+    if (!*temporizador) {
+        fprintf(stderr, "Error: no se pudo crear el temporizador.\n");
+        al_destroy_event_queue(*cola_eventos);
+        al_destroy_display(*ventana);
+        return -1;
+    }
+
+    al_register_event_source(*cola_eventos, al_get_display_event_source(*ventana));
+    al_register_event_source(*cola_eventos, al_get_timer_event_source(*temporizador));
+    al_register_event_source(*cola_eventos, al_get_keyboard_event_source());
+    al_register_event_source(*cola_eventos, al_get_mouse_event_source());
+
+    al_start_timer(*temporizador);
+
+    *fuente = al_load_ttf_font("pixel_arial_11/PIXEARG_.TTF", 24, 0);
+    if (!*fuente) {
+        fprintf(stderr, "Error: no se pudo crear la fuente.\n");
+        al_destroy_event_queue(*cola_eventos);
+        al_destroy_display(*ventana);
+        al_destroy_timer(*temporizador);
+        return -1;
+    }
+
+    return 0;
+}
