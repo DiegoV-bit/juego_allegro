@@ -97,7 +97,7 @@ bool detectar_colision(Nave* nave, Asteroide asteroide)
     
     if (colision)
     {
-        nave->vida -= 100; //para acabar rapido el juego el valor normal de daño es 10
+        nave->vida -= 10; //para acabar rapido el juego el valor normal de daño es 10
         nave->tiempo_invulnerable = tiempo_actual;
         nave->tiempo_ultimo_dano = tiempo_actual;
     }
@@ -168,8 +168,10 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo di
  * @param asteroides Arreglo de asteroides a dibujar.
  * @param num_asteroides Número de asteroides en el arreglo.
  */
-void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
+void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGRO_BITMAP* imagen_fondo)
 {
+    al_draw_bitmap(imagen_fondo, 0, 0, 0);
+    
     al_draw_filled_rectangle(nave.x, nave.y, nave.x + nave.ancho, nave.y + nave.largo, al_map_rgb(0, 255, 0));
 
     for (int i = 0; i < num_asteroides; i++)

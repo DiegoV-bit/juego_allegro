@@ -17,8 +17,12 @@ int main() {
     ALLEGRO_EVENT_QUEUE *cola_eventos = NULL;
     ALLEGRO_TIMER *temporizador = NULL;
     ALLEGRO_FONT *fuente = NULL;
+    ALLEGRO_BITMAP *fondo_juego = NULL;
 
-    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente) != 0) return -1; 
+    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego) != 0)
+    {
+        return -1;
+    }
 
     /*Inicializar los botones del menu*/
     Boton botones[3];
@@ -116,7 +120,7 @@ int main() {
                         actualizar_asteroide(&asteroides[i]);
                     }
                     al_clear_to_color(al_map_rgb(0, 0, 0));
-                    dibujar_juego(nave, asteroides, 10);
+                    dibujar_juego(nave, asteroides, 10, fondo_juego);
                     dibujar_disparos(disparos, 10);
                     dibujar_puntaje(puntaje);
                     dibujar_barra_vida(nave); // Dibujar la barra de vida
@@ -163,7 +167,7 @@ int main() {
         }
     }    
 
-    destruir_recursos(ventana, cola_eventos, temporizador, fuente);
+    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego);
 
     return 0;
 }

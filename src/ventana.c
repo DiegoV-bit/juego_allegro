@@ -8,6 +8,7 @@
 
 ALLEGRO_DISPLAY *ventana = NULL;
 ALLEGRO_EVENT_QUEUE *cola_eventos = NULL;
+ALLEGRO_BITMAP* imagen_fondo = NULL;
 
 /**
  * @brief Inicializa la biblioteca Allegro.
@@ -44,6 +45,11 @@ int init_allegro() {
     
     if (!al_init_ttf_addon()) {
         fprintf(stderr, "Error: No se pudo inicializar las fuentes TTF.\n");
+        return -1;
+    }
+
+    if (!al_init_image_addon()) {
+        fprintf(stderr, "Error: No se pudo inicializar las imagenes.\n");
         return -1;
     }
 
@@ -115,7 +121,7 @@ void mostrar_ventana() {
  * @param temporizador Temporizador usado para los FPS
  * @param fuente Fuente de letra usada en el juego
  */
-void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente)
+void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen)
 {
     if (ventana) 
     {
@@ -140,16 +146,30 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
         al_destroy_font(fuente);
         fuente = NULL;
     }
+
+    if (imagen)
+    {
+        al_destroy_bitmap(imagen);
+        imagen = NULL;
+    }
 }
 
-
-int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente)
+/**
+ * @brief Permite inicializar todos los recursos del juego
+ * 
+ * @param ventana Puntero doble a la ventana del juego
+ * @param cola_eventos Puntero doble a la cola de eventos
+ * @param temporizador Puntero doble al temporizador
+ * @param fuente Puntero doble a la fuente de letra
+ * @return int Si la inicializacion fue exitosa retorna 0, en caso contrario retorna -1
+ */
+int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo)
 {
     if (init_allegro() != 0) {
         return -1;
     }
 
-    *ventana = crear_ventana(800, 600, "Juego de Naves");
+    *ventana = crear_ventana(ANCHO_VENTANA, ALTO_VENTANA, "Juego de Naves");
     if (!*ventana) {
         return -1;
     }
@@ -182,6 +202,16 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
         al_destroy_event_queue(*cola_eventos);
         al_destroy_display(*ventana);
         al_destroy_timer(*temporizador);
+        return -1;
+    }
+
+    *imagen_fondo = al_load_bitmap("imagenes/Fondo_juego.jpeg");
+    if (!imagen_fondo) {
+        fprintf(stderr, "Error: no se pudo cargar la imagen de fondo.\n");
+        al_destroy_event_queue(*cola_eventos);
+        al_destroy_display(*ventana);
+        al_destroy_timer(*temporizador);
+        al_destroy_font(*fuente);
         return -1;
     }
 
