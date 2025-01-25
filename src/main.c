@@ -18,8 +18,9 @@ int main() {
     ALLEGRO_TIMER *temporizador = NULL;
     ALLEGRO_FONT *fuente = NULL;
     ALLEGRO_BITMAP *fondo_juego = NULL;
+    ALLEGRO_BITMAP *imagen_nave = NULL;
 
-    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego) != 0)
+    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave) != 0)
     {
         return -1;
     }
@@ -85,7 +86,7 @@ int main() {
             init_asteroides(asteroides, NUM_ASTEROIDES, 800);
 
             // Inicializar nave
-            Nave nave = init_nave(400, 500, 50, 50, 100, 0.1);
+            Nave nave = init_nave(400, 500, 50, 50, 100, 0.1, imagen_nave);
 
             // Inicializar disparos
             Disparo disparos[10];
@@ -167,7 +168,7 @@ int main() {
         }
     }    
 
-    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego);
+    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave);
 
     return 0;
 }

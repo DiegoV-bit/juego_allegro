@@ -19,7 +19,7 @@
  * @param tiempo_invulnerable Tiempo que la nave es invulnerable.
  * @return Nave inicializada.
  */
-Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable)
+Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave)
 {
     Nave nave;
     nave.x = x;
@@ -29,6 +29,7 @@ Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiem
     nave.vida = vida;
     nave.tiempo_invulnerable = tiempo_invulnerable;
     nave.tiempo_ultimo_dano = -nave.tiempo_invulnerable;
+    nave.imagen = imagen_nave;
     return nave;
 }
 
@@ -172,7 +173,10 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGR
 {
     al_draw_bitmap(imagen_fondo, 0, 0, 0);
     
-    al_draw_filled_rectangle(nave.x, nave.y, nave.x + nave.ancho, nave.y + nave.largo, al_map_rgb(0, 255, 0));
+    float escala_ancho = nave.ancho / al_get_bitmap_width(nave.imagen);
+    float escala_alto = nave.largo / al_get_bitmap_height(nave.imagen);
+    al_draw_scaled_bitmap(nave.imagen, 0, 0, al_get_bitmap_width(nave.imagen), al_get_bitmap_height(nave.imagen),
+                          nave.x, nave.y, nave.ancho, nave.largo, 0);
 
     for (int i = 0; i < num_asteroides; i++)
     {

@@ -52,11 +52,12 @@ typedef struct
 {
     float x; /**< Posicion en el eje x */
     float y; /**< Posicion en el eje y */
-    float ancho; /** Ancho de la nave  */
-    float largo; /** Largo de la nave */
-    int vida; /** Vida de la nave */
-    double tiempo_invulnerable; /** Tiempo que la nave es invulnerable */
-    double tiempo_ultimo_dano; /** Tiempo en el que la nave recibio el ultimo dano */
+    float ancho; /**< Ancho de la nave  */
+    float largo; /**< Largo de la nave */
+    int vida; /**< Vida de la nave */
+    double tiempo_invulnerable; /**< Tiempo que la nave es invulnerable */
+    double tiempo_ultimo_dano; /**< Tiempo en el que la nave recibio el ultimo dano */
+    ALLEGRO_BITMAP* imagen; /**< Imagen de la nave */
 } Nave;
 
 /**
@@ -107,7 +108,7 @@ typedef struct
 
 
 /*Funciones*/
-Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable);
+Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave);
 void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana);
 void actualizar_asteroide(Asteroide* asteroide);
 bool detectar_colision(Nave* nave, Asteroide asteroide);

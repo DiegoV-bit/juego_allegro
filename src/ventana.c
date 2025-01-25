@@ -121,7 +121,7 @@ void mostrar_ventana() {
  * @param temporizador Temporizador usado para los FPS
  * @param fuente Fuente de letra usada en el juego
  */
-void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen)
+void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave)
 {
     if (ventana) 
     {
@@ -152,6 +152,12 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
         al_destroy_bitmap(imagen);
         imagen = NULL;
     }
+
+    if (imagen_nave)
+    {
+        al_destroy_bitmap(imagen_nave);
+        imagen_nave = NULL;
+    }
 }
 
 /**
@@ -163,7 +169,7 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
  * @param fuente Puntero doble a la fuente de letra
  * @return int Si la inicializacion fue exitosa retorna 0, en caso contrario retorna -1
  */
-int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo)
+int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave)
 {
     if (init_allegro() != 0) {
         return -1;
@@ -212,6 +218,17 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
         al_destroy_display(*ventana);
         al_destroy_timer(*temporizador);
         al_destroy_font(*fuente);
+        return -1;
+    }
+
+    *imagen_nave = al_load_bitmap("imagenes/jugador/nave.png");
+    if (!*imagen_nave) {
+        fprintf(stderr, "Error: no se pudo cargar la imagen de la nave.\n");
+        al_destroy_event_queue(*cola_eventos);
+        al_destroy_display(*ventana);
+        al_destroy_timer(*temporizador);
+        al_destroy_font(*fuente);
+        al_destroy_bitmap(*imagen_fondo);
         return -1;
     }
 
