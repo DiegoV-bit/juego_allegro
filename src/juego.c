@@ -17,6 +17,7 @@
  * @param largo Largo de la nave. 
  * @param vida Vida de la nave.
  * @param tiempo_invulnerable Tiempo que la nave es invulnerable.
+ * @param imagen_nave Imagen de la nave.
  * @return Nave inicializada.
  */
 Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave)
@@ -168,6 +169,7 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo di
  * @param nave La nave a dibujar.
  * @param asteroides Arreglo de asteroides a dibujar.
  * @param num_asteroides Número de asteroides en el arreglo.
+ * @param imagen_fondo Imagen de fondo del juego.
  */
 void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGRO_BITMAP* imagen_fondo)
 {

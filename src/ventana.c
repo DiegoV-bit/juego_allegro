@@ -120,6 +120,8 @@ void mostrar_ventana() {
  * @param cola_eventos Cola de eventos.
  * @param temporizador Temporizador usado para los FPS
  * @param fuente Fuente de letra usada en el juego
+ * @param imagen Imagen usada en el juego
+ * @param imagen_nave Imagen usada para la nave
  */
 void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave)
 {
@@ -167,6 +169,7 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
  * @param cola_eventos Puntero doble a la cola de eventos
  * @param temporizador Puntero doble al temporizador
  * @param fuente Puntero doble a la fuente de letra
+ * @param imagen_fondo Puntero doble a la imagen de fondo
  * @return int Si la inicializacion fue exitosa retorna 0, en caso contrario retorna -1
  */
 int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave)
