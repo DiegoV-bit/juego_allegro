@@ -34,6 +34,9 @@ int main() {
     bool mostrarRanking = false;
     bool volver_menu = false;
 
+    int cursor_x = 0;
+    int cursor_y = 0;
+
     while (true)
     {
         while (en_menu)
@@ -71,10 +74,16 @@ int main() {
                 }
             }
 
+            if (evento.type == ALLEGRO_EVENT_MOUSE_AXES)
+            {
+                cursor_x = evento.mouse.x;
+                cursor_y = evento.mouse.y;
+            }
+
             if (evento.type == ALLEGRO_EVENT_TIMER)
             {
                 al_clear_to_color(al_map_rgb(0, 0, 0));
-                dibujar_botones(botones, 3, fuente);
+                dibujar_botones(botones, 3, fuente, cursor_x, cursor_y);
                 al_flip_display();
             }
         }

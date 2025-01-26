@@ -123,12 +123,13 @@ bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo);
 void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje);
 void dibujar_puntaje(int puntaje);
 void init_botones(Boton botones[]);
-void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente);
+void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y);
 int detectar_click(Boton botones[], int num_botones, int x, int y);
 void guardar_puntaje(const char* nombre, int puntaje);
 void cargar_ranking(Jugador ranking[], int* num_jugadores);
 void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores, bool* volver_menu);
 void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre);
 int comparar_puntajes(const void* a, const void* b);
+bool cursor_sobre_boton(Boton boton, int x, int y);
 
 #endif

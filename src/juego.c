@@ -175,8 +175,8 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGR
 {
     al_draw_bitmap(imagen_fondo, 0, 0, 0);
     
-    float escala_ancho = nave.ancho / al_get_bitmap_width(nave.imagen);
-    float escala_alto = nave.largo / al_get_bitmap_height(nave.imagen);
+    //float escala_ancho = nave.ancho / al_get_bitmap_width(nave.imagen);
+    //float escala_alto = nave.largo / al_get_bitmap_height(nave.imagen);
     al_draw_scaled_bitmap(nave.imagen, 0, 0, al_get_bitmap_width(nave.imagen), al_get_bitmap_height(nave.imagen),
                           nave.x, nave.y, nave.ancho, nave.largo, 0);
 
@@ -415,12 +415,13 @@ void init_botones(Boton botones[])
  * @param num_botones Numero de botones del menu principal
  * @param fuente Fuente de letra usada en el menu principal
  */
-void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente)
+void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y)
 {
     for (int i = 0; i < num_botones; i++)
     {
+        ALLEGRO_COLOR color = cursor_sobre_boton(botones[i], cursor_x, cursor_y) ? al_map_rgb(255, 255, 0) : al_map_rgb(0, 255, 0);
         al_draw_filled_rectangle(botones[i].x, botones[i].y, botones[i].x + botones[i].ancho, botones[i].y + botones[i].alto, al_map_rgb(0, 0, 0));
-        al_draw_text(fuente, al_map_rgb(0, 255, 0), botones[i].x + botones[i].ancho / 2, botones[i].y + botones[i].alto / 2, ALLEGRO_ALIGN_CENTER, botones[i].texto);
+        al_draw_text(fuente, color, botones[i].x + botones[i].ancho / 2, botones[i].y + botones[i].alto / 2, ALLEGRO_ALIGN_CENTER, botones[i].texto);
     }   
 }
 
@@ -608,4 +609,11 @@ int comparar_puntajes(const void* a, const void* b)
     Jugador* jugadorB = (Jugador*)b;
 
     return jugadorB->puntaje - jugadorA->puntaje;
+}
+
+
+bool cursor_sobre_boton(Boton boton, int x, int y)
+{
+    return x >= boton.x && x <= boton.x + boton.ancho &&
+           y >= boton.y && y <= boton.y + boton.alto;
 }
