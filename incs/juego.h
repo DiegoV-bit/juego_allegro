@@ -73,6 +73,7 @@ typedef struct
     float velocidad; /** <Velocidad de los asteroides */
     float ancho; /** <Ancho de los asteroides */
     float alto; /** <Alto de los asteroides */
+    ALLEGRO_BITMAP* imagen; /** <Imagen de los asteroides */
 } Asteroide;
 
 /**
@@ -109,7 +110,7 @@ typedef struct
 
 /*Funciones*/
 Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave);
-void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana);
+void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana, ALLEGRO_BITMAP* imagen_asteroide);
 void actualizar_asteroide(Asteroide* asteroide);
 bool detectar_colision(Nave* nave, Asteroide asteroide);
 void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo disparos[], int num_disparos);

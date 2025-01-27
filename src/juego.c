@@ -43,7 +43,7 @@ Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiem
  * @param num_asteroides Numero de asteroides en el arreglo.
  * @param ancho_ventana Anchura de los asteroides.
  */ 
-void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana)
+void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana, ALLEGRO_BITMAP* imagen_asteroide)
 {
     for (int i = 0; i < num_asteroides; i++)
     {
@@ -52,6 +52,7 @@ void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_venta
         asteroides[i].velocidad = 1.5;
         asteroides[i].ancho = 50;
         asteroides[i].alto = 50;
+        asteroides[i].imagen = imagen_asteroide;
     }
 }
 
@@ -175,17 +176,13 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGR
 {
     al_draw_bitmap(imagen_fondo, 0, 0, 0);
     
-    //float escala_ancho = nave.ancho / al_get_bitmap_width(nave.imagen);
-    //float escala_alto = nave.largo / al_get_bitmap_height(nave.imagen);
     al_draw_scaled_bitmap(nave.imagen, 0, 0, al_get_bitmap_width(nave.imagen), al_get_bitmap_height(nave.imagen),
                           nave.x, nave.y, nave.ancho, nave.largo, 0);
 
     for (int i = 0; i < num_asteroides; i++)
     {
-        al_draw_filled_rectangle(
-            asteroides[i].x, asteroides[i].y,
-            asteroides[i].x + asteroides[i].ancho, asteroides[i].y + asteroides[i].alto,
-            al_map_rgb(255, 0, 0));
+        al_draw_scaled_bitmap(asteroides[i].imagen, 0, 0, al_get_bitmap_width(asteroides[i].imagen), al_get_bitmap_height(asteroides[i].imagen),
+                              asteroides[i].x, asteroides[i].y, asteroides[i].ancho, asteroides[i].alto, 0);
     }
 }
 

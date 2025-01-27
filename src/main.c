@@ -19,8 +19,9 @@ int main() {
     ALLEGRO_FONT *fuente = NULL;
     ALLEGRO_BITMAP *fondo_juego = NULL;
     ALLEGRO_BITMAP *imagen_nave = NULL;
+    ALLEGRO_BITMAP *imagen_asteroide = NULL;
 
-    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave) != 0)
+    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide) != 0)
     {
         return -1;
     }
@@ -92,7 +93,7 @@ int main() {
         {
             // Inicializar asteroides
             Asteroide asteroides[NUM_ASTEROIDES];
-            init_asteroides(asteroides, NUM_ASTEROIDES, 800);
+            init_asteroides(asteroides, NUM_ASTEROIDES, 800, imagen_asteroide);
 
             // Inicializar nave
             Nave nave = init_nave(400, 500, 50, 50, 100, 0.1, imagen_nave);
@@ -177,7 +178,7 @@ int main() {
         }
     }    
 
-    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave);
+    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide);
 
     return 0;
 }
