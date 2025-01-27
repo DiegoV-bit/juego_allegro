@@ -532,8 +532,7 @@ void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores,
 
         if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN)
         {
-            if (evento.mouse.x >= boton_volver.x && evento.mouse.x <= boton_volver.x + boton_volver.ancho &&
-                evento.mouse.y >= boton_volver.y && evento.mouse.y <= boton_volver.y + boton_volver.alto)
+            if (cursor_sobre_boton(boton_volver, evento.mouse.x, evento.mouse.y))
             {
                 mostrar = false;
                 *volver_menu = true;
@@ -565,14 +564,22 @@ void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre)
 
         if (evento.type == ALLEGRO_EVENT_KEY_CHAR)
         {
-            if (evento.keyboard.unichar >= 'a' && evento.keyboard.unichar <= 'z' && pos < MAX_NOMBRE - 1)
+            if (evento.keyboard.unichar >= 'a' && evento.keyboard.unichar <= 'z' ||
+                evento.keyboard.unichar >= 'A' && evento.keyboard.unichar <= 'Z' ||
+                evento.keyboard.unichar >= '0' && evento.keyboard.unichar <= '9' ||
+                evento.keyboard.unichar == '-' || evento.keyboard.unichar == '_')
             {
-                nombre[pos++] = (char)evento.keyboard.unichar;
-                nombre[pos] = '\0';
+                if (pos < MAX_NOMBRE - 1)
+                {
+                    nombre[pos] = evento.keyboard.unichar;
+                    pos++;
+                    nombre[pos] = '\0';
+                }
             }
             else if (evento.keyboard.keycode == ALLEGRO_KEY_BACKSPACE && pos > 0)
             {
-                nombre[--pos] = '\0';
+                pos--;
+                nombre[pos] = '\0';
             }
             else if (evento.keyboard.keycode == ALLEGRO_KEY_ENTER)
             {
