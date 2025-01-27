@@ -163,6 +163,10 @@ int main() {
             {
                 mostrarRanking = false;
                 en_menu = true;
+
+                cursor_x = 0;
+                cursor_y = 0;init_botones(botones);
+                al_flush_event_queue(cola_eventos);
             }
         }
 
@@ -170,6 +174,12 @@ int main() {
         {
             volver_menu = false;
             en_menu = true;
+
+            cursor_x = 0;
+            cursor_y = 0;
+            init_botones(botones);
+
+            al_flush_event_queue(cola_eventos);
         }
 
         if (!en_menu && !jugando && !mostrarRanking)
