@@ -9,7 +9,7 @@
 /**
  *@brief Inicializa la nave.
  *
- * Esta funcion Inicializa la nave dandole una posicion en los ejes "x" e "y", al igual que le da un tamano
+ * Esta funcion Inicializa la nave dandole una posicion en los ejes "x" e "y", al igual que le da un tamano y angulo inicial.
  * 
  * @param x Posicion en el eje x.
  * @param y posicion en el eje y.
@@ -31,6 +31,7 @@ Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiem
     nave.tiempo_invulnerable = tiempo_invulnerable;
     nave.tiempo_ultimo_dano = -nave.tiempo_invulnerable;
     nave.imagen = imagen_nave;
+    nave.angulo = 0.0f;
     return nave;
 }
 
@@ -167,6 +168,7 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo di
  *
  * Esta función dibuja la nave y todos los asteroides en sus posiciones actuales.
  *
+ * Ahora se dibuja la imagen de la nave reescalada y rotada según su ángulo.
  * @param nave La nave a dibujar.
  * @param asteroides Arreglo de asteroides a dibujar.
  * @param num_asteroides Número de asteroides en el arreglo.
@@ -175,9 +177,12 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo di
 void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGRO_BITMAP* imagen_fondo)
 {
     al_draw_bitmap(imagen_fondo, 0, 0, 0);
-    
-    al_draw_scaled_bitmap(nave.imagen, 0, 0, al_get_bitmap_width(nave.imagen), al_get_bitmap_height(nave.imagen),
-                          nave.x, nave.y, nave.ancho, nave.largo, 0);
+
+    float cx = al_get_bitmap_width(nave.imagen) / 2.0f;
+    float cy = al_get_bitmap_height(nave.imagen) / 2.0f;
+    float escala_x = nave.ancho / al_get_bitmap_width(nave.imagen);
+    float escala_y = nave.largo / al_get_bitmap_height(nave.imagen);
+    al_draw_scaled_rotated_bitmap(nave.imagen, cx, cy, nave.x + nave.ancho / 2, nave.y + nave.largo / 2, escala_x, escala_y, nave.angulo, 0);
 
     for (int i = 0; i < num_asteroides; i++)
     {
@@ -189,6 +194,8 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGR
 /**
  * @brief Permite actualizar la posición de la nave y detectar colisiones con los asteroides.
  * 
+ * La nave gira si se presiona la tecla izquierda o derecha, y se mueve hacia arriba o abajo si se presionan las teclas correspondientes.
+ * 
  * @param nave Puntero a la nave que se va a mover
  * @param teclas Arreglo de teclas presionadas
  * @param asteroides Arreglo de asteroides
@@ -197,10 +204,17 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGR
  */
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double tiempo_actual)
 {
+    // Rotación de la nave
+    if(teclas[2]) nave->angulo -= 0.07f;
+    if(teclas[3]) nave->angulo += 0.07f;
+
+    // Movimiento normal de la nave
     if (teclas[0]) nave->y -= 5;
     if (teclas[1]) nave->y += 5;
+    /*
     if (teclas[2]) nave->x -= 5;
     if (teclas[3]) nave->x += 5;
+    */
 
     // Limitar el movimiento de la nave dentro de la ventana
     if (nave->x < 0) nave->x = 0;

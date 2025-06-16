@@ -47,6 +47,8 @@
  * 
  * La nave tiene una posicion en los ejes "x" e "y", al igual que un ancho y un largo.
  * Además, tiene una vida, un tiempo invulnerable y un tiempo en el que recibio el ultimo dano.
+ * 
+ * Se le implemento un angulo para poder rotar la nave
  */
 typedef struct
 {
@@ -58,6 +60,7 @@ typedef struct
     double tiempo_invulnerable; /**< Tiempo que la nave es invulnerable */
     double tiempo_ultimo_dano; /**< Tiempo en el que la nave recibio el ultimo dano */
     ALLEGRO_BITMAP* imagen; /**< Imagen de la nave */
+    float angulo; /**< Angulo de la nave */
 } Nave;
 
 /**

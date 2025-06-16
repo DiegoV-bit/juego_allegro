@@ -190,5 +190,7 @@ int main() {
 
     destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide);
 
+    al_uninstall_system(); // Esto evita fugas de memoria y libera recursos evitando el segmentation fault en WSL
+
     return 0;
 }
