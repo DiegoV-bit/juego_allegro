@@ -15,6 +15,7 @@
 /*Bibliotecas usadas*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
@@ -93,6 +94,7 @@ typedef struct {
     float y; /**< Posicion en el eje y */
     float velocidad; /** <Velocidad del disparo */
     bool activo; /** <Actividad del disparo */
+    float angulo; /**< Angulo del disparo */
 } Disparo;
 
 typedef struct

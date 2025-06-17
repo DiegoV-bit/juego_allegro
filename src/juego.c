@@ -192,10 +192,12 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGR
 }
 
 /**
- * @brief Permite actualizar la posición de la nave y detectar colisiones con los asteroides.
+ * @brief Actualiza la posición y el ángulo de la nave según las teclas presionadas.
  * 
- * La nave gira si se presiona la tecla izquierda o derecha, y se mueve hacia arriba o abajo si se presionan las teclas correspondientes.
- * 
+ * La nave rota con las teclas izquierda/derecha y avanza o retrocede en la dirección de su ángulo
+ * cuando se presionan las teclas de arriba o abajo, respectivamente. El movimiento se ajusta para
+ * que coincida con la orientación visual de la nave (punta hacia arriba).
+ *
  * @param nave Puntero a la nave que se va a mover
  * @param teclas Arreglo de teclas presionadas
  * @param asteroides Arreglo de asteroides
@@ -205,16 +207,19 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGR
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double tiempo_actual)
 {
     // Rotación de la nave
-    if(teclas[2]) nave->angulo -= 0.07f;
-    if(teclas[3]) nave->angulo += 0.07f;
+    if(teclas[2]) nave->angulo -= 0.07f; // Izquierda
+    if(teclas[3]) nave->angulo += 0.07f; // Derecha
 
-    // Movimiento normal de la nave
-    if (teclas[0]) nave->y -= 5;
-    if (teclas[1]) nave->y += 5;
-    /*
-    if (teclas[2]) nave->x -= 5;
-    if (teclas[3]) nave->x += 5;
-    */
+    if (teclas[0]) // Arriba (avanzar)
+    {
+        nave->x += cos(nave->angulo - ALLEGRO_PI/2) * 5;
+        nave->y += sin(nave->angulo - ALLEGRO_PI/2) * 5;
+    }
+    if (teclas[1]) // Abajo (retroceder, opcional)
+    {
+        nave->x -= cos(nave->angulo - ALLEGRO_PI/2) * 2.5; // Retrocede más lento
+        nave->y -= sin(nave->angulo - ALLEGRO_PI/2) * 2.5;
+    }
 
     // Limitar el movimiento de la nave dentro de la ventana
     if (nave->x < 0) nave->x = 0;
@@ -265,7 +270,9 @@ void init_disparos(Disparo disparos[], int num_disparos)
 }
 
 /**
- * @brief 
+ * @brief Actualiza la posición de todos los disparos activos.
+ * 
+ * Mueve cada disparo activo en la dirección de su ángulo y desactiva los disparos que salen de la pantalla.
  * 
  * @param disparos Arreglo de disparos
  * @param num_disparos Cantidad de disparos definida
@@ -276,8 +283,9 @@ void actualizar_disparos(Disparo disparos[], int num_disparos)
     {
         if (disparos[i].activo)
         {
-            disparos[i].y -= disparos[i].velocidad;
-            if (disparos[i].y < 0)
+            disparos[i].x += cos(disparos[i].angulo) * disparos[i].velocidad;
+            disparos[i].y += sin(disparos[i].angulo) * disparos[i].velocidad;
+            if (disparos[i].x < 0 || disparos[i].x > 800 || disparos[i].y < 0 || disparos[i].y > 600)
             {
                 disparos[i].activo = false;
             }
@@ -303,8 +311,11 @@ void dibujar_disparos(Disparo disparos[], int num_disparos)
 }
 
 /**
- * @brief Permite que la neve pueda disparar
- * 
+ * @brief Permite que la nave dispare proyectiles desde su punta en la dirección actual.
+ *
+ * Busca un disparo inactivo en el arreglo y lo activa, posicionándolo en la punta de la nave
+ * y asignándole el ángulo actual de la nave. El disparo se moverá en la dirección en la que apunta la nave.
+ *
  * @param disparos Arreglo de disparos
  * @param num_disparos Cantidad de disparos definida
  * @param nave Nave que ejecuta los disparos
@@ -315,9 +326,17 @@ void disparar(Disparo disparos[], int num_disparos, Nave nave)
     {
         if (!disparos[i].activo)
         {
-            disparos[i].x = nave.x + nave.ancho / 2;
-            disparos[i].y = nave.y;
+            // Calcula el centro de la nave
+            float centro_x = nave.x + nave.ancho / 2.0f;
+            float centro_y = nave.y + nave.largo / 2.0f;
+            // Calcula la punta de la nave desde el centro, usando el ángulo y la mitad del largo
+            float punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
+            float punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
+
+            disparos[i].x = punta_x;
+            disparos[i].y = punta_y;
             disparos[i].velocidad = 10;
+            disparos[i].angulo = nave.angulo - ALLEGRO_PI/2; // Asignar el ángulo de la nave al disparo
             disparos[i].activo = true;
             break;
         }
