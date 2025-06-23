@@ -87,26 +87,15 @@ void actualizar_asteroide(Asteroide* asteroide)
  */
 bool detectar_colision(Nave* nave, Asteroide asteroide)
 {
-    double tiempo_actual = al_get_time();
+    float centro_nave_x = nave->x + nave->ancho / 2;
+    float centro_nave_y = nave->y + nave->largo / 2;
+    float radio_nave = nave->ancho / 2.0f;
 
-    if (tiempo_actual - nave->tiempo_invulnerable < 10)
-    {
-        return false;
-    }
-    
-    bool colision = nave->x < asteroide.x + asteroide.ancho &&
-                    nave->x + nave->ancho > asteroide.x &&
-                    nave->y < asteroide.y + asteroide.alto &&
-                    nave->y + nave->largo > asteroide.y;
-    
-    if (colision)
-    {
-        nave->vida -= 10; //para acabar rapido el juego el valor normal de daño es 10
-        nave->tiempo_invulnerable = tiempo_actual;
-        nave->tiempo_ultimo_dano = tiempo_actual;
-    }
+    float centro_asteroide_x = asteroide.x + asteroide.ancho / 2;
+    float centro_asteroide_y = asteroide.y + asteroide.alto / 2;
+    float radio_asteroide = asteroide.ancho / 2.0f;
 
-    return colision;
+    return detectar_colision_circular(centro_nave_x, centro_nave_y, radio_nave, centro_asteroide_x, centro_asteroide_y, radio_asteroide);
 }
 
 /**
@@ -649,8 +638,93 @@ int comparar_puntajes(const void* a, const void* b)
 }
 
 
+/**
+ * @brief Determina si el cursor está sobre un botón.
+ * 
+ * @param boton Botón a verificar.
+ * @param x Posición x del cursor.
+ * @param y Posición y del cursor.
+ * @return true si el cursor está sobre el botón, false en caso contrario.
+ */
 bool cursor_sobre_boton(Boton boton, int x, int y)
 {
     return x >= boton.x && x <= boton.x + boton.ancho &&
            y >= boton.y && y <= boton.y + boton.alto;
+}
+
+
+/**
+ * @brief Actualiza la posición de todos los disparos activos.
+ * 
+ * Mueve cada disparo activo en la dirección de su ángulo y desactiva los disparos que salen de la pantalla.
+ * 
+ * @param disparos Arreglo de disparos.
+ * @param num_disparos Número total de disparos.
+ */
+void actualizar_disparos(Disparo disparos[], int num_disparos);
+
+/**
+ * @brief Dibuja todos los disparos activos en pantalla.
+ * 
+ * @param disparos Arreglo de disparos.
+ * @param num_disparos Número total de disparos.
+ */
+void dibujar_disparos(Disparo disparos[], int num_disparos);
+
+/**
+ * @brief Inicializa los botones del menú principal.
+ * 
+ * @param botones Arreglo de botones del menú principal.
+ */
+void init_botones(Boton botones[]);
+
+/**
+ * @brief Dibuja los botones del menú principal.
+ * 
+ * @param botones Arreglo de botones.
+ * @param num_botones Número de botones.
+ * @param fuente Fuente usada para el texto.
+ * @param cursor_x Posición x del cursor.
+ * @param cursor_y Posición y del cursor.
+ */
+void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y);
+
+/**
+ * @brief Detecta si el mouse hizo clic sobre algún botón.
+ * 
+ * @param botones Arreglo de botones.
+ * @param num_botones Número de botones.
+ * @param x Posición x del mouse.
+ * @param y Posición y del mouse.
+ * @return int Índice del botón clickeado, o -1 si no se clickeó ningún botón.
+ */
+int detectar_click(Boton botones[], int num_botones, int x, int y);
+
+/**
+ * @brief Determina si el cursor está sobre un botón.
+ * 
+ * @param boton Botón a verificar.
+ * @param x Posición x del cursor.
+ * @param y Posición y del cursor.
+ * @return true si el cursor está sobre el botón, false en caso contrario.
+ */
+bool cursor_sobre_boton(Boton boton, int x, int y);
+
+/**
+ * @brief Detecta colisión circular entre dos objetos.
+ * 
+ * @param x1 Centro x del primer objeto.
+ * @param y1 Centro y del primer objeto.
+ * @param r1 Radio del primer objeto.
+ * @param x2 Centro x del segundo objeto.
+ * @param y2 Centro y del segundo objeto.
+ * @param r2 Radio del segundo objeto.
+ * @return true si hay colisión, false en caso contrario.
+ */
+bool detectar_colision_circular(float x1, float y1, float r1, float x2, float y2, float r2)
+{
+    float dx = x1 - x2;
+    float dy = y1 - y2;
+    float distancia = sqrt(dx * dx + dy * dy);
+    return distancia < (r1 + r2);
 }

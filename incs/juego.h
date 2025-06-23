@@ -137,5 +137,6 @@ void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores,
 void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre);
 int comparar_puntajes(const void* a, const void* b);
 bool cursor_sobre_boton(Boton boton, int x, int y);
+bool detectar_colision_circular(float x1, float y1, float r1, float x2, float y2, float r2);
 
 #endif
