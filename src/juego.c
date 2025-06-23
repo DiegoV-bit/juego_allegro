@@ -385,20 +385,11 @@ void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num
  * 
  * @param puntaje Puntaje que hace el jugador
  */
-void dibujar_puntaje(int puntaje)
+void dibujar_puntaje(int puntaje, ALLEGRO_FONT* fuente)
 {
-    ALLEGRO_FONT* fuente = al_create_builtin_font();
-    if (!fuente)
-    {
-        fprintf(stderr, "Error: no se pudo cargar la fuente.\n");
-        return;
-    }
-    
     char text_puntaje[20];
     sprintf(text_puntaje, "Puntaje: %d", puntaje);
     al_draw_text(fuente, al_map_rgb(255, 255, 255), 10, 40, ALLEGRO_ALIGN_LEFT, text_puntaje);
-
-    al_destroy_font(fuente);
 }
 
 /**
@@ -571,24 +562,23 @@ void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores,
  * @param fuente Fuente de letra a usar.
  * @param nombre Puntero al nombre del jugador
  */
-void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre)
+void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre, ALLEGRO_EVENT_QUEUE* cola_eventos)
 {
-    ALLEGRO_EVENT_QUEUE* cola_eventos = al_create_event_queue();
-    al_register_event_source(cola_eventos, al_get_keyboard_event_source());
-
     int pos = 0;
     nombre[0] = '\0';
+    bool terminado = false;
+    bool necesita_redibujar = true;
 
-    while (true)
+    while (!terminado)
     {
         ALLEGRO_EVENT evento;
         al_wait_for_event(cola_eventos, &evento);
 
         if (evento.type == ALLEGRO_EVENT_KEY_CHAR)
         {
-            if (evento.keyboard.unichar >= 'a' && evento.keyboard.unichar <= 'z' ||
-                evento.keyboard.unichar >= 'A' && evento.keyboard.unichar <= 'Z' ||
-                evento.keyboard.unichar >= '0' && evento.keyboard.unichar <= '9' ||
+            if ((evento.keyboard.unichar >= 'a' && evento.keyboard.unichar <= 'z') ||
+                (evento.keyboard.unichar >= 'A' && evento.keyboard.unichar <= 'Z') ||
+                (evento.keyboard.unichar >= '0' && evento.keyboard.unichar <= '9') ||
                 evento.keyboard.unichar == '-' || evento.keyboard.unichar == '_')
             {
                 if (pos < MAX_NOMBRE - 1)
@@ -596,26 +586,35 @@ void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre)
                     nombre[pos] = evento.keyboard.unichar;
                     pos++;
                     nombre[pos] = '\0';
+                    necesita_redibujar = true;
                 }
             }
             else if (evento.keyboard.keycode == ALLEGRO_KEY_BACKSPACE && pos > 0)
             {
                 pos--;
                 nombre[pos] = '\0';
+                necesita_redibujar = true;
             }
             else if (evento.keyboard.keycode == ALLEGRO_KEY_ENTER)
             {
-                break;
+                terminado = true;
             }
         }
-        
-        al_clear_to_color(al_map_rgb(0, 0, 0));
-        al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 300, ALLEGRO_ALIGN_CENTER, "Ingrese su nombre:");
-        al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 350, ALLEGRO_ALIGN_CENTER, nombre);
-        al_flip_display();
+        else if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
+        {
+            nombre[0] = '\0';
+            terminado = true;
+        }
+
+        if (necesita_redibujar)
+        {
+            al_clear_to_color(al_map_rgb(0, 0, 0));
+            al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 300, ALLEGRO_ALIGN_CENTER, "Ingrese su nombre:");
+            al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 350, ALLEGRO_ALIGN_CENTER, nombre);
+            al_flip_display();
+            necesita_redibujar = false;
+        }
     }
-    
-    al_destroy_event_queue(cola_eventos);
 }
 
 /**

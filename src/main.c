@@ -133,7 +133,7 @@ int main() {
                     al_clear_to_color(al_map_rgb(0, 0, 0));
                     dibujar_juego(nave, asteroides, 10, fondo_juego);
                     dibujar_disparos(disparos, 10);
-                    dibujar_puntaje(puntaje);
+                    dibujar_puntaje(puntaje, fuente);
                     dibujar_barra_vida(nave); // Dibujar la barra de vida
                     al_flip_display();
 
@@ -146,7 +146,7 @@ int main() {
             if (nave.vida <= 0)
             {
                 char nombre_jugador[MAX_NOMBRE];
-                capturar_nombre(fuente, nombre_jugador);
+                capturar_nombre(fuente, nombre_jugador, cola_eventos);
                 guardar_puntaje(nombre_jugador, puntaje);
                 volver_menu = true;
             }
