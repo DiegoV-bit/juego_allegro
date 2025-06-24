@@ -185,13 +185,13 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGR
  * 
  * La nave rota con las teclas izquierda/derecha y avanza o retrocede en la dirección de su ángulo
  * cuando se presionan las teclas de arriba o abajo, respectivamente. El movimiento se ajusta para
- * que coincida con la orientación visual de la nave (punta hacia arriba).
+ * que coincida con la orientación visual de la nave (punta hacia arriba). También gestiona la colisión
+ * circular con los asteroides y aplica invulnerabilidad temporal tras recibir daño.
  *
- * @param nave Puntero a la nave que se va a mover
- * @param teclas Arreglo de teclas presionadas
- * @param asteroides Arreglo de asteroides
- * @param num_asteroides Número de asteroides en el arreglo
- * @param tiempo_actual Tiempo actual en segundos
+ * @param nave Puntero a la nave que se va a mover.
+ * @param teclas Arreglo de teclas presionadas.
+ * @param asteroides Arreglo de asteroides.
+ * @param tiempo_actual Tiempo actual en segundos.
  */
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double tiempo_actual)
 {
@@ -711,6 +711,8 @@ bool cursor_sobre_boton(Boton boton, int x, int y);
 
 /**
  * @brief Detecta colisión circular entre dos objetos.
+ * 
+ * Calcula si dos círculos definidos por sus centros y radios se intersectan.
  * 
  * @param x1 Centro x del primer objeto.
  * @param y1 Centro y del primer objeto.
