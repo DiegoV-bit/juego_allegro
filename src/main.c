@@ -38,6 +38,9 @@ int main() {
     int cursor_x = 0;
     int cursor_y = 0;
 
+    Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS];
+    cargar_tilemap("nivel1.txt", tilemap);
+
     while (true)
     {
         while (en_menu)
@@ -125,12 +128,9 @@ int main() {
 
                 if (evento.type == ALLEGRO_EVENT_TIMER)
                 {
-                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje);
-                    for (int i = 0; i < NUM_ASTEROIDES; i++)
-                    {
-                        actualizar_asteroide(&asteroides[i]);
-                    }
+                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap);
                     al_clear_to_color(al_map_rgb(0, 0, 0));
+                    dibujar_tilemap(tilemap, imagen_asteroide);
                     dibujar_juego(nave, asteroides, 10, fondo_juego);
                     dibujar_disparos(disparos, 10);
                     dibujar_puntaje(puntaje, fuente);

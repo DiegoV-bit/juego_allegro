@@ -65,9 +65,41 @@ void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_venta
  *
  * @param asteroide Puntero al asteroide a actualizar.
  */
-void actualizar_asteroide(Asteroide* asteroide)
+void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave* nave)
 {
     asteroide->y += asteroide->velocidad;
+
+    // Verifica colisión con la nave
+    float centro_nave_x = nave->x + nave->ancho / 2;
+    float centro_nave_y = nave->y + nave->largo / 2;
+    float radio_nave = nave->ancho / 2.0f;
+    float centro_asteroide_x = asteroide->x + asteroide->ancho / 2;
+    float centro_asteroide_y = asteroide->y + asteroide->alto / 2;
+    float radio_asteroide = asteroide->ancho / 2.0f;
+
+    if (detectar_colision_circular(centro_nave_x, centro_nave_y, radio_nave, centro_asteroide_x, centro_asteroide_y, radio_asteroide)) {
+        // Asteroide impacta la nave: desaparece
+        asteroide->y = -asteroide->alto;
+        asteroide->x = rand() % (800 - (int)asteroide->ancho);
+        nave->vida -= 10; // O el daño que prefieras
+        return;
+    }
+
+    // Verifica colisión con escudo del tilemap
+    int fila = (int)(asteroide->y / TILE_ALTO);
+    int col = (int)(asteroide->x / TILE_ANCHO);
+    if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS) {
+        if (tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0) {
+            tilemap[fila][col].vida--;
+            if (tilemap[fila][col].vida <= 0) {
+                tilemap[fila][col].tipo = 0; // El escudo se destruye
+            }
+            // Asteroide desaparece
+            asteroide->y = -asteroide->alto;
+            asteroide->x = rand() % (800 - (int)asteroide->ancho);
+            return;
+        }
+    }
 
     if (asteroide->y > 600)
     {
@@ -359,13 +391,13 @@ bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo)
  * @param puntaje Puntero al puntaje del jugador
  * 
  */
-void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje)
+void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {
     actualizar_nave(nave, teclas, asteroides, al_get_time());
     actualizar_disparos(disparos, num_disparos);
     for (int i = 0; i < num_asteroides; i++)
     {
-        actualizar_asteroide(&asteroides[i]);
+        actualizar_asteroide(&asteroides[i], tilemap, nave);
         for (int j = 0; j < num_disparos; j++)
         {
             if (disparos[j].activo && detectar_colision_disparo(asteroides[i], disparos[j]))
@@ -729,3 +761,71 @@ bool detectar_colision_circular(float x1, float y1, float r1, float x2, float y2
     float distancia = sqrt(dx * dx + dy * dy);
     return distancia < (r1 + r2);
 }
+
+
+/**
+ * @brief Carga un tilemap desde un archivo de texto.
+ * 
+ * @param filename Nombre del archivo del nivel.
+ * @param tilemap Matriz de tiles a llenar.
+ */
+void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]) {
+    FILE* archivo = fopen(filename, "r");
+    if (!archivo) {
+        fprintf(stderr, "No se pudo abrir el archivo del tilemap.\n");
+        return;
+    }
+    char linea[MAPA_COLUMNAS + 2]; // +2 por '\n' y '\0'
+    for (int fila = 0; fila < MAPA_FILAS; fila++) {
+        if (fgets(linea, sizeof(linea), archivo)) {
+            for (int col = 0; col < MAPA_COLUMNAS; col++) {
+                tilemap[fila][col].tipo = linea[col] - '0';
+                if (tilemap[fila][col].tipo == 2) 
+                {
+                    tilemap[fila][col].vida = 3; // Por ejemplo, 3 impactos para destruir el escudo
+                } 
+                else 
+                {
+                    tilemap[fila][col].vida = 0;
+                }
+            }
+        }
+    }
+    fclose(archivo);
+}
+
+
+/**
+ * @brief Dibuja el tilemap en pantalla.
+ * 
+ * @param tilemap Matriz de tiles.
+ * @param imagen_asteroide Imagen para los tiles de tipo asteroide.
+ */
+void dibujar_tilemap(Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], ALLEGRO_BITMAP* imagen_asteroide) {
+    for (int fila = 0; fila < MAPA_FILAS; fila++) {
+        for (int col = 0; col < MAPA_COLUMNAS; col++) {
+            if (tilemap[fila][col].tipo == 1) {
+                al_draw_scaled_bitmap(
+                    imagen_asteroide,
+                    0, 0,
+                    al_get_bitmap_width(imagen_asteroide), al_get_bitmap_height(imagen_asteroide),
+                    col * TILE_ANCHO, fila * TILE_ALTO,
+                    TILE_ANCHO, TILE_ALTO,
+                    0
+                );
+            } else if (tilemap[fila][col].tipo == 2) {
+                // Dibuja el escudo como un rectángulo azul (puedes usar una imagen si prefieres)
+                ALLEGRO_COLOR color = al_map_rgb(0, 128, 255);
+                if (tilemap[fila][col].vida == 2) color = al_map_rgb(0, 200, 255);
+                if (tilemap[fila][col].vida == 1) color = al_map_rgb(100, 100, 255);
+                al_draw_filled_rectangle(
+                    col * TILE_ANCHO, fila * TILE_ALTO,
+                    (col + 1) * TILE_ANCHO, (fila + 1) * TILE_ALTO,
+                    color
+                );
+            }
+        }
+    }
+}
+
+

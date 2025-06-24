@@ -41,6 +41,11 @@
  */
 #define MAX_NOMBRE 40
 
+#define TILE_ANCHO 40
+#define TILE_ALTO 40
+#define MAPA_FILAS 15
+#define MAPA_COLUMNAS 20
+
 /*Estructuras usadas en el juego*/
 /**
  * @struct Nave
@@ -112,11 +117,16 @@ typedef struct
     int puntaje; /**<Puntaje del jugador */
 } Jugador;
 
+typedef struct {
+    int tipo;
+    int vida;
+} Tile;
+
 
 /*Funciones*/
 Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave);
 void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana, ALLEGRO_BITMAP* imagen_asteroide);
-void actualizar_asteroide(Asteroide* asteroide);
+void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave* nave);
 bool detectar_colision(Nave* nave, Asteroide asteroide);
 void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo disparos[], int num_disparos);
 void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGRO_BITMAP* imagen_fondo);
@@ -126,7 +136,7 @@ void actualizar_disparos(Disparo disparos[], int num_disparos);
 void dibujar_disparos(Disparo disparos[], int num_disparos);
 void disparar(Disparo disparos[], int num_disparos, Nave nave);
 bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo);
-void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje);
+void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 void dibujar_puntaje(int puntaje, ALLEGRO_FONT* fuente);
 void init_botones(Boton botones[]);
 void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y);
@@ -138,5 +148,6 @@ void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre, ALLEGRO_EVENT_QUEUE* co
 int comparar_puntajes(const void* a, const void* b);
 bool cursor_sobre_boton(Boton boton, int x, int y);
 bool detectar_colision_circular(float x1, float y1, float r1, float x2, float y2, float r2);
-
+void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
+void dibujar_tilemap(Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], ALLEGRO_BITMAP* imagen_asteroide);
 #endif
