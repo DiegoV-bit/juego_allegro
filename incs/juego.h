@@ -41,8 +41,8 @@
  */
 #define MAX_NOMBRE 40
 
-#define TILE_ANCHO 40
-#define TILE_ALTO 40
+#define TILE_ANCHO 20
+#define TILE_ALTO 20
 #define MAPA_FILAS 15
 #define MAPA_COLUMNAS 20
 
@@ -129,7 +129,7 @@ void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_venta
 void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave* nave);
 bool detectar_colision(Nave* nave, Asteroide asteroide);
 void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo disparos[], int num_disparos);
-void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGRO_BITMAP* imagen_fondo);
+void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides);
 void dibujar_barra_vida(Nave nave);
 void init_disparos(Disparo disparos[], int num_disparos);
 void actualizar_disparos(Disparo disparos[], int num_disparos);

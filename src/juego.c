@@ -76,6 +76,9 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
     float centro_asteroide_x = asteroide->x + asteroide->ancho / 2;
     float centro_asteroide_y = asteroide->y + asteroide->alto / 2;
     float radio_asteroide = asteroide->ancho / 2.0f;
+    float pos_y_anterior = asteroide->y;
+
+    asteroide->y += asteroide->velocidad;
 
     if (detectar_colision_circular(centro_nave_x, centro_nave_y, radio_nave, centro_asteroide_x, centro_asteroide_y, radio_asteroide)) {
         // Asteroide impacta la nave: desaparece
@@ -84,6 +87,12 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
         nave->vida -= 10; // O el daño que prefieras
         return;
     }
+
+    // Verifica la colision con los escudos del tilemap
+    int col_izquierda = (int)(asteroide->x / TILE_ANCHO);
+    int col_derecha = (int)((asteroide->x + asteroide->ancho - 1) / TILE_ANCHO);
+    int fila_superior = (int)(asteroide->y / TILE_ALTO);
+    int fila_inferior = (int)((asteroide->y + asteroide->alto - 1) / TILE_ALTO);
 
     // Verifica colisión con escudo del tilemap
     int fila = (int)(asteroide->y / TILE_ALTO);
@@ -195,9 +204,9 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo di
  * @param num_asteroides Número de asteroides en el arreglo.
  * @param imagen_fondo Imagen de fondo del juego.
  */
-void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, ALLEGRO_BITMAP* imagen_fondo)
+void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
 {
-    al_draw_bitmap(imagen_fondo, 0, 0, 0);
+    // al_draw_bitmap(imagen_fondo, 0, 0, 0);
 
     float cx = al_get_bitmap_width(nave.imagen) / 2.0f;
     float cy = al_get_bitmap_height(nave.imagen) / 2.0f;
@@ -295,8 +304,8 @@ void init_disparos(Disparo disparos[], int num_disparos)
  * 
  * Mueve cada disparo activo en la dirección de su ángulo y desactiva los disparos que salen de la pantalla.
  * 
- * @param disparos Arreglo de disparos
- * @param num_disparos Cantidad de disparos definida
+ * @param disparos Arreglo de disparos.
+ * @param num_disparos Número total de disparos.
  */
 void actualizar_disparos(Disparo disparos[], int num_disparos)
 {
@@ -315,10 +324,10 @@ void actualizar_disparos(Disparo disparos[], int num_disparos)
 }
 
 /**
- * @brief 
+ * @brief Dibuja todos los disparos activos en pantalla.
  * 
- * @param disparos Arreglo de disparos
- * @param num_disparos Cantidad de disparos definida
+ * @param disparos Arreglo de disparos.
+ * @param num_disparos Número total de disparos.
  */
 void dibujar_disparos(Disparo disparos[], int num_disparos)
 {
@@ -425,9 +434,9 @@ void dibujar_puntaje(int puntaje, ALLEGRO_FONT* fuente)
 }
 
 /**
- * @brief Inicializa los botones del menu principal.
+ * @brief Inicializa los botones del menú principal.
  * 
- * @param botones Arreglo de los botones del menu principal
+ * @param botones Arreglo de botones del menú principal.
  */
 void init_botones(Boton botones[])
 {
@@ -451,11 +460,13 @@ void init_botones(Boton botones[])
 }
 
 /**
- * @brief Dibuja los botones del menu principal.
+ * @brief Dibuja los botones del menú principal.
  * 
- * @param botones Arreglo de botones del menu principal
- * @param num_botones Numero de botones del menu principal
- * @param fuente Fuente de letra usada en el menu principal
+ * @param botones Arreglo de botones.
+ * @param num_botones Número de botones.
+ * @param fuente Fuente usada para el texto.
+ * @param cursor_x Posición x del cursor.
+ * @param cursor_y Posición y del cursor.
  */
 void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y)
 {
@@ -468,13 +479,13 @@ void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int
 }
 
 /**
- * @brief Permite detectar los clicks que hace el mouse en los botones del menu principal.
+ * @brief Detecta si el mouse hizo clic sobre algún botón.
  * 
- * @param botones Arreglo de los botones del menu principal
- * @param num_botones Numero de botones del menu principal
- * @param x Posicion en el eje x del mouse
- * @param y Posicion en el eje y del mouse
- * @return int El numero de boton que se clickeo
+ * @param botones Arreglo de botones.
+ * @param num_botones Número de botones.
+ * @param x Posición x del mouse.
+ * @param y Posición y del mouse.
+ * @return int Índice del botón clickeado, o -1 si no se clickeó ningún botón.
  */
 int detectar_click(Boton botones[], int num_botones, int x, int y)
 {
@@ -683,63 +694,6 @@ bool cursor_sobre_boton(Boton boton, int x, int y)
            y >= boton.y && y <= boton.y + boton.alto;
 }
 
-
-/**
- * @brief Actualiza la posición de todos los disparos activos.
- * 
- * Mueve cada disparo activo en la dirección de su ángulo y desactiva los disparos que salen de la pantalla.
- * 
- * @param disparos Arreglo de disparos.
- * @param num_disparos Número total de disparos.
- */
-void actualizar_disparos(Disparo disparos[], int num_disparos);
-
-/**
- * @brief Dibuja todos los disparos activos en pantalla.
- * 
- * @param disparos Arreglo de disparos.
- * @param num_disparos Número total de disparos.
- */
-void dibujar_disparos(Disparo disparos[], int num_disparos);
-
-/**
- * @brief Inicializa los botones del menú principal.
- * 
- * @param botones Arreglo de botones del menú principal.
- */
-void init_botones(Boton botones[]);
-
-/**
- * @brief Dibuja los botones del menú principal.
- * 
- * @param botones Arreglo de botones.
- * @param num_botones Número de botones.
- * @param fuente Fuente usada para el texto.
- * @param cursor_x Posición x del cursor.
- * @param cursor_y Posición y del cursor.
- */
-void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y);
-
-/**
- * @brief Detecta si el mouse hizo clic sobre algún botón.
- * 
- * @param botones Arreglo de botones.
- * @param num_botones Número de botones.
- * @param x Posición x del mouse.
- * @param y Posición y del mouse.
- * @return int Índice del botón clickeado, o -1 si no se clickeó ningún botón.
- */
-int detectar_click(Boton botones[], int num_botones, int x, int y);
-
-/**
- * @brief Determina si el cursor está sobre un botón.
- * 
- * @param boton Botón a verificar.
- * @param x Posición x del cursor.
- * @param y Posición y del cursor.
- * @return true si el cursor está sobre el botón, false en caso contrario.
- */
-bool cursor_sobre_boton(Boton boton, int x, int y);
 
 /**
  * @brief Detecta colisión circular entre dos objetos.

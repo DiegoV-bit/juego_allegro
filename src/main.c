@@ -39,7 +39,7 @@ int main() {
     int cursor_y = 0;
 
     Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS];
-    cargar_tilemap("nivel1.txt", tilemap);
+    cargar_tilemap("Nivel1.txt", tilemap);
 
     while (true)
     {
@@ -131,7 +131,7 @@ int main() {
                     actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap);
                     al_clear_to_color(al_map_rgb(0, 0, 0));
                     dibujar_tilemap(tilemap, imagen_asteroide);
-                    dibujar_juego(nave, asteroides, 10, fondo_juego);
+                    dibujar_juego(nave, asteroides, 10);
                     dibujar_disparos(disparos, 10);
                     dibujar_puntaje(puntaje, fuente);
                     dibujar_barra_vida(nave); // Dibujar la barra de vida
