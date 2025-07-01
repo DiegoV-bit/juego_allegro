@@ -21,10 +21,16 @@ int main() {
     ALLEGRO_BITMAP *imagen_nave = NULL;
     ALLEGRO_BITMAP *imagen_asteroide = NULL;
 
+    Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS];
+    Enemigo enemigos_mapa[NUM_ENEMIGOS];
+    int num_enemigos_cargados = 0;
+
     if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide) != 0)
     {
         return -1;
     }
+
+    cargar_tilemap("Nivel1.txt", tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_asteroide);
 
     /*Inicializar los botones del menu*/
     Boton botones[3];
@@ -38,8 +44,7 @@ int main() {
     int cursor_x = 0;
     int cursor_y = 0;
 
-    Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS];
-    cargar_tilemap("Nivel1.txt", tilemap);
+    cargar_tilemap("Nivel1.txt", tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_asteroide);
 
     while (true)
     {
@@ -105,6 +110,20 @@ int main() {
             Disparo disparos[10];
             init_disparos(disparos, 10);
 
+            // Inicializar Enemigos
+            Disparo disparos_enemigos[NUM_DISPAROS_ENEMIGOS];
+
+            Enemigo enemigos[NUM_ENEMIGOS];
+            for (int i = 0; i < num_enemigos_cargados && i < NUM_ENEMIGOS; i++) {
+            enemigos[i] = enemigos_mapa[i];
+            }
+            // Inicializar el resto como inactivos
+            for (int i = num_enemigos_cargados; i < NUM_ENEMIGOS; i++) {
+            enemigos[i].activo = false;
+            }
+            
+            init_disparos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
+
             // Inicializar puntaje en 0
             int puntaje = 0;
 
@@ -128,11 +147,13 @@ int main() {
 
                 if (evento.type == ALLEGRO_EVENT_TIMER)
                 {
-                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap);
+                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, NUM_ENEMIGOS, disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
                     al_clear_to_color(al_map_rgb(0, 0, 0));
                     dibujar_tilemap(tilemap, imagen_asteroide);
                     dibujar_juego(nave, asteroides, 10);
                     dibujar_disparos(disparos, 10);
+                    dibujar_enemigos(enemigos, NUM_ENEMIGOS);
+                    dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
                     dibujar_puntaje(puntaje, fuente);
                     dibujar_barra_vida(nave); // Dibujar la barra de vida
                     al_flip_display();

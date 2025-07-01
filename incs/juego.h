@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
+#include <string.h>
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
@@ -41,10 +43,22 @@
  */
 #define MAX_NOMBRE 40
 
-#define TILE_ANCHO 20
+#define TILE_ANCHO 40
 #define TILE_ALTO 20
 #define MAPA_FILAS 15
 #define MAPA_COLUMNAS 20
+
+/**
+ * @def NUM_ENEMIGOS
+ * @brief Número de enemigos en el juego.
+ */
+#define NUM_ENEMIGOS 3
+
+/**
+ * @def NUM_DISPAROS_ENEMIGOS
+ * @brief Número máximo de disparos de enemigos.
+ */
+#define NUM_DISPAROS_ENEMIGOS 15
 
 /*Estructuras usadas en el juego*/
 /**
@@ -122,6 +136,21 @@ typedef struct {
     int vida;
 } Tile;
 
+typedef struct
+{
+    float x;
+    float y;
+    float ancho;
+    float alto;
+    float velocidad;
+    int vida;
+    bool activo;
+    double ultimo_disparo;
+    double intervalo_disparo;
+    ALLEGRO_BITMAP* imagen;
+} Enemigo;
+
+
 
 /*Funciones*/
 Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave);
@@ -136,7 +165,7 @@ void actualizar_disparos(Disparo disparos[], int num_disparos);
 void dibujar_disparos(Disparo disparos[], int num_disparos);
 void disparar(Disparo disparos[], int num_disparos, Nave nave);
 bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo);
-void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
+void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos);
 void dibujar_puntaje(int puntaje, ALLEGRO_FONT* fuente);
 void init_botones(Boton botones[]);
 void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y);
@@ -148,6 +177,20 @@ void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre, ALLEGRO_EVENT_QUEUE* co
 int comparar_puntajes(const void* a, const void* b);
 bool cursor_sobre_boton(Boton boton, int x, int y);
 bool detectar_colision_circular(float x1, float y1, float r1, float x2, float y2, float r2);
-void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
+void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagen_enemigo);
 void dibujar_tilemap(Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], ALLEGRO_BITMAP* imagen_asteroide);
+void init_enemigos(Enemigo enemigos[], int num_enemigos, ALLEGRO_BITMAP* imagen_enemigo);
+void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Nave nave, double tiempo_actual);
+void dibujar_enemigos(Enemigo enemigos[], int num_enemigos);
+void actualizar_disparos_enemigos(Disparo disparos[], int num_disparos);
+void dibujar_disparos_enemigos(Disparo disparos[], int num_disparos);
+bool detectar_colision_disparo_enemigo_nave(Nave nave, Disparo disparo);
+void enemigo_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo);
+bool detectar_colision_disparo_enemigo(Disparo disparo, Enemigo enemigo);
+bool detectar_colision_nave_enemigo(Nave nave, Enemigo enemigo);
+bool detectar_colision_generica(float x1, float y1, float ancho1, float alto1, float x2, float y2, float ancho2, float alto2);
+void inicializar_elementos_juego(Nave* nave, Asteroide asteroides[], Disparo disparos[], Enemigo enemigos[], Disparo disparos_enemigos[], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide);
+void manejar_menu(bool* en_menu, bool* jugando, bool* mostrarRanking, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_FONT* fuente);
+void ejecutar_juego(bool* jugando, bool* volver_menu, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_FONT* fuente, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide);
+void manejar_ranking(bool* mostrarRanking, bool* en_menu, ALLEGRO_FONT* fuente);
 #endif
