@@ -43,10 +43,10 @@
  */
 #define MAX_NOMBRE 40
 
-#define TILE_ANCHO 40
+#define TILE_ANCHO 20
 #define TILE_ALTO 20
-#define MAPA_FILAS 15
-#define MAPA_COLUMNAS 20
+#define MAPA_FILAS 20
+#define MAPA_COLUMNAS 39
 
 /**
  * @def NUM_ENEMIGOS
@@ -77,6 +77,7 @@ typedef struct
     float ancho; /**< Ancho de la nave  */
     float largo; /**< Largo de la nave */
     int vida; /**< Vida de la nave */
+    int tipo; /**< Tipo de movilidad de la nave */
     double tiempo_invulnerable; /**< Tiempo que la nave es invulnerable */
     double tiempo_ultimo_dano; /**< Tiempo en el que la nave recibio el ultimo dano */
     ALLEGRO_BITMAP* imagen; /**< Imagen de la nave */
@@ -180,7 +181,7 @@ bool detectar_colision_circular(float x1, float y1, float r1, float x2, float y2
 void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagen_enemigo);
 void dibujar_tilemap(Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], ALLEGRO_BITMAP* imagen_asteroide);
 void init_enemigos(Enemigo enemigos[], int num_enemigos, ALLEGRO_BITMAP* imagen_enemigo);
-void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Nave nave, double tiempo_actual);
+void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, double tiempo_actual);
 void dibujar_enemigos(Enemigo enemigos[], int num_enemigos);
 void actualizar_disparos_enemigos(Disparo disparos[], int num_disparos);
 void dibujar_disparos_enemigos(Disparo disparos[], int num_disparos);

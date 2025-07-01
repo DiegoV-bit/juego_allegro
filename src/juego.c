@@ -413,7 +413,7 @@ void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num
 
     actualizar_nave(nave, teclas, asteroides, tiempo_actual);
     actualizar_disparos(disparos, num_disparos);
-    actualizar_enemigos(enemigos, num_enemigos, disparos_enemigos, num_disparos_enemigos, *nave, tiempo_actual);
+    actualizar_enemigos(enemigos, num_enemigos, disparos_enemigos, num_disparos_enemigos, tiempo_actual);
     actualizar_disparos_enemigos(disparos_enemigos, num_disparos_enemigos);
 
     for (int i = 0; i < num_asteroides; i++)
@@ -808,11 +808,19 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
         *num_enemigos = 0;
         return;
     }
+
     char linea[MAPA_COLUMNAS + 2]; // +2 por '\n' y '\0'
     *num_enemigos = 0;
 
     for (int fila = 0; fila < MAPA_FILAS; fila++) {
         if (fgets(linea, sizeof(linea), archivo)) {
+            if ((int)strlen(linea) < MAPA_COLUMNAS)
+            {
+                fprintf(stderr, "Error: la línea %d del mapa es demasiado corta (tiene %zu, se esperaban %d)\n", fila+1, strlen(linea), MAPA_COLUMNAS);
+                fclose(archivo);
+                exit(1);
+            }
+            
             for (int col = 0; col < MAPA_COLUMNAS; col++) {
                 int tipo = linea[col] - '0';
 
@@ -916,7 +924,7 @@ void init_enemigos(Enemigo enemigos[], int num_enemigos, ALLEGRO_BITMAP* imagen_
 }
 
 
-void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Nave nave, double tiempo_actual)
+void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, double tiempo_actual)
 {
     for (int i = 0; i < num_enemigos; i++)
     {
@@ -1073,10 +1081,7 @@ bool detectar_colision_disparo_enemigo_nave(Nave nave, Disparo disparo)
  * @param imagen_nave Imagen de la nave
  * @param imagen_asteroide Imagen del asteroide
  */
-void inicializar_elementos_juego(Nave* nave, Asteroide asteroides[], Disparo disparos[], 
-                                Enemigo enemigos[], Disparo disparos_enemigos[],
-                                Enemigo enemigos_mapa[], int num_enemigos_cargados,
-                                ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide)
+void inicializar_elementos_juego(Nave* nave, Asteroide asteroides[], Disparo disparos[], Enemigo enemigos[], Disparo disparos_enemigos[], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide)
 {
     // Inicializar asteroides
     init_asteroides(asteroides, NUM_ASTEROIDES, 800, imagen_asteroide);
@@ -1108,8 +1113,7 @@ void inicializar_elementos_juego(Nave* nave, Asteroide asteroides[], Disparo dis
  * @param cola_eventos Cola de eventos
  * @param fuente Fuente para el texto
  */
-void manejar_menu(bool* en_menu, bool* jugando, bool* mostrarRanking, 
-                  ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_FONT* fuente)
+void manejar_menu(bool* en_menu, bool* jugando, bool* mostrarRanking, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_FONT* fuente)
 {
     Boton botones[3];
     init_botones(botones);
@@ -1180,10 +1184,7 @@ void manejar_menu(bool* en_menu, bool* jugando, bool* mostrarRanking,
  * @param imagen_nave Imagen de la nave
  * @param imagen_asteroide Imagen del asteroide
  */
-void ejecutar_juego(bool* jugando, bool* volver_menu, ALLEGRO_EVENT_QUEUE* cola_eventos, 
-                   ALLEGRO_FONT* fuente, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS],
-                   Enemigo enemigos_mapa[], int num_enemigos_cargados,
-                   ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide)
+void ejecutar_juego(bool* jugando, bool* volver_menu, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_FONT* fuente, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide)
 {
     bool teclas[ALLEGRO_KEY_MAX] = {false};
     

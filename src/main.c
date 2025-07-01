@@ -44,8 +44,6 @@ int main() {
     int cursor_x = 0;
     int cursor_y = 0;
 
-    cargar_tilemap("Nivel1.txt", tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_asteroide);
-
     while (true)
     {
         while (en_menu)
