@@ -32,6 +32,7 @@ Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiem
     nave.tiempo_ultimo_dano = -nave.tiempo_invulnerable;
     nave.imagen = imagen_nave;
     nave.angulo = 0.0f;
+    nave.tipo = 0;
     return nave;
 }
 
@@ -243,26 +244,42 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
  */
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double tiempo_actual)
 {
-    // Rotación de la nave
-    if(teclas[2]) nave->angulo -= 0.07f; // Izquierda
-    if(teclas[3]) nave->angulo += 0.07f; // Derecha
-
-    if (teclas[0]) // Arriba (avanzar)
+    /*Defino los tipos de jugabilidad propuestos*/
+    if(nave->tipo == 0)
     {
-        nave->x += cos(nave->angulo - ALLEGRO_PI/2) * 5;
-        nave->y += sin(nave->angulo - ALLEGRO_PI/2) * 5;
-    }
-    if (teclas[1]) // Abajo (retroceder, opcional)
-    {
-        nave->x -= cos(nave->angulo - ALLEGRO_PI/2) * 2.5; // Retrocede más lento
-        nave->y -= sin(nave->angulo - ALLEGRO_PI/2) * 2.5;
-    }
+        // Movilidad tipo Space Invaders: solo izquierda/derecha
+        if (teclas[2]) nave->x -= 5; // Izquierda
+        if (teclas[3]) nave->x += 5; // Derecha
 
-    // Limitar el movimiento de la nave dentro de la ventana
-    if (nave->x < 0) nave->x = 0;
-    if (nave->x > 800 - nave->ancho) nave->x = 800 - nave->ancho;
-    if (nave->y < 0) nave->y = 0;
-    if (nave->y > 600 - nave->largo) nave->y = 600 - nave->largo;
+        // Limitar el movimiento de la nave dentro de la ventana
+        if (nave->x < 0) nave->x = 0;
+        if (nave->x > 800 - nave->ancho) nave->x = 800 - nave->ancho;
+        // No permitir movimiento vertical ni rotación
+        nave->angulo = 0.0f;
+    }
+    else
+    {
+        // Rotación de la nave
+        if(teclas[2]) nave->angulo -= 0.07f; // Izquierda
+        if(teclas[3]) nave->angulo += 0.07f; // Derecha
+
+        if (teclas[0]) // Arriba (avanzar)
+        {
+            nave->x += cos(nave->angulo - ALLEGRO_PI/2) * 5;
+            nave->y += sin(nave->angulo - ALLEGRO_PI/2) * 5;
+        }
+        if (teclas[1]) // Abajo (retroceder, opcional)
+        {
+            nave->x -= cos(nave->angulo - ALLEGRO_PI/2) * 2.5; // Retrocede más lento
+            nave->y -= sin(nave->angulo - ALLEGRO_PI/2) * 2.5;
+        }
+
+        // Limitar el movimiento de la nave dentro de la ventana
+        if (nave->x < 0) nave->x = 0;
+        if (nave->x > 800 - nave->ancho) nave->x = 800 - nave->ancho;
+        if (nave->y < 0) nave->y = 0;
+        if (nave->y > 600 - nave->largo) nave->y = 600 - nave->largo;
+    }
 
     for (int i = 0; i < NUM_ASTEROIDES; i++)
     {
@@ -407,19 +424,21 @@ bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo)
  * @param puntaje Puntero al puntaje del jugador
  * 
  */
-void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos)
+void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos)
 {
     double tiempo_actual = al_get_time();
+    int i;
+    int j;
 
     actualizar_nave(nave, teclas, asteroides, tiempo_actual);
     actualizar_disparos(disparos, num_disparos);
     actualizar_enemigos(enemigos, num_enemigos, disparos_enemigos, num_disparos_enemigos, tiempo_actual);
     actualizar_disparos_enemigos(disparos_enemigos, num_disparos_enemigos);
 
-    for (int i = 0; i < num_asteroides; i++)
+    for (i = 0; i < num_asteroides; i++)
     {
         actualizar_asteroide(&asteroides[i], tilemap, nave);
-        for (int j = 0; j < num_disparos; j++)
+        for (j = 0; j < num_disparos; j++)
         {
             if (disparos[j].activo && detectar_colision_disparo(asteroides[i], disparos[j]))
             {
@@ -433,12 +452,12 @@ void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num
     }
 
     // Colisiones con enemigos
-    for (int i = 0; i < num_enemigos; i++)
+    for (i = 0; i < num_enemigos; i++)
     {
         if (!enemigos[i].activo) continue;
         
         // Disparos del jugador vs enemigos (USA LA NUEVA FUNCIÓN)
-        for (int j = 0; j < num_disparos; j++)
+        for (j = 0; j < num_disparos; j++)
         {
             if (disparos[j].activo && detectar_colision_disparo_enemigo(disparos[j], enemigos[i]))
             {
@@ -462,7 +481,7 @@ void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num
     }
 
     // Disparos de enemigos vs nave (USA LA NUEVA FUNCIÓN)
-    for (int i = 0; i < num_disparos_enemigos; i++)
+    for (i = 0; i < num_disparos_enemigos; i++)
     {
         if (disparos_enemigos[i].activo && detectar_colision_disparo_enemigo_nave(*nave, disparos_enemigos[i]))
         {
@@ -471,6 +490,7 @@ void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num
         }
     }
 }
+
 
 /**
  * @brief Permite dibujar el puntaje que hace el jugador en la pantalla.
