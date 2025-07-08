@@ -13,6 +13,7 @@ int main() {
     srand(time(NULL)); // Inicializa el generador de números aleatorios
     bool teclas[ALLEGRO_KEY_MAX] = {false};
 
+    // Inicializar Allegro y sus addons
     ALLEGRO_DISPLAY *ventana = NULL;
     ALLEGRO_EVENT_QUEUE *cola_eventos = NULL;
     ALLEGRO_TIMER *temporizador = NULL;
@@ -23,19 +24,12 @@ int main() {
     ALLEGRO_BITMAP *imagen_enemigo = NULL;
 
     Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS];
+
     Enemigo enemigos_mapa[NUM_ENEMIGOS];
     int num_enemigos_cargados = 0;
 
-    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide) != 0)
+    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo) != 0)
     {
-        return -1;
-    }
-
-    // Cargar imagen específica para enemigos
-    imagen_enemigo = al_load_bitmap("imagenes/enemigos/Enemigo.png");
-    if (!imagen_enemigo) {
-        fprintf(stderr, "Error: no se pudo cargar la imagen del enemigo.\n");
-        destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide);
         return -1;
     }
 
@@ -233,11 +227,7 @@ int main() {
         }
     }    
 
-    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide);
-
-    if (imagen_enemigo) {
-        al_destroy_bitmap(imagen_enemigo);
-    }
+    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide, imagen_enemigo);
 
     al_uninstall_system(); // Esto evita fugas de memoria y libera recursos evitando el segmentation fault en WSL
 

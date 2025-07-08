@@ -823,10 +823,22 @@ bool detectar_colision_generica(float x1, float y1, float ancho1, float alto1, f
 
 
 /**
- * @brief Carga un tilemap desde un archivo de texto.
+ * @brief Carga un tilemap desde un archivo de texto y extrae enemigos.
  * 
- * @param filename Nombre del archivo del nivel.
+ * Lee un archivo que contiene números que representan diferentes tipos de tiles:
+ * - 0: vacío
+ * - 1: asteroide fijo
+ * - 2: escudo destructible
+ * - 3: enemigo normal
+ * - 4: enemigo perseguidor
+ * 
+ * Los enemigos (3 y 4) se extraen del tilemap y se almacenan en el arreglo de enemigos.
+ * 
+ * @param filename Nombre del archivo del tilemap.
  * @param tilemap Matriz de tiles a llenar.
+ * @param enemigos Arreglo donde se almacenarán los enemigos extraídos.
+ * @param num_enemigos Puntero al contador de enemigos cargados.
+ * @param imagen_enemigo Imagen que se asignará a todos los enemigos.
  */
 void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagen_enemigo) {
     FILE* archivo = fopen(filename, "r");
@@ -939,6 +951,20 @@ void init_enemigos(Enemigo enemigos[], int num_enemigos, ALLEGRO_BITMAP* imagen_
 }
 
 
+/**
+ * @brief Actualiza la posición y comportamiento de todos los enemigos.
+ * 
+ * Los enemigos normales (tipo 0) se mueven horizontalmente rebotando en los bordes
+ * y disparan hacia la nave. Los enemigos perseguidores (tipo 1) siguen a la nave
+ * cuando está dentro de su rango de visión.
+ * 
+ * @param enemigos Arreglo de enemigos a actualizar.
+ * @param num_enemigos Número de enemigos en el arreglo.
+ * @param disparos_enemigos Arreglo de disparos de enemigos.
+ * @param num_disparos_enemigos Número máximo de disparos de enemigos.
+ * @param tiempo_actual Tiempo actual del juego en segundos.
+ * @param nave Nave del jugador (para persecución y disparos).
+ */
 void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, double tiempo_actual,Nave nave)
 {
     for (int i = 0; i < num_enemigos; i++)
@@ -1003,6 +1029,15 @@ void dibujar_enemigos(Enemigo enemigos[], int num_enemigos)
 }
 
 
+/**
+ * @brief Actualiza la posición de todos los disparos de enemigos.
+ * 
+ * Mueve cada disparo activo según su ángulo y velocidad, y desactiva
+ * los disparos que salen de los límites de la pantalla.
+ * 
+ * @param disparos Arreglo de disparos de enemigos.
+ * @param num_disparos Número de disparos en el arreglo.
+ */
 void actualizar_disparos_enemigos(Disparo disparos[], int num_disparos)
 {
     for(int i = 0; i < num_disparos; i++)
@@ -1108,15 +1143,19 @@ bool detectar_colision_disparo_enemigo_nave(Nave nave, Disparo disparo)
 /**
  * @brief Inicializa todos los elementos del juego.
  * 
- * @param nave Puntero a la nave
- * @param asteroides Arreglo de asteroides
- * @param disparos Arreglo de disparos del jugador
- * @param enemigos Arreglo de enemigos
- * @param disparos_enemigos Arreglo de disparos de enemigos
- * @param enemigos_mapa Enemigos cargados del mapa
- * @param num_enemigos_cargados Número de enemigos cargados
- * @param imagen_nave Imagen de la nave
- * @param imagen_asteroide Imagen del asteroide
+ * Prepara asteroides, nave, disparos del jugador, enemigos desde el tilemap
+ * y disparos de enemigos. Los enemigos se copian desde el arreglo del mapa
+ * y los elementos no utilizados se marcan como inactivos.
+ * 
+ * @param nave Puntero a la nave del jugador.
+ * @param asteroides Arreglo de asteroides a inicializar.
+ * @param disparos Arreglo de disparos del jugador a inicializar.
+ * @param enemigos Arreglo de enemigos del juego.
+ * @param disparos_enemigos Arreglo de disparos de enemigos a inicializar.
+ * @param enemigos_mapa Enemigos cargados desde el tilemap.
+ * @param num_enemigos_cargados Número de enemigos cargados desde el mapa.
+ * @param imagen_nave Imagen de la nave del jugador.
+ * @param imagen_asteroide Imagen de los asteroides.
  */
 void inicializar_elementos_juego(Nave* nave, Asteroide asteroides[], Disparo disparos[], Enemigo enemigos[], Disparo disparos_enemigos[], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide)
 {
@@ -1144,11 +1183,15 @@ void inicializar_elementos_juego(Nave* nave, Asteroide asteroides[], Disparo dis
 /**
  * @brief Maneja el menú principal del juego.
  * 
- * @param en_menu Puntero a la variable que controla si está en el menú
- * @param jugando Puntero a la variable que controla si está jugando
- * @param mostrarRanking Puntero a la variable que controla si muestra el ranking
- * @param cola_eventos Cola de eventos
- * @param fuente Fuente para el texto
+ * Muestra los botones del menú (Jugar, Ranking, Salir) y procesa los eventos
+ * del mouse para navegar entre las opciones. Actualiza los estados del juego
+ * según la opción seleccionada.
+ * 
+ * @param en_menu Puntero a la variable que controla si está en el menú.
+ * @param jugando Puntero a la variable que controla si está jugando.
+ * @param mostrarRanking Puntero a la variable que controla si muestra el ranking.
+ * @param cola_eventos Cola de eventos de Allegro.
+ * @param fuente Fuente para renderizar el texto de los botones.
  */
 void manejar_menu(bool* en_menu, bool* jugando, bool* mostrarRanking, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_FONT* fuente)
 {
@@ -1211,15 +1254,18 @@ void manejar_menu(bool* en_menu, bool* jugando, bool* mostrarRanking, ALLEGRO_EV
 /**
  * @brief Ejecuta el bucle principal del juego.
  * 
- * @param jugando Puntero a la variable que controla el estado del juego
- * @param volver_menu Puntero a la variable que indica si debe volver al menú
- * @param cola_eventos Cola de eventos
- * @param fuente Fuente para el texto
- * @param tilemap Matriz del tilemap
- * @param enemigos_mapa Enemigos cargados del mapa
- * @param num_enemigos_cargados Número de enemigos cargados
- * @param imagen_nave Imagen de la nave
- * @param imagen_asteroide Imagen del asteroide
+ * Gestiona la lógica principal del juego: inicializa elementos, procesa eventos,
+ * actualiza estados, dibuja todos los elementos en pantalla y maneja el fin del juego.
+ * 
+ * @param jugando Puntero a la variable que controla el estado del juego.
+ * @param volver_menu Puntero a la variable que indica si debe volver al menú.
+ * @param cola_eventos Cola de eventos de Allegro.
+ * @param fuente Fuente para renderizar texto en pantalla.
+ * @param tilemap Matriz del tilemap del nivel.
+ * @param enemigos_mapa Enemigos cargados desde el tilemap.
+ * @param num_enemigos_cargados Número de enemigos cargados desde el mapa.
+ * @param imagen_nave Imagen de la nave del jugador.
+ * @param imagen_asteroide Imagen de los asteroides.
  */
 void ejecutar_juego(bool* jugando, bool* volver_menu, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_FONT* fuente, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide)
 {
@@ -1292,9 +1338,12 @@ void ejecutar_juego(bool* jugando, bool* volver_menu, ALLEGRO_EVENT_QUEUE* cola_
 /**
  * @brief Maneja la pantalla de ranking.
  * 
- * @param mostrarRanking Puntero a la variable que controla si muestra el ranking
- * @param en_menu Puntero a la variable que controla si está en el menú
- * @param fuente Fuente para el texto
+ * Carga el ranking desde archivo, lo muestra en pantalla y permite
+ * volver al menú principal cuando el usuario lo desee.
+ * 
+ * @param mostrarRanking Puntero a la variable que controla si muestra el ranking.
+ * @param en_menu Puntero a la variable que controla si está en el menú.
+ * @param fuente Fuente para renderizar el texto del ranking.
  */
 void manejar_ranking(bool* mostrarRanking, bool* en_menu, ALLEGRO_FONT* fuente)
 {

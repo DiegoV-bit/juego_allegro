@@ -15,7 +15,8 @@ ALLEGRO_BITMAP* imagen_asteroide = NULL;
 /**
  * @brief Inicializa la biblioteca Allegro.
  *
- * Esta función inicializa Allegro y sus complementos necesarios, como el teclado y los primitivos.
+ * Esta función inicializa Allegro, crea la ventana, cola de eventos, temporizador,
+ * fuente y carga todas las imágenes necesarias para el juego (nave, asteroide, enemigo).
  * 
  * @return 0 si la inicialización fue exitosa, -1 en caso de error.
  */
@@ -125,7 +126,7 @@ void mostrar_ventana() {
  * @param imagen Imagen usada en el juego
  * @param imagen_nave Imagen usada para la nave
  */
-void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide)
+void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, ALLEGRO_BITMAP* imagen_enemigo)
 {
     if (ventana) 
     {
@@ -168,7 +169,11 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
         al_destroy_bitmap(imagen_asteroide);
         imagen_asteroide = NULL;
     }
-    
+
+    if (imagen_enemigo) 
+    {
+        al_destroy_bitmap(imagen_enemigo);
+    }
 }
 
 /**
@@ -183,7 +188,7 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
  * @param imagen_asteroide Puntero doble a la imagen del asteoride
  * @return int Si la inicializacion fue exitosa retorna 0, en caso contrario retorna -1
  */
-int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave, ALLEGRO_BITMAP **imagen_asteroide)
+int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave, ALLEGRO_BITMAP **imagen_asteroide, ALLEGRO_BITMAP **imagen_enemigo)
 {
     if (init_allegro() != 0) {
         return -1;
@@ -255,6 +260,20 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
         al_destroy_font(*fuente);
         al_destroy_bitmap(*imagen_fondo);
         al_destroy_bitmap(*imagen_nave);
+        return -1;
+    }
+
+        // Cargar imagen específica para enemigos
+    *imagen_enemigo = al_load_bitmap("imagenes/enemigos/Enemigo.png");
+    if (!imagen_enemigo) {
+        fprintf(stderr, "Error: no se pudo cargar la imagen del enemigo.\n");
+        al_destroy_event_queue(*cola_eventos);
+        al_destroy_display(*ventana);
+        al_destroy_timer(*temporizador);
+        al_destroy_font(*fuente);
+        al_destroy_bitmap(*imagen_fondo);
+        al_destroy_bitmap(*imagen_nave);
+        al_destroy_bitmap(*imagen_asteroide);
         return -1;
     }
 
