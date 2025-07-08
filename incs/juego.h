@@ -52,7 +52,7 @@
  * @def NUM_ENEMIGOS
  * @brief Número de enemigos en el juego.
  */
-#define NUM_ENEMIGOS 3
+#define NUM_ENEMIGOS (MAPA_FILAS * MAPA_COLUMNAS)
 
 /**
  * @def NUM_DISPAROS_ENEMIGOS
@@ -149,6 +149,7 @@ typedef struct
     double ultimo_disparo;
     double intervalo_disparo;
     ALLEGRO_BITMAP* imagen;
+    int tipo; /*Tipo de enemigo: 0 enemigo normal/ 1 enemigo perseguidor*/
 } Enemigo;
 
 
@@ -181,7 +182,7 @@ bool detectar_colision_circular(float x1, float y1, float r1, float x2, float y2
 void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagen_enemigo);
 void dibujar_tilemap(Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], ALLEGRO_BITMAP* imagen_asteroide);
 void init_enemigos(Enemigo enemigos[], int num_enemigos, ALLEGRO_BITMAP* imagen_enemigo);
-void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, double tiempo_actual);
+void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, double tiempo_actual, Nave nave);
 void dibujar_enemigos(Enemigo enemigos[], int num_enemigos);
 void actualizar_disparos_enemigos(Disparo disparos[], int num_disparos);
 void dibujar_disparos_enemigos(Disparo disparos[], int num_disparos);

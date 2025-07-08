@@ -244,7 +244,6 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
  */
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double tiempo_actual)
 {
-    /*Defino los tipos de jugabilidad propuestos*/
     if(nave->tipo == 0)
     {
         // Movilidad tipo Space Invaders: solo izquierda/derecha
@@ -432,7 +431,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
 
     actualizar_nave(nave, teclas, asteroides, tiempo_actual);
     actualizar_disparos(disparos, num_disparos);
-    actualizar_enemigos(enemigos, num_enemigos, disparos_enemigos, num_disparos_enemigos, tiempo_actual);
+    actualizar_enemigos(enemigos, num_enemigos, disparos_enemigos, num_disparos_enemigos, tiempo_actual, *nave);
     actualizar_disparos_enemigos(disparos_enemigos, num_disparos_enemigos);
 
     for (i = 0; i < num_asteroides; i++)
@@ -832,19 +831,14 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
     char linea[MAPA_COLUMNAS + 2]; // +2 por '\n' y '\0'
     *num_enemigos = 0;
 
-    for (int fila = 0; fila < MAPA_FILAS; fila++) {
-        if (fgets(linea, sizeof(linea), archivo)) {
-            if ((int)strlen(linea) < MAPA_COLUMNAS)
-            {
-                fprintf(stderr, "Error: la línea %d del mapa es demasiado corta (tiene %zu, se esperaban %d)\n", fila+1, strlen(linea), MAPA_COLUMNAS);
-                fclose(archivo);
-                exit(1);
-            }
-            
+    for (int fila = 0; fila < MAPA_FILAS; fila++) 
+    {
+        if (fgets(linea, sizeof(linea), archivo)) 
+        {
             for (int col = 0; col < MAPA_COLUMNAS; col++) {
                 int tipo = linea[col] - '0';
 
-                if(tipo == 3)
+                if(tipo == 3 || tipo == 4)
                 {
                     if (*num_enemigos < NUM_ENEMIGOS) {
                         enemigos[*num_enemigos].x = col * TILE_ANCHO;
@@ -857,6 +851,7 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
                         enemigos[*num_enemigos].ultimo_disparo = 0;
                         enemigos[*num_enemigos].intervalo_disparo = 1.5 + (rand() % 200) / 100.0;
                         enemigos[*num_enemigos].imagen = imagen_enemigo;
+                        enemigos[*num_enemigos].tipo = (tipo == 4) ? 1 : 0; // 3: enemigo perseguidor, 4: enemigo de lado
                         (*num_enemigos)++;
                     }                    
 
@@ -866,16 +861,8 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
                 }
                 else
                 {
-                    // Procesar otros tipos de tiles
-                    tilemap[fila][col].tipo = tipo;
-                    if (tilemap[fila][col].tipo == 2) 
-                    {
-                        tilemap[fila][col].vida = 3; // Escudos con 3 vidas
-                    }
-                    else
-                    {
-                        tilemap[fila][col].vida = 0;
-                    }
+                    tilemap[fila][col].tipo = tipo; // 0: vacío, 1: asteroide, 2: escudo
+                    tilemap[fila][col].vida = (tipo == 2) ? 3 : 0; // Escudos tienen vida, asteroides no
                 }
             }
         }
@@ -944,26 +931,48 @@ void init_enemigos(Enemigo enemigos[], int num_enemigos, ALLEGRO_BITMAP* imagen_
 }
 
 
-void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, double tiempo_actual)
+void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, double tiempo_actual,Nave nave)
 {
     for (int i = 0; i < num_enemigos; i++)
     {
         if (!enemigos[i].activo) continue;
-        
-        // Movimiento horizontal (de lado a lado)
-        enemigos[i].x += enemigos[i].velocidad;
-        
-        // Rebota en los bordes
-        if (enemigos[i].x <= 0 || enemigos[i].x >= 800 - enemigos[i].ancho)
+
+        if (enemigos[i].tipo == 1)
         {
-            enemigos[i].velocidad *= -1;
+            // Calcular distancia a la nave
+            float dx = nave.x + nave.ancho/2 - (enemigos[i].x + enemigos[i].ancho/2);
+            float dy = nave.y + nave.largo/2 - (enemigos[i].y + enemigos[i].alto/2);
+            float distancia = sqrt(dx*dx + dy*dy);
+
+            float rango_vision = 250.0f; // Puedes ajustar este valor
+            
+            if (distancia < rango_vision)
+            {
+                float norm = sqrt(dx*dx + dy*dy);
+                if (norm > 0.1f) 
+                {
+                    enemigos[i].x += (dx / norm) * enemigos[i].velocidad;
+                    enemigos[i].y += (dy / norm) * enemigos[i].velocidad;
+                }
+            }
         }
-        
-        // Disparar hacia la nave
-        if (tiempo_actual - enemigos[i].ultimo_disparo >= enemigos[i].intervalo_disparo)
+        else
         {
-            enemigo_disparar(disparos_enemigos, num_disparos_enemigos, enemigos[i]);
-            enemigos[i].ultimo_disparo = tiempo_actual;
+            // Movimiento horizontal (de lado a lado)
+            enemigos[i].x += enemigos[i].velocidad;
+        
+            // Rebota en los bordes
+            if (enemigos[i].x <= 0 || enemigos[i].x >= 800 - enemigos[i].ancho)
+            {
+                enemigos[i].velocidad *= -1;
+            }
+        
+            // Disparar hacia la nave
+            if (tiempo_actual - enemigos[i].ultimo_disparo >= enemigos[i].intervalo_disparo)
+            {
+                enemigo_disparar(disparos_enemigos, num_disparos_enemigos, enemigos[i]);
+                enemigos[i].ultimo_disparo = tiempo_actual;
+            }
         }
     }
 }

@@ -155,7 +155,7 @@ int main() {
                         aviso_mostrado = false;
                     }
 
-                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, NUM_ENEMIGOS, disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
+                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
                     al_clear_to_color(al_map_rgb(0, 0, 0));
                     dibujar_tilemap(tilemap, imagen_asteroide);
                     dibujar_juego(nave, asteroides, 10);
