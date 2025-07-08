@@ -47,6 +47,7 @@
 #define TILE_ALTO 20
 #define MAPA_FILAS 20
 #define MAPA_COLUMNAS 39
+#define MAX_DISPAROS 10
 
 /**
  * @def NUM_ENEMIGOS
@@ -61,6 +62,24 @@
 #define NUM_DISPAROS_ENEMIGOS 15
 
 /*Estructuras usadas en el juego*/
+
+/**
+ * @struct Disparo
+ * @brief Estructura que representa un disparo en el juego.
+ * 
+ * Caracteristicas de un disparo:
+ * - Posicion en los ejes "x" e "y".
+ * - Velocidad del disparo.
+ * - Estado del disparo (activo o inactivo).
+ */
+typedef struct {
+    float x; /**< Posicion en el eje x */
+    float y; /**< Posicion en el eje y */
+    float velocidad; /** <Velocidad del disparo */
+    bool activo; /** <Actividad del disparo */
+    float angulo; /**< Angulo del disparo */
+} Disparo;
+
 /**
  * @struct Nave
  * @brief Estructura que representa una nave en el juego. 
@@ -82,6 +101,7 @@ typedef struct
     double tiempo_ultimo_dano; /**< Tiempo en el que la nave recibio el ultimo dano */
     ALLEGRO_BITMAP* imagen; /**< Imagen de la nave */
     float angulo; /**< Angulo de la nave */
+    Disparo disparos[MAX_DISPAROS]; /**< Arreglo de disparos de la nave */
 } Nave;
 
 /**
@@ -99,23 +119,6 @@ typedef struct
     float alto; /** <Alto de los asteroides */
     ALLEGRO_BITMAP* imagen; /** <Imagen de los asteroides */
 } Asteroide;
-
-/**
- * @struct Disparo
- * @brief Estructura que representa un disparo en el juego.
- * 
- * Caracteristicas de un disparo:
- * - Posicion en los ejes "x" e "y".
- * - Velocidad del disparo.
- * - Estado del disparo (activo o inactivo).
- */
-typedef struct {
-    float x; /**< Posicion en el eje x */
-    float y; /**< Posicion en el eje y */
-    float velocidad; /** <Velocidad del disparo */
-    bool activo; /** <Actividad del disparo */
-    float angulo; /**< Angulo del disparo */
-} Disparo;
 
 typedef struct
 {

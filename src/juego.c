@@ -22,6 +22,8 @@
  */
 Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave)
 {
+    int i;
+    // Inicializa la nave con los parámetros dados
     Nave nave;
     nave.x = x;
     nave.y = y;
@@ -33,6 +35,12 @@ Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiem
     nave.imagen = imagen_nave;
     nave.angulo = 0.0f;
     nave.tipo = 0;
+
+    for(i = 0; i < MAX_DISPAROS; i++)
+    {
+        nave.disparos[i].activo = false;
+    }
+
     return nave;
 }
 
@@ -853,7 +861,7 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
                         enemigos[*num_enemigos].imagen = imagen_enemigo;
                         enemigos[*num_enemigos].tipo = (tipo == 4) ? 1 : 0; // 3: enemigo perseguidor, 4: enemigo de lado
                         (*num_enemigos)++;
-                    }                    
+                    }
 
                     // En el tilemap, marcamos como vacío (el enemigo ya está en el arreglo)
                     tilemap[fila][col].tipo = 0;
@@ -1119,7 +1127,7 @@ void inicializar_elementos_juego(Nave* nave, Asteroide asteroides[], Disparo dis
     *nave = init_nave(400, 500, 50, 50, 100, 0.1, imagen_nave);
 
     // Inicializar disparos del jugador
-    init_disparos(disparos, 10);
+    init_disparos(disparos, MAX_DISPAROS);
 
     // Inicializar enemigos desde el tilemap
     for (int i = 0; i < num_enemigos_cargados && i < NUM_ENEMIGOS; i++) {

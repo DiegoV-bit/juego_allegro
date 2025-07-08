@@ -20,6 +20,7 @@ int main() {
     ALLEGRO_BITMAP *fondo_juego = NULL;
     ALLEGRO_BITMAP *imagen_nave = NULL;
     ALLEGRO_BITMAP *imagen_asteroide = NULL;
+    ALLEGRO_BITMAP *imagen_enemigo = NULL;
 
     Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS];
     Enemigo enemigos_mapa[NUM_ENEMIGOS];
@@ -30,7 +31,15 @@ int main() {
         return -1;
     }
 
-    cargar_tilemap("Nivel1.txt", tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_asteroide);
+    // Cargar imagen específica para enemigos
+    imagen_enemigo = al_load_bitmap("imagenes/enemigos/Enemigo.png");
+    if (!imagen_enemigo) {
+        fprintf(stderr, "Error: no se pudo cargar la imagen del enemigo.\n");
+        destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide);
+        return -1;
+    }
+
+    cargar_tilemap("Nivel1.txt", tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_enemigo);
 
     /*Inicializar los botones del menu*/
     Boton botones[3];
@@ -113,11 +122,12 @@ int main() {
 
             Enemigo enemigos[NUM_ENEMIGOS];
             for (int i = 0; i < num_enemigos_cargados && i < NUM_ENEMIGOS; i++) {
-            enemigos[i] = enemigos_mapa[i];
+                enemigos[i] = enemigos_mapa[i];
+                enemigos[i].imagen = imagen_enemigo; // Asegurar que usen el sprite correcto
             }
             // Inicializar el resto como inactivos
             for (int i = num_enemigos_cargados; i < NUM_ENEMIGOS; i++) {
-            enemigos[i].activo = false;
+                enemigos[i].activo = false;
             }
             
             init_disparos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
@@ -148,8 +158,8 @@ int main() {
 
                 if (evento.type == ALLEGRO_EVENT_TIMER)
                 {
-                    // Cambiar movilidad si corresponde
-                    if (puntaje >= 200 && nave.tipo == 0)
+                    // Cambiar movilidad si corresponde se puso en 30 para probar
+                    if (puntaje >= 30 && nave.tipo == 0)
                     {
                         nave.tipo = 1;
                         aviso_mostrado = false;
@@ -160,7 +170,7 @@ int main() {
                     dibujar_tilemap(tilemap, imagen_asteroide);
                     dibujar_juego(nave, asteroides, 10);
                     dibujar_disparos(disparos, 10);
-                    dibujar_enemigos(enemigos, NUM_ENEMIGOS);
+                    dibujar_enemigos(enemigos, num_enemigos_cargados);
                     dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
                     dibujar_puntaje(puntaje, fuente);
                     dibujar_barra_vida(nave); // Dibujar la barra de vida
@@ -224,6 +234,10 @@ int main() {
     }    
 
     destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide);
+
+    if (imagen_enemigo) {
+        al_destroy_bitmap(imagen_enemigo);
+    }
 
     al_uninstall_system(); // Esto evita fugas de memoria y libera recursos evitando el segmentation fault en WSL
 
