@@ -264,7 +264,7 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
     }
 
         // Cargar imagen específica para enemigos
-    *imagen_enemigo = al_load_bitmap("imagenes/enemigos/Enemigo.png");
+    *imagen_enemigo = al_load_bitmap("imagenes/enemigos/Enemigo1.png");
     if (!imagen_enemigo) {
         fprintf(stderr, "Error: no se pudo cargar la imagen del enemigo.\n");
         al_destroy_event_queue(*cola_eventos);

@@ -7,7 +7,7 @@
 */
 
 /**
- *@brief Inicializa la nave.
+ * @brief Inicializa la nave.
  *
  * Esta funcion Inicializa la nave dandole una posicion en los ejes "x" e "y", al igual que le da un tamano y angulo inicial.
  * 
@@ -35,6 +35,8 @@ Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiem
     nave.imagen = imagen_nave;
     nave.angulo = 0.0f;
     nave.tipo = 0;
+    nave.nivel_disparo_radial = 0;
+    nave.kills_para_mejora = 0;
 
     for(i = 0; i < MAX_DISPAROS; i++)
     {
@@ -185,7 +187,7 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo di
             teclas[3] = true;
             break;
         case ALLEGRO_KEY_SPACE:
-            disparar(disparos, num_disparos, *nave);
+            disparar_radial(disparos, num_disparos, *nave);
             break;
         }
     }
@@ -453,6 +455,8 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                 asteroides[i].y = -asteroides[i].alto;
                 asteroides[i].x = rand() % (800 - (int)asteroides[i].ancho);
                 (*puntaje)++;
+                nave->kills_para_mejora++;
+                verficar_mejora_disparo_radial(nave);
             }
         }
         //detectar_colision(nave, asteroides[i]);
@@ -474,6 +478,8 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                 {
                     enemigos[i].activo = false;
                     (*puntaje) += 5; // Más puntos por destruir enemigo
+                    nave->kills_para_mejora++;
+                    verficar_mejora_disparo_radial(nave);
                 }
                 break;
             }
@@ -1359,4 +1365,87 @@ void manejar_ranking(bool* mostrarRanking, bool* en_menu, ALLEGRO_FONT* fuente)
         *mostrarRanking = false;
         *en_menu = true;
     }
+}
+
+
+void disparar_radial(Disparo disparos[], int num_disparos, Nave nave)
+{
+    if (nave.nivel_disparo_radial == 0) 
+    {
+        disparar(disparos, num_disparos, nave);
+        return;
+    }
+
+    // Calcular el centro de la nave
+    float centro_x = nave.x + nave.ancho / 2.0f;
+    float centro_y = nave.y + nave.largo / 2.0f;
+
+    int num_disparos_radiales = 2;
+    float separacion_angular = ALLEGRO_PI / 6; // 30 grados por defecto
+
+    // Determinar número de disparos según el nivel
+    if (nave.nivel_disparo_radial == 1) 
+    {
+        num_disparos_radiales = 2;
+        separacion_angular = ALLEGRO_PI / 6; // 30 grados entre disparos
+    } 
+    else if (nave.nivel_disparo_radial == 2) 
+    {
+        num_disparos_radiales = 5;
+        separacion_angular = ALLEGRO_PI / 8; // 22.5 grados entre disparos
+    }
+
+    // Crear disparos radiales
+    int disparos_creados = 0;
+    for (int i = 0; i < num_disparos && disparos_creados < num_disparos_radiales; i++)
+    {
+        if (!disparos[i].activo)
+        {
+            // Calcular ángulo para este disparo
+            float angulo_disparo;
+            if (num_disparos_radiales == 2) {
+                // 2 disparos: uno a cada lado del ángulo principal
+                angulo_disparo = nave.angulo - ALLEGRO_PI/2 + (disparos_creados == 0 ? -separacion_angular : separacion_angular);
+            } else {
+                // 5 disparos: uno central y dos a cada lado
+                angulo_disparo = nave.angulo - ALLEGRO_PI/2 + (disparos_creados - 2) * separacion_angular;
+            }
+
+            // Calcular posición de disparo
+            float punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
+            float punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
+
+            disparos[i].x = punta_x;
+            disparos[i].y = punta_y;
+            disparos[i].velocidad = 10;
+            disparos[i].angulo = angulo_disparo;
+            disparos[i].activo = true;
+            
+            disparos_creados++;
+        }
+    }
+}
+
+
+void verficar_mejora_disparo_radial(Nave *nave)
+{
+    if (nave->kills_para_mejora >= 16 && nave->nivel_disparo_radial < 2) 
+    {
+        nave->nivel_disparo_radial++;
+        nave->kills_para_mejora = 0; // Reiniciar contador de kills
+        printf("¡Mejora de disparo radial! Nivel actual: %d\n", nave->nivel_disparo_radial);
+    }
+}
+
+
+
+void dibujar_nivel_powerup(Nave nave, ALLEGRO_FONT* fuente)
+{
+    char texto_powerup[50];
+    if (nave.nivel_disparo_radial == 0) {
+        sprintf(texto_powerup, "Radial: Desactivado (%d/16)", nave.kills_para_mejora);
+    } else {
+        sprintf(texto_powerup, "Radial Nv.%d (%d/16)", nave.nivel_disparo_radial, nave.kills_para_mejora);
+    }
+    al_draw_text(fuente, al_map_rgb(255, 255, 0), 10, 70, ALLEGRO_ALIGN_LEFT, texto_powerup);
 }

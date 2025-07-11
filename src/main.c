@@ -168,6 +168,7 @@ int main() {
                     dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
                     dibujar_puntaje(puntaje, fuente);
                     dibujar_barra_vida(nave); // Dibujar la barra de vida
+                    dibujar_nivel_powerup(nave, fuente);
                     al_flip_display();
 
                     if (puntaje >= 200 && nave.tipo == 1 && !aviso_mostrado)

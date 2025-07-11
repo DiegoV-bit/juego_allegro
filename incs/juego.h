@@ -21,6 +21,7 @@
 #include <allegro5/allegro.h>
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
+#include <allegro5/joystick.h>
 
 /**
  * @def NUM_ASTEROIDES
@@ -42,11 +43,24 @@
  * @brief Longitud maxima del nombre del jugador.
  */
 #define MAX_NOMBRE 40
-
+/**
+ * @def TILE_ANCHO
+ * @def TILE_ALTO
+ * @brief Tamaño de los tiles del mapa.
+ */
 #define TILE_ANCHO 20
 #define TILE_ALTO 20
+/**
+ * @def MAPA_FILAS
+ * @def MAPA_COLUMNAS
+ * @brief Filas y columnas del mapa del juego.
+ */
 #define MAPA_FILAS 20
 #define MAPA_COLUMNAS 39
+/**
+ * @def MAX_DISPAROS
+ * @brief Cantidad de disparos que puede efectuar la nave
+ */
 #define MAX_DISPAROS 10
 
 /**
@@ -102,6 +116,8 @@ typedef struct
     ALLEGRO_BITMAP* imagen; /**< Imagen de la nave */
     float angulo; /**< Angulo de la nave */
     Disparo disparos[MAX_DISPAROS]; /**< Arreglo de disparos de la nave */
+    int nivel_disparo_radial;
+    int kills_para_mejora;
 } Nave;
 
 /**
@@ -120,6 +136,13 @@ typedef struct
     ALLEGRO_BITMAP* imagen; /** <Imagen de los asteroides */
 } Asteroide;
 
+/**
+ * @struct Boton 
+ *
+ * @brief Estructura que representa los botones en el menu del juego.
+ * 
+ * Los botones tienen una posicion en x e y, un ancho y un alto, y un texto que los identifica.
+ */
 typedef struct
 {
     float x; /**< Posicion en el eje x del boton*/
@@ -129,17 +152,38 @@ typedef struct
     char texto[20]; /**<Texto del boton */
 } Boton;
 
+/**
+ * @struct Jugador
+ * 
+ * @brief Estructura que representa un jugador en el ranking del juego.
+ * 
+ * Los jugadores tienen un nombre y el puntaje respectivo al terminar de jugar
+ */
 typedef struct
 {
     char nombre[MAX_NOMBRE]; /**<Arreglo de caracteres que representa el nombre del jugador */
     int puntaje; /**<Puntaje del jugador */
 } Jugador;
 
+/**
+ * @struct Tile
+ * 
+ * @brief Estructura que representa un tile en el mapa del juego.
+ * 
+ * Los tiles tienen un tipo (que puede ser un asteroide, un enemigo, etc.) y una vida (para asteroides o enemigos).
+ */
 typedef struct {
     int tipo;
     int vida;
 } Tile;
 
+/**
+ * @struct Enemigo
+ * 
+ * @brief Estructura que representa un enemigo en el juego.
+ * 
+ * Los enemigos tienen una posicion en los ejes "x" e "y", un ancho y un alto, una velocidad, una vida, un estado activo, un ultimo disparo, un intevalo de disparo, una imagen y un tipo.
+ */
 typedef struct
 {
     float x;
@@ -198,4 +242,7 @@ void inicializar_elementos_juego(Nave* nave, Asteroide asteroides[], Disparo dis
 void manejar_menu(bool* en_menu, bool* jugando, bool* mostrarRanking, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_FONT* fuente);
 void ejecutar_juego(bool* jugando, bool* volver_menu, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_FONT* fuente, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide);
 void manejar_ranking(bool* mostrarRanking, bool* en_menu, ALLEGRO_FONT* fuente);
+void disparar_radial(Disparo disparos[], int num_disparos, Nave nave);
+void verficar_mejora_disparo_radial(Nave *nave);
+void dibujar_nivel_powerup(Nave nave, ALLEGRO_FONT* fuente);
 #endif
