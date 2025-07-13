@@ -433,7 +433,7 @@ bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo)
  * @param puntaje Puntero al puntaje del jugador
  * 
  */
-void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos)
+void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad)
 {
     double tiempo_actual = al_get_time();
     int i;
@@ -443,6 +443,9 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
     actualizar_disparos(disparos, num_disparos);
     actualizar_enemigos(enemigos, num_enemigos, disparos_enemigos, num_disparos_enemigos, tiempo_actual, *nave);
     actualizar_disparos_enemigos(disparos_enemigos, num_disparos_enemigos);
+
+    actualizar_mensaje(mensaje_powerup, tiempo_actual);
+    actualizar_mensaje(mensaje_movilidad, tiempo_actual);
 
     for (i = 0; i < num_asteroides; i++)
     {
@@ -456,7 +459,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                 asteroides[i].x = rand() % (800 - (int)asteroides[i].ancho);
                 (*puntaje)++;
                 nave->kills_para_mejora++;
-                verficar_mejora_disparo_radial(nave);
+                verificar_mejora_disparo_radial(nave, mensaje_powerup);
             }
         }
         //detectar_colision(nave, asteroides[i]);
@@ -479,7 +482,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                     enemigos[i].activo = false;
                     (*puntaje) += 5; // Más puntos por destruir enemigo
                     nave->kills_para_mejora++;
-                    verficar_mejora_disparo_radial(nave);
+                    verificar_mejora_disparo_radial(nave, mensaje_powerup);
                 }
                 break;
             }
@@ -961,7 +964,7 @@ void init_enemigos(Enemigo enemigos[], int num_enemigos, ALLEGRO_BITMAP* imagen_
  * @brief Actualiza la posición y comportamiento de todos los enemigos.
  * 
  * Los enemigos normales (tipo 0) se mueven horizontalmente rebotando en los bordes
- * y disparan hacia la nave. Los enemigos perseguidores (tipo 1) siguen a la nave
+ * y disparan hacia la nave. Los enemigos perseguidos (tipo 1) siguen a la nave
  * cuando está dentro de su rango de visión.
  * 
  * @param enemigos Arreglo de enemigos a actualizar.
@@ -1285,9 +1288,13 @@ void ejecutar_juego(bool* jugando, bool* volver_menu, ALLEGRO_EVENT_QUEUE* cola_
     Disparo disparos_enemigos[NUM_DISPAROS_ENEMIGOS];
     int puntaje = 0;
 
+    // Inicializar mensajes
+    Mensaje mensaje_powerup, mensaje_movilidad;
+    init_mensaje(&mensaje_powerup);
+    init_mensaje(&mensaje_movilidad);
+
     // Inicializar elementos del juego
-    inicializar_elementos_juego(&nave, asteroides, disparos, enemigos, disparos_enemigos,
-                               enemigos_mapa, num_enemigos_cargados, imagen_nave, imagen_asteroide);
+    inicializar_elementos_juego(&nave, asteroides, disparos, enemigos, disparos_enemigos, enemigos_mapa, num_enemigos_cargados, imagen_nave, imagen_asteroide);
 
     // Bucle principal del juego
     while (*jugando) 
@@ -1308,9 +1315,15 @@ void ejecutar_juego(bool* jugando, bool* volver_menu, ALLEGRO_EVENT_QUEUE* cola_
 
         if (evento.type == ALLEGRO_EVENT_TIMER)
         {
+            // Cambiar movilidad si corresponde
+            if (puntaje >= 30 && nave.tipo == 0)
+            {
+                nave.tipo = 1;
+                mostrar_mensaje(&mensaje_movilidad, "¡Nueva movilidad desbloqueada!", 150, 200, 4.0, al_map_rgb(0, 255, 0));
+            }
+
             // Actualizar juego
-            actualizar_juego(&nave, teclas, asteroides, NUM_ASTEROIDES, disparos, 10, &puntaje, 
-                           tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
+            actualizar_juego(&nave, teclas, asteroides, NUM_ASTEROIDES, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &mensaje_powerup, &mensaje_movilidad);
             
             // Dibujar todo
             al_clear_to_color(al_map_rgb(0, 0, 0));
@@ -1321,6 +1334,11 @@ void ejecutar_juego(bool* jugando, bool* volver_menu, ALLEGRO_EVENT_QUEUE* cola_
             dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
             dibujar_puntaje(puntaje, fuente);
             dibujar_barra_vida(nave);
+            dibujar_nivel_powerup(nave, fuente);
+
+            dibujar_mensaje(mensaje_powerup, fuente);
+            dibujar_mensaje(mensaje_movilidad, fuente);
+
             al_flip_display();
 
             // Verificar fin del juego
@@ -1380,59 +1398,72 @@ void disparar_radial(Disparo disparos[], int num_disparos, Nave nave)
     float centro_x = nave.x + nave.ancho / 2.0f;
     float centro_y = nave.y + nave.largo / 2.0f;
 
-    int num_disparos_radiales = 2;
-    float separacion_angular = ALLEGRO_PI / 6; // 30 grados por defecto
+    int num_disparos_radiales;
+    float separacion_angular;
 
     // Determinar número de disparos según el nivel
     if (nave.nivel_disparo_radial == 1) 
     {
-        num_disparos_radiales = 2;
-        separacion_angular = ALLEGRO_PI / 6; // 30 grados entre disparos
+        num_disparos_radiales = 3; // Cambiar a 3 disparos para mejor distribución
+        separacion_angular = ALLEGRO_PI / 8; // 22.5 grados entre disparos
     } 
     else if (nave.nivel_disparo_radial == 2) 
     {
         num_disparos_radiales = 5;
-        separacion_angular = ALLEGRO_PI / 8; // 22.5 grados entre disparos
+        separacion_angular = ALLEGRO_PI / 12; // 15 grados entre disparos (más cerrado)
     }
 
-    // Crear disparos radiales
-    int disparos_creados = 0;
-    for (int i = 0; i < num_disparos && disparos_creados < num_disparos_radiales; i++)
+    float angulos[5];
+
+    if (num_disparos_radiales == 3)
+    {
+        // 3 disparos: izquierda, centro, derecha
+        angulos[0] = nave.angulo - ALLEGRO_PI/2 - separacion_angular; // Izquierda
+        angulos[1] = nave.angulo - ALLEGRO_PI/2;                     // Centro
+        angulos[2] = nave.angulo - ALLEGRO_PI/2 + separacion_angular; // Derecha
+    }
+    else
+    {
+        for (int j = 0; j < 5; j++)
+        {
+            int offset = j - 2;
+            angulos[j] = nave.angulo - ALLEGRO_PI/2 + offset * separacion_angular;
+        }
+    }
+
+    // Calcular posición de disparo desde la punta de la nave
+    float punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
+    float punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
+
+    int indice_angulo = 0;
+    for (int i = 0; i < num_disparos && indice_angulo < num_disparos_radiales; i++)
     {
         if (!disparos[i].activo)
         {
-            // Calcular ángulo para este disparo
-            float angulo_disparo;
-            if (num_disparos_radiales == 2) {
-                // 2 disparos: uno a cada lado del ángulo principal
-                angulo_disparo = nave.angulo - ALLEGRO_PI/2 + (disparos_creados == 0 ? -separacion_angular : separacion_angular);
-            } else {
-                // 5 disparos: uno central y dos a cada lado
-                angulo_disparo = nave.angulo - ALLEGRO_PI/2 + (disparos_creados - 2) * separacion_angular;
-            }
-
-            // Calcular posición de disparo
-            float punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
-            float punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
-
             disparos[i].x = punta_x;
             disparos[i].y = punta_y;
             disparos[i].velocidad = 10;
-            disparos[i].angulo = angulo_disparo;
+            disparos[i].angulo = angulos[indice_angulo]; // Usar el ángulo precalculado
             disparos[i].activo = true;
             
-            disparos_creados++;
+            indice_angulo++; // Avanzar al siguiente ángulo
         }
     }
 }
 
 
-void verficar_mejora_disparo_radial(Nave *nave)
+void verificar_mejora_disparo_radial(Nave *nave, Mensaje* mensaje_powerup)
 {
     if (nave->kills_para_mejora >= 16 && nave->nivel_disparo_radial < 2) 
     {
         nave->nivel_disparo_radial++;
-        nave->kills_para_mejora = 0; // Reiniciar contador de kills
+        nave->kills_para_mejora = 0;
+        
+        // Mostrar mensaje de mejora
+        char texto_mejora[100];
+        sprintf(texto_mejora, "¡Disparo Radial Nivel %d Desbloqueado!", nave->nivel_disparo_radial);
+        mostrar_mensaje(mensaje_powerup, texto_mejora, 200, 150, 3.0, al_map_rgb(255, 255, 0));
+        
         printf("¡Mejora de disparo radial! Nivel actual: %d\n", nave->nivel_disparo_radial);
     }
 }
@@ -1448,4 +1479,50 @@ void dibujar_nivel_powerup(Nave nave, ALLEGRO_FONT* fuente)
         sprintf(texto_powerup, "Radial Nv.%d (%d/16)", nave.nivel_disparo_radial, nave.kills_para_mejora);
     }
     al_draw_text(fuente, al_map_rgb(255, 255, 0), 10, 70, ALLEGRO_ALIGN_LEFT, texto_powerup);
+}
+
+
+void init_mensaje(Mensaje *mensaje)
+{
+    mensaje->activo = false;
+    mensaje->x = 0;
+    mensaje->y = 0;
+    mensaje->texto[0] = '\0';
+    mensaje->duracion = 0;
+    mensaje->color = al_map_rgb(255, 255, 255);
+}
+
+
+void mostrar_mensaje(Mensaje *mensaje, const char *texto, float x, float y, double duracion, ALLEGRO_COLOR color)
+{
+    strncpy(mensaje->texto, texto, sizeof(mensaje->texto) - 1);
+    mensaje->texto[sizeof(mensaje->texto) - 1] = '\0';
+    mensaje->x = x;
+    mensaje->y = y;
+    mensaje->tiempo_inicio = al_get_time();
+    mensaje->duracion = duracion;
+    mensaje->activo = true;
+    mensaje->color = color;
+}
+
+
+void actualizar_mensaje(Mensaje *mensaje, double tiempo_actual)
+{
+    if (mensaje->activo && (tiempo_actual - mensaje->tiempo_inicio >= mensaje->duracion)) 
+    {
+        mensaje->activo = false; // Desactivar mensaje después de la duración
+    }
+}
+
+
+void dibujar_mensaje(Mensaje mensaje, ALLEGRO_FONT* fuente)
+{
+    if (mensaje.activo)
+    {
+        // Dibujar fondo semi-transparente
+        al_draw_filled_rectangle(mensaje.x - 10, mensaje.y - 5, mensaje.x + strlen(mensaje.texto) * 12 + 10, mensaje.y + 25, al_map_rgba(0, 0, 0, 128));
+        
+        // Dibujar texto
+        al_draw_text(fuente, mensaje.color, mensaje.x, mensaje.y, ALLEGRO_ALIGN_LEFT, mensaje.texto);
+    }
 }

@@ -129,6 +129,12 @@ int main() {
             // Inicializar puntaje en 0
             int puntaje = 0;
 
+            // Inicializar Mensajes
+            Mensaje mensaje_powerup;
+            Mensaje mensaje_movilidad;
+            init_mensaje(&mensaje_powerup);
+            init_mensaje(&mensaje_movilidad);
+
             // Mensaje de cambio de tipo de juego
             bool aviso_mostrado = false;
 
@@ -138,7 +144,8 @@ int main() {
                 ALLEGRO_EVENT evento;
                 al_wait_for_event(cola_eventos, &evento);
 
-                if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
+                if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
+                {
                     jugando = false;
                     en_menu = false;
                     mostrarRanking = false;
@@ -156,10 +163,11 @@ int main() {
                     if (puntaje >= 30 && nave.tipo == 0)
                     {
                         nave.tipo = 1;
+                        mostrar_mensaje(&mensaje_movilidad, "Nueva movilidad desbloqueada descubre como usarla", 150, 200, 4.0, al_map_rgb(0, 255, 0));
                         aviso_mostrado = false;
                     }
 
-                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
+                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &mensaje_powerup, &mensaje_movilidad);
                     al_clear_to_color(al_map_rgb(0, 0, 0));
                     dibujar_tilemap(tilemap, imagen_asteroide);
                     dibujar_juego(nave, asteroides, 10);
@@ -169,14 +177,18 @@ int main() {
                     dibujar_puntaje(puntaje, fuente);
                     dibujar_barra_vida(nave); // Dibujar la barra de vida
                     dibujar_nivel_powerup(nave, fuente);
-                    al_flip_display();
 
+                    dibujar_mensaje(mensaje_powerup, fuente);
+                    dibujar_mensaje(mensaje_movilidad, fuente);
+
+                    al_flip_display();
+/*
                     if (puntaje >= 200 && nave.tipo == 1 && !aviso_mostrado)
                     {
                         al_draw_text(fuente, al_map_rgb(255,255,0), 400, 100, ALLEGRO_ALIGN_CENTER, "¡Nueva movilidad desbloqueada!");
                         aviso_mostrado = true;
                     }
-
+*/
                     if (nave.vida <= 0)
                     {
                         jugando = false;

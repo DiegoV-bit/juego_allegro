@@ -61,7 +61,7 @@
  * @def MAX_DISPAROS
  * @brief Cantidad de disparos que puede efectuar la nave
  */
-#define MAX_DISPAROS 10
+#define MAX_DISPAROS 15
 
 /**
  * @def NUM_ENEMIGOS
@@ -199,6 +199,16 @@ typedef struct
     int tipo; /*Tipo de enemigo: 0 enemigo normal/ 1 enemigo perseguidor*/
 } Enemigo;
 
+typedef struct
+{
+    char texto[100];
+    float x;
+    float y;
+    double tiempo_inicio;
+    double duracion;
+    bool activo;
+    ALLEGRO_COLOR color;
+} Mensaje;
 
 
 /*Funciones*/
@@ -214,7 +224,7 @@ void actualizar_disparos(Disparo disparos[], int num_disparos);
 void dibujar_disparos(Disparo disparos[], int num_disparos);
 void disparar(Disparo disparos[], int num_disparos, Nave nave);
 bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo);
-void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos);
+void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad);
 void dibujar_puntaje(int puntaje, ALLEGRO_FONT* fuente);
 void init_botones(Boton botones[]);
 void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y);
@@ -243,6 +253,10 @@ void manejar_menu(bool* en_menu, bool* jugando, bool* mostrarRanking, ALLEGRO_EV
 void ejecutar_juego(bool* jugando, bool* volver_menu, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_FONT* fuente, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide);
 void manejar_ranking(bool* mostrarRanking, bool* en_menu, ALLEGRO_FONT* fuente);
 void disparar_radial(Disparo disparos[], int num_disparos, Nave nave);
-void verficar_mejora_disparo_radial(Nave *nave);
+void verificar_mejora_disparo_radial(Nave *nave, Mensaje* mensaje_powerup);
 void dibujar_nivel_powerup(Nave nave, ALLEGRO_FONT* fuente);
+void init_mensaje(Mensaje* mensaje);
+void mostrar_mensaje(Mensaje* mensaje, const char* texto, float x, float y, double duracion, ALLEGRO_COLOR color);
+void actualizar_mensaje(Mensaje* mensaje, double tiempo_actual);
+void dibujar_mensaje(Mensaje mensaje, ALLEGRO_FONT* fuente);
 #endif
