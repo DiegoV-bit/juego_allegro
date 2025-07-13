@@ -9,7 +9,8 @@
  * @return int 
  */
 
-int main() {
+int main() 
+{
     srand(time(NULL)); // Inicializa el generador de números aleatorios
     bool teclas[ALLEGRO_KEY_MAX] = {false};
     int i;
@@ -103,6 +104,13 @@ int main() {
     
         if (jugando)
         {
+            // Inicializar estado del juego
+            EstadoJuego estado_nivel;
+            init_estado_juego(&estado_nivel);
+
+            bool recargar_nivel = false;
+            bool juego_terminado = false;
+
             // Inicializar asteroides
             Asteroide asteroides[NUM_ASTEROIDES];
             init_asteroides(asteroides, NUM_ASTEROIDES, 800, imagen_asteroide);
@@ -142,7 +150,7 @@ int main() {
             bool aviso_mostrado = false;
 
             /*Bucle del juego*/
-            while (jugando) 
+            while (jugando && !juego_terminado) 
             {
                 ALLEGRO_EVENT evento;
                 al_wait_for_event(cola_eventos, &evento);
@@ -157,11 +165,50 @@ int main() {
 
                 if (evento.type == ALLEGRO_EVENT_KEY_DOWN || evento.type == ALLEGRO_EVENT_KEY_UP)
                 {
-                    manejar_eventos(evento, &nave, teclas, disparos, 10);
+                    if (!estado_nivel.mostrar_transicion)
+                    {
+                        manejar_eventos(evento, &nave, teclas, disparos, MAX_DISPAROS);
+                    }
                 }
 
                 if (evento.type == ALLEGRO_EVENT_TIMER)
                 {
+                    // Verificar si necesitamos cargar el siguiente nivel
+                    if (estado_nivel.nivel_completado && !estado_nivel.mostrar_transicion && !recargar_nivel)
+                    {
+                        recargar_nivel = true;
+                    }
+
+                    // Cargar siguiente nivel si es necesario
+                    if (recargar_nivel)
+                    {
+                        if (cargar_siguiente_nivel(estado_nivel.nivel_actual, tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_enemigo, &nave_x_inicial, &nave_y_inicial))
+                        {
+                            // Recargar enemigos en el juego
+                            for (int k = 0; k < num_enemigos_cargados && k < NUM_ENEMIGOS; k++) 
+                            {
+                                enemigos[k] = enemigos_mapa[k];
+                                enemigos[k].imagen = imagen_enemigo;
+                            }
+                            for (int k = num_enemigos_cargados; k < NUM_ENEMIGOS; k++) {
+                                enemigos[k].activo = false;
+                            }
+                        
+                            // Reposicionar la nave
+                            nave.x = nave_x_inicial;
+                            nave.y = nave_y_inicial;
+                        
+                            printf("Nivel %d iniciado con %d enemigos.\n", estado_nivel.nivel_actual, num_enemigos_cargados);
+                        }
+                        else 
+                        {
+                            // No hay más niveles
+                            juego_terminado = true;
+                            printf("¡Felicidades! Has completado todos los niveles.\n");
+                        }
+                        recargar_nivel = false;
+                    }
+
                     // Cambiar movilidad si corresponde se puso en 30 para probar
                     if (puntaje >= 30 && nave.tipo == 0)
                     {
@@ -170,40 +217,52 @@ int main() {
                         aviso_mostrado = false;
                     }
 
-                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &mensaje_powerup, &mensaje_movilidad);
+                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &mensaje_powerup, &mensaje_movilidad, &estado_nivel);
+                    
                     al_clear_to_color(al_map_rgb(0, 0, 0));
-                    dibujar_tilemap(tilemap, imagen_asteroide);
-                    dibujar_juego(nave, asteroides, 10);
-                    dibujar_disparos(disparos, 10);
-                    dibujar_enemigos(enemigos, num_enemigos_cargados);
-                    dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
-                    dibujar_puntaje(puntaje, fuente);
-                    dibujar_barra_vida(nave); // Dibujar la barra de vida
-                    dibujar_nivel_powerup(nave, fuente);
+                    
+                    // Si estamos en transición, mostrar pantalla de transición
+                    if (estado_nivel.mostrar_transicion) {
+                        double tiempo_transcurrido = al_get_time() - estado_nivel.tiempo_inicio_transicion;
+                        mostrar_pantalla_transicion(estado_nivel.nivel_actual, estado_nivel.nivel_actual + 1, fuente, tiempo_transcurrido, estado_nivel.duracion_transicion);
+                    } else {
+                        // Dibujar el juego normal
+                        dibujar_tilemap(tilemap, imagen_asteroide);
+                        dibujar_juego(nave, asteroides, 10);
+                        dibujar_disparos(disparos, 10);
+                        dibujar_enemigos(enemigos, num_enemigos_cargados);
+                        dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
+                        dibujar_puntaje(puntaje, fuente);
+                        dibujar_barra_vida(nave); // Dibujar la barra de vida
+                        dibujar_nivel_powerup(nave, fuente);
+                        
+                        // Mostrar nivel actual
+                        char texto_nivel[50];
+                        sprintf(texto_nivel, "Nivel: %d", estado_nivel.nivel_actual);
+                        al_draw_text(fuente, al_map_rgb(255, 255, 255), 10, 120, ALLEGRO_ALIGN_LEFT, texto_nivel);
 
-                    dibujar_mensaje(mensaje_powerup, fuente);
-                    dibujar_mensaje(mensaje_movilidad, fuente);
-
-                    al_flip_display();
-/*
-                    if (puntaje >= 200 && nave.tipo == 1 && !aviso_mostrado)
-                    {
-                        al_draw_text(fuente, al_map_rgb(255,255,0), 400, 100, ALLEGRO_ALIGN_CENTER, "¡Nueva movilidad desbloqueada!");
-                        aviso_mostrado = true;
+                        dibujar_mensaje(mensaje_powerup, fuente);
+                        dibujar_mensaje(mensaje_movilidad, fuente);
                     }
-*/
+                    
+                    al_flip_display();
+                    
                     if (nave.vida <= 0)
                     {
                         jugando = false;
+                        // Capturar nombre para el ranking
+                        char nombre_jugador[MAX_NOMBRE];
+                        capturar_nombre(fuente, nombre_jugador, cola_eventos);
+                        guardar_puntaje(nombre_jugador, puntaje);
+                        volver_menu = true;
+                    }
+                    
+                    // Si terminamos todos los niveles, salir del juego
+                    if (juego_terminado) {
+                        jugando = false;
+                        volver_menu = true;
                     }
                 }
-            }
-            if (nave.vida <= 0)
-            {
-                char nombre_jugador[MAX_NOMBRE];
-                capturar_nombre(fuente, nombre_jugador, cola_eventos);
-                guardar_puntaje(nombre_jugador, puntaje);
-                volver_menu = true;
             }
         }
 
@@ -220,7 +279,8 @@ int main() {
                 en_menu = true;
 
                 cursor_x = 0;
-                cursor_y = 0;init_botones(botones);
+                cursor_y = 0;
+                init_botones(botones);
                 al_flush_event_queue(cola_eventos);
             }
         }

@@ -433,11 +433,17 @@ bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo)
  * @param puntaje Puntero al puntaje del jugador
  * 
  */
-void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad)
+void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad, EstadoJuego *estado_nivel)
 {
     double tiempo_actual = al_get_time();
     int i;
     int j;
+
+    if (estado_nivel->mostrar_transicion)
+    {
+        actualizar_estado_nivel(estado_nivel, enemigos, num_enemigos, tiempo_actual);
+        return;
+    }
 
     actualizar_nave(nave, teclas, asteroides, tiempo_actual);
     actualizar_disparos(disparos, num_disparos);
@@ -505,6 +511,8 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
             nave->vida -= 15; // Los enemigos hacen más daño
         }
     }
+
+    actualizar_estado_nivel(estado_nivel, enemigos, num_enemigos, tiempo_actual);
 }
 
 
@@ -1444,5 +1452,193 @@ void dibujar_mensaje(Mensaje mensaje, ALLEGRO_FONT* fuente)
         
         // Dibujar texto
         al_draw_text(fuente, mensaje.color, mensaje.x, mensaje.y, ALLEGRO_ALIGN_LEFT, mensaje.texto);
+    }
+}
+
+
+/**
+ * @brief Inicializa el estado del juego.
+ * 
+ * @param estado Puntero al estado del juego a inicializar.
+ */
+void init_estado_juego(EstadoJuego *estado)
+{
+    estado->nivel_actual = 1;
+    estado->todos_enemigos_eliminados = false;
+    estado->mostrar_transicion = false;
+    estado->tiempo_inicio_transicion = 0;
+    estado->duracion_transicion = 3.0;
+    estado->nivel_completado = false;
+}
+
+
+/**
+ * @brief Verifica si todos los enemigos del nivel han sido eliminados.
+ * 
+ * @param enemigos Arreglo de enemigos del nivel.
+ * @param num_enemigos Número de enemigos en el arreglo.
+ * @return true si todos los enemigos están inactivos, false en caso contrario.
+ */
+bool verificar_nivel_completado(Enemigo enemigos[], int num_enemigos)
+{
+    int i;
+
+    for (i = 0; i < num_enemigos; i++)
+    {
+        if (enemigos[i].activo) 
+        {
+            return false; // Si hay al menos un enemigo activo, el nivel no está completo
+        }
+    }
+
+    return true; // Si no hay enemigos activos, el nivel está completo
+}
+
+
+/**
+ * @brief Muestra la pantalla de transición entre niveles.
+ * 
+ * @param nivel_completado Nivel que se acaba de completar.
+ * @param nivel_siguiente Nivel que viene a continuación.
+ * @param fuente Fuente para renderizar el texto.
+ * @param tiempo_transcurrido Tiempo transcurrido de la transición.
+ * @param duracion_total Duración total de la transición.
+ */
+void mostrar_pantalla_transicion(int nivel_completado, int siguiente_nivel, ALLEGRO_FONT *fuente, double tiempo_transcurrido, double duracion_total)
+{
+    // Fondo oscuro con efecto de fade
+    float alpha = 200.0f;
+    al_draw_filled_rectangle(0, 0, 800, 600, al_map_rgba(0, 0, 0, (int)alpha));
+    
+    // Calcular el progreso de la animación (0.0 a 1.0)
+    float progreso = (float)(tiempo_transcurrido / duracion_total);
+    if (progreso > 1.0f) progreso = 1.0f;
+    
+    // Efecto de aparición/desaparición del texto
+    float alpha_texto = 255.0f;
+    if (progreso < 0.2f) {
+        // Fade in en los primeros 20%
+        alpha_texto = 255.0f * (progreso / 0.2f);
+    } else if (progreso > 0.8f) {
+        // Fade out en los últimos 20%
+        alpha_texto = 255.0f * ((1.0f - progreso) / 0.2f);
+    }
+    
+    // Colores con transparencia animada
+    ALLEGRO_COLOR color_titulo = al_map_rgba(255, 255, 0, (int)alpha_texto);
+    ALLEGRO_COLOR color_subtitulo = al_map_rgba(0, 255, 0, (int)alpha_texto);
+    ALLEGRO_COLOR color_progreso = al_map_rgba(255, 255, 255, (int)alpha_texto);
+    
+    // Textos de transición
+    char texto_titulo[100];
+    char texto_subtitulo[100];
+    char texto_progreso[100];
+    
+    if (siguiente_nivel <= 3) {
+        sprintf(texto_titulo, "¡NIVEL %d COMPLETADO!", nivel_completado);
+        sprintf(texto_subtitulo, "Preparando Nivel %d...", siguiente_nivel);
+    } else {
+        sprintf(texto_titulo, "¡FELICIDADES!");
+        sprintf(texto_subtitulo, "¡Has completado todos los niveles!");
+    }
+    
+    sprintf(texto_progreso, "%.0f%%", progreso * 100);
+    
+    // Dibujar textos centrados
+    al_draw_text(fuente, color_titulo, 400, 250, ALLEGRO_ALIGN_CENTER, texto_titulo);
+    al_draw_text(fuente, color_subtitulo, 400, 300, ALLEGRO_ALIGN_CENTER, texto_subtitulo);
+    
+    // Barra de progreso
+    float barra_ancho = 300;
+    float barra_alto = 20;
+    float barra_x = 400 - barra_ancho / 2;
+    float barra_y = 350;
+    
+    // Fondo de la barra
+    al_draw_filled_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, al_map_rgba(100, 100, 100, (int)alpha_texto));
+    
+    // Progreso de la barra
+    float progreso_barra = barra_ancho * progreso;
+    al_draw_filled_rectangle(barra_x, barra_y, barra_x + progreso_barra, barra_y + barra_alto, al_map_rgba(0, 255, 0, (int)alpha_texto));
+    
+    // Borde de la barra
+    al_draw_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, color_progreso, 2);
+    
+    // Texto de progreso
+    al_draw_text(fuente, color_progreso, 400, 380, ALLEGRO_ALIGN_CENTER, texto_progreso);
+}
+
+
+/**
+ * @brief Carga el siguiente nivel del juego.
+ * 
+ * @param nivel Número del nivel a cargar.
+ * @param tilemap Matriz de tiles del nivel.
+ * @param enemigos_mapa Arreglo donde se cargarán los enemigos del nivel.
+ * @param num_enemigos_cargados Puntero al número de enemigos cargados.
+ * @param imagen_enemigo Imagen del enemigo.
+ * @param nave_x Puntero a la coordenada x inicial de la nave.
+ * @param nave_y Puntero a la coordenada y inicial de la nave.
+ * @return true si se cargó correctamente, false si no existe el nivel.
+ */
+bool cargar_siguiente_nivel(int nivel, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos_mapa[], int* num_enemigos_cargados, ALLEGRO_BITMAP* imagen_enemigo, float* nave_x, float* nave_y) {
+    char nombre_archivo[50];
+    sprintf(nombre_archivo, "Nivel%d.txt", nivel);
+    
+    // Verificar si el archivo existe
+    FILE* test = fopen(nombre_archivo, "r");
+    if (!test) {
+        printf("No se encontró el archivo %s. Fin del juego.\n", nombre_archivo);
+        return false;
+    }
+    fclose(test);
+    
+    // Limpiar el tilemap anterior
+    for (int f = 0; f < MAPA_FILAS; f++) {
+        for (int c = 0; c < MAPA_COLUMNAS; c++) {
+            tilemap[f][c].tipo = 0;
+            tilemap[f][c].vida = 0;
+        }
+    }
+    
+    // Cargar el nuevo nivel
+    cargar_tilemap(nombre_archivo, tilemap, enemigos_mapa, num_enemigos_cargados, imagen_enemigo, nave_x, nave_y);
+    
+    printf("Nivel %d cargado: %d enemigos encontrados.\n", nivel, *num_enemigos_cargados);
+    return true;
+}
+
+/**
+ * @brief Actualiza el estado del nivel y maneja las transiciones.
+ * 
+ * @param estado Puntero al estado del juego.
+ * @param enemigos Arreglo de enemigos del nivel actual.
+ * @param num_enemigos Número de enemigos en el arreglo.
+ * @param tiempo_actual Tiempo actual del juego.
+ */
+void actualizar_estado_nivel(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual) {
+    // Verificar si todos los enemigos han sido eliminados
+    if (!estado->todos_enemigos_eliminados && verificar_nivel_completado(enemigos, num_enemigos)) {
+        estado->todos_enemigos_eliminados = true;
+        estado->mostrar_transicion = true;
+        estado->tiempo_inicio_transicion = tiempo_actual;
+        estado->nivel_completado = true;
+        
+        printf("¡Nivel %d completado! Iniciando transición...\n", estado->nivel_actual);
+    }
+    
+    // Manejar la transición
+    if (estado->mostrar_transicion) {
+        double tiempo_transcurrido = tiempo_actual - estado->tiempo_inicio_transicion;
+        
+        if (tiempo_transcurrido >= estado->duracion_transicion) {
+            // Finalizar transición
+            estado->mostrar_transicion = false;
+            estado->nivel_actual++;
+            estado->todos_enemigos_eliminados = false;
+            estado->nivel_completado = false;
+            
+            printf("Transición completada. Avanzando al nivel %d.\n", estado->nivel_actual);
+        }
     }
 }

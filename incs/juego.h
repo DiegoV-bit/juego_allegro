@@ -210,6 +210,16 @@ typedef struct
     ALLEGRO_COLOR color;
 } Mensaje;
 
+typedef struct
+{
+    int nivel_actual;
+    bool todos_enemigos_eliminados;
+    bool mostrar_transicion;
+    double tiempo_inicio_transicion;
+    double duracion_transicion;
+    bool nivel_completado;
+} EstadoJuego;
+
 
 /*Funciones*/
 Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave);
@@ -224,7 +234,7 @@ void actualizar_disparos(Disparo disparos[], int num_disparos);
 void dibujar_disparos(Disparo disparos[], int num_disparos);
 void disparar(Disparo disparos[], int num_disparos, Nave nave);
 bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo);
-void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad);
+void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad, EstadoJuego* estado_nivel);
 void dibujar_puntaje(int puntaje, ALLEGRO_FONT* fuente);
 void init_botones(Boton botones[]);
 void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y);
@@ -258,4 +268,9 @@ void init_mensaje(Mensaje* mensaje);
 void mostrar_mensaje(Mensaje* mensaje, const char* texto, float x, float y, double duracion, ALLEGRO_COLOR color);
 void actualizar_mensaje(Mensaje* mensaje, double tiempo_actual);
 void dibujar_mensaje(Mensaje mensaje, ALLEGRO_FONT* fuente);
+void init_estado_juego(EstadoJuego* estado);
+bool verificar_nivel_completado(Enemigo enemigos[], int num_enemigos);
+void mostrar_pantalla_transicion(int nivel_completado, int nivel_siguiente, ALLEGRO_FONT* fuente, double tiempo_transcurrido, double duracion_total);
+bool cargar_siguiente_nivel(int nivel, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos_mapa[], int* num_enemigos_cargados, ALLEGRO_BITMAP* imagen_enemigo, float* nave_x, float* nave_y);
+void actualizar_estado_nivel(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual);
 #endif
