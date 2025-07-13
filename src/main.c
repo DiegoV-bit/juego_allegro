@@ -12,6 +12,9 @@
 int main() {
     srand(time(NULL)); // Inicializa el generador de números aleatorios
     bool teclas[ALLEGRO_KEY_MAX] = {false};
+    int i;
+    float nave_x_inicial;
+    float nave_y_inicial;
 
     // Inicializar Allegro y sus addons
     ALLEGRO_DISPLAY *ventana = NULL;
@@ -33,7 +36,7 @@ int main() {
         return -1;
     }
 
-    cargar_tilemap("Nivel1.txt", tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_enemigo);
+    cargar_tilemap("Nivel1.txt", tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_enemigo, &nave_x_inicial, &nave_y_inicial);
 
     /*Inicializar los botones del menu*/
     Boton botones[3];
@@ -105,7 +108,7 @@ int main() {
             init_asteroides(asteroides, NUM_ASTEROIDES, 800, imagen_asteroide);
 
             // Inicializar nave
-            Nave nave = init_nave(400, 500, 50, 50, 100, 0.1, imagen_nave);
+            Nave nave = init_nave(nave_x_inicial, nave_y_inicial, 50, 50, 100, 0.1, imagen_nave);
 
             // Inicializar disparos
             Disparo disparos[10];
@@ -115,12 +118,12 @@ int main() {
             Disparo disparos_enemigos[NUM_DISPAROS_ENEMIGOS];
 
             Enemigo enemigos[NUM_ENEMIGOS];
-            for (int i = 0; i < num_enemigos_cargados && i < NUM_ENEMIGOS; i++) {
+            for (i = 0; i < num_enemigos_cargados && i < NUM_ENEMIGOS; i++) {
                 enemigos[i] = enemigos_mapa[i];
                 enemigos[i].imagen = imagen_enemigo; // Asegurar que usen el sprite correcto
             }
             // Inicializar el resto como inactivos
-            for (int i = num_enemigos_cargados; i < NUM_ENEMIGOS; i++) {
+            for (i = num_enemigos_cargados; i < NUM_ENEMIGOS; i++) {
                 enemigos[i].activo = false;
             }
             

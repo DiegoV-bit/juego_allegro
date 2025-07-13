@@ -849,16 +849,20 @@ bool detectar_colision_generica(float x1, float y1, float ancho1, float alto1, f
  * @param num_enemigos Puntero al contador de enemigos cargados.
  * @param imagen_enemigo Imagen que se asignará a todos los enemigos.
  */
-void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagen_enemigo) {
+void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagen_enemigo, float *nave_x, float *nave_y) {
     FILE* archivo = fopen(filename, "r");
     if (!archivo) {
         fprintf(stderr, "No se pudo abrir el archivo del tilemap.\n");
         *num_enemigos = 0;
+        // Posicion por defecto si no se encuentra la nave en el mapa
+        *nave_x = 400;
+        *nave_y = 500;
         return;
     }
 
     char linea[MAPA_COLUMNAS + 2]; // +2 por '\n' y '\0'
     *num_enemigos = 0;
+    bool nave_encontrada = false;
 
     for (int fila = 0; fila < MAPA_FILAS; fila++) 
     {
@@ -888,6 +892,13 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
                     tilemap[fila][col].tipo = 0;
                     tilemap[fila][col].vida = 0;
                 }
+                else if (tipo == 5)
+                {
+                    // Nave del jugador
+                    *nave_x = col * TILE_ANCHO;
+                    *nave_y = fila * TILE_ALTO;
+                    nave_encontrada = true;
+                }
                 else
                 {
                     tilemap[fila][col].tipo = tipo; // 0: vacío, 1: asteroide, 2: escudo
@@ -895,6 +906,13 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
                 }
             }
         }
+    }
+    // Si no se encontró la nave, asignamos una posición por defecto
+    if (!nave_encontrada)
+    {
+        *nave_x = 400; // Posición por defecto
+        *nave_y = 500; // Posición por defecto
+        printf("Advertencia: No se encontró la posición de la nave en el mapa. Usando posición por defecto.\n");
     }
     fclose(archivo);
 }
@@ -1166,13 +1184,13 @@ bool detectar_colision_disparo_enemigo_nave(Nave nave, Disparo disparo)
  * @param imagen_nave Imagen de la nave del jugador.
  * @param imagen_asteroide Imagen de los asteroides.
  */
-void inicializar_elementos_juego(Nave* nave, Asteroide asteroides[], Disparo disparos[], Enemigo enemigos[], Disparo disparos_enemigos[], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide)
+void inicializar_elementos_juego(Nave* nave, Asteroide asteroides[], Disparo disparos[], Enemigo enemigos[], Disparo disparos_enemigos[], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, float nave_x, float nave_y)
 {
     // Inicializar asteroides
     init_asteroides(asteroides, NUM_ASTEROIDES, 800, imagen_asteroide);
 
     // Inicializar nave
-    *nave = init_nave(400, 500, 50, 50, 100, 0.1, imagen_nave);
+    *nave = init_nave(nave_x, nave_y, 50, 50, 100, 0.1, imagen_nave);
 
     // Inicializar disparos del jugador
     init_disparos(disparos, MAX_DISPAROS);
@@ -1260,104 +1278,6 @@ void manejar_menu(bool* en_menu, bool* jugando, bool* mostrarRanking, ALLEGRO_EV
     }
 }
 
-/**
- * @brief Ejecuta el bucle principal del juego.
- * 
- * Gestiona la lógica principal del juego: inicializa elementos, procesa eventos,
- * actualiza estados, dibuja todos los elementos en pantalla y maneja el fin del juego.
- * 
- * @param jugando Puntero a la variable que controla el estado del juego.
- * @param volver_menu Puntero a la variable que indica si debe volver al menú.
- * @param cola_eventos Cola de eventos de Allegro.
- * @param fuente Fuente para renderizar texto en pantalla.
- * @param tilemap Matriz del tilemap del nivel.
- * @param enemigos_mapa Enemigos cargados desde el tilemap.
- * @param num_enemigos_cargados Número de enemigos cargados desde el mapa.
- * @param imagen_nave Imagen de la nave del jugador.
- * @param imagen_asteroide Imagen de los asteroides.
- */
-void ejecutar_juego(bool* jugando, bool* volver_menu, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_FONT* fuente, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide)
-{
-    bool teclas[ALLEGRO_KEY_MAX] = {false};
-    
-    // Variables del juego
-    Asteroide asteroides[NUM_ASTEROIDES];
-    Nave nave;
-    Disparo disparos[10];
-    Enemigo enemigos[NUM_ENEMIGOS];
-    Disparo disparos_enemigos[NUM_DISPAROS_ENEMIGOS];
-    int puntaje = 0;
-
-    // Inicializar mensajes
-    Mensaje mensaje_powerup, mensaje_movilidad;
-    init_mensaje(&mensaje_powerup);
-    init_mensaje(&mensaje_movilidad);
-
-    // Inicializar elementos del juego
-    inicializar_elementos_juego(&nave, asteroides, disparos, enemigos, disparos_enemigos, enemigos_mapa, num_enemigos_cargados, imagen_nave, imagen_asteroide);
-
-    // Bucle principal del juego
-    while (*jugando) 
-    {
-        ALLEGRO_EVENT evento;
-        al_wait_for_event(cola_eventos, &evento);
-
-        if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
-            *jugando = false;
-            *volver_menu = false;
-            break;
-        }
-
-        if (evento.type == ALLEGRO_EVENT_KEY_DOWN || evento.type == ALLEGRO_EVENT_KEY_UP)
-        {
-            manejar_eventos(evento, &nave, teclas, disparos, 10);
-        }
-
-        if (evento.type == ALLEGRO_EVENT_TIMER)
-        {
-            // Cambiar movilidad si corresponde
-            if (puntaje >= 30 && nave.tipo == 0)
-            {
-                nave.tipo = 1;
-                mostrar_mensaje(&mensaje_movilidad, "¡Nueva movilidad desbloqueada!", 150, 200, 4.0, al_map_rgb(0, 255, 0));
-            }
-
-            // Actualizar juego
-            actualizar_juego(&nave, teclas, asteroides, NUM_ASTEROIDES, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &mensaje_powerup, &mensaje_movilidad);
-            
-            // Dibujar todo
-            al_clear_to_color(al_map_rgb(0, 0, 0));
-            dibujar_tilemap(tilemap, imagen_asteroide);
-            dibujar_juego(nave, asteroides, NUM_ASTEROIDES);
-            dibujar_disparos(disparos, 10);
-            dibujar_enemigos(enemigos, num_enemigos_cargados);
-            dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
-            dibujar_puntaje(puntaje, fuente);
-            dibujar_barra_vida(nave);
-            dibujar_nivel_powerup(nave, fuente);
-
-            dibujar_mensaje(mensaje_powerup, fuente);
-            dibujar_mensaje(mensaje_movilidad, fuente);
-
-            al_flip_display();
-
-            // Verificar fin del juego
-            if (nave.vida <= 0)
-            {
-                *jugando = false;
-            }
-        }
-    }
-    
-    // Si la nave murió, capturar nombre y guardar puntaje
-    if (nave.vida <= 0)
-    {
-        char nombre_jugador[MAX_NOMBRE];
-        capturar_nombre(fuente, nombre_jugador, cola_eventos);
-        guardar_puntaje(nombre_jugador, puntaje);
-        *volver_menu = true;
-    }
-}
 
 /**
  * @brief Maneja la pantalla de ranking.
