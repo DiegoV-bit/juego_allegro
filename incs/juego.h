@@ -227,7 +227,7 @@ void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_venta
 void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave* nave);
 bool detectar_colision(Nave* nave, Asteroide asteroide);
 void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo disparos[], int num_disparos);
-void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides);
+void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int nivel_actual);
 void dibujar_barra_vida(Nave nave);
 void init_disparos(Disparo disparos[], int num_disparos);
 void actualizar_disparos(Disparo disparos[], int num_disparos);
@@ -271,4 +271,5 @@ bool verificar_nivel_completado(Enemigo enemigos[], int num_enemigos);
 void mostrar_pantalla_transicion(int nivel_completado, int nivel_siguiente, ALLEGRO_FONT* fuente, double tiempo_transcurrido, double duracion_total);
 bool cargar_siguiente_nivel(int nivel, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos_mapa[], int* num_enemigos_cargados, ALLEGRO_BITMAP* imagen_enemigo, float* nave_x, float* nave_y);
 void actualizar_estado_nivel(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual);
+bool asteroides_activados(int nivel_actual);
 #endif

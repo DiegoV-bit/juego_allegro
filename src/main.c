@@ -147,7 +147,6 @@ int main()
             init_mensaje(&mensaje_movilidad);
 
             double tiempo_cache = 0;
-            int contador_frames = 0;
 
             /*Bucle del juego*/
             while (jugando && !juego_terminado) 
@@ -174,7 +173,6 @@ int main()
                 if (evento.type == ALLEGRO_EVENT_TIMER)
                 {
                     tiempo_cache = al_get_time();
-                    contador_frames++;
 
                     // Verificar si necesitamos cargar el siguiente nivel
                     if (estado_nivel.nivel_completado && !estado_nivel.mostrar_transicion && !recargar_nivel)
@@ -193,10 +191,34 @@ int main()
                             estado_nivel.nivel_actual = siguiente_nivel;
                             estado_nivel.todos_enemigos_eliminados = false;
 
+                            // REINICIALIZAR NAVE COMPLETAMENTE
+                            nave = init_nave(nave_x_inicial, nave_y_inicial, 50, 50, 100, 0.1, imagen_nave);
+                            
+                            // Limpiar todas las teclas
+                            for(int k = 0; k < ALLEGRO_KEY_MAX; k++)
+                            {
+                                teclas[k] = false;
+                            }
+
+                            // MANEJAR ASTEROIDES SEGÚN EL NIVEL
+                            if (asteroides_activados(estado_nivel.nivel_actual)) {
+                                // Reinicializar asteroides para el nuevo nivel
+                                init_asteroides(asteroides, NUM_ASTEROIDES, 800, imagen_asteroide);
+                                printf("Asteroides ACTIVADOS en nivel %d\n", estado_nivel.nivel_actual);
+                            } else {
+                                // Desactivar completamente los asteroides
+                                for (int k = 0; k < NUM_ASTEROIDES; k++) {
+                                    asteroides[k].y = -1000; // Fuera de la pantalla
+                                    asteroides[k].x = -1000;
+                                    asteroides[k].velocidad = 0; // Sin movimiento
+                                }
+                                printf("Asteroides DESACTIVADOS en nivel %d\n", estado_nivel.nivel_actual);
+                            }
+
+                            // RECARGAR ENEMIGOS
                             int enemigos_a_copiar = (num_enemigos_cargados < NUM_ENEMIGOS) ? num_enemigos_cargados : NUM_ENEMIGOS;
 
-                            // Recargar enemigos en el juego
-                            for (int k = 0; k < enemigos_a_copiar && k < NUM_ENEMIGOS; k++) 
+                            for (int k = 0; k < enemigos_a_copiar; k++) 
                             {
                                 enemigos[k] = enemigos_mapa[k];
                                 enemigos[k].imagen = imagen_enemigo;
@@ -205,10 +227,10 @@ int main()
                             for (int k = num_enemigos_cargados; k < NUM_ENEMIGOS; k++) {
                                 enemigos[k].activo = false;
                             }
-                        
-                            // Reposicionar la nave
-                            nave.x = nave_x_inicial;
-                            nave.y = nave_y_inicial;
+
+                            // LIMPIAR DISPAROS
+                            init_disparos(disparos, MAX_DISPAROS);
+                            init_disparos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
                         
                             printf("Nivel %d iniciado con %d enemigos.\n", estado_nivel.nivel_actual, num_enemigos_cargados);
                         }
@@ -246,12 +268,13 @@ int main()
                     {
                         // Dibujar el juego normal
                         dibujar_tilemap(tilemap, imagen_asteroide);
-                        dibujar_juego(nave, asteroides, 10);
+                        dibujar_juego(nave, asteroides, 10, estado_nivel.nivel_actual);
                         dibujar_disparos(disparos, 10);
+                        
                         dibujar_enemigos(enemigos, num_enemigos_cargados);
                         dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
                         dibujar_puntaje(puntaje, fuente);
-                        dibujar_barra_vida(nave); // Dibujar la barra de vida
+                        dibujar_barra_vida(nave);
                         dibujar_nivel_powerup(nave, fuente);
 
                         if (mensaje_powerup.activo) dibujar_mensaje(mensaje_powerup, fuente);
@@ -261,9 +284,6 @@ int main()
                         char texto_nivel[50];
                         sprintf(texto_nivel, "Nivel: %d", estado_nivel.nivel_actual);
                         al_draw_text(fuente, al_map_rgb(255, 255, 255), 10, 120, ALLEGRO_ALIGN_LEFT, texto_nivel);
-
-                        dibujar_mensaje(mensaje_powerup, fuente);
-                        dibujar_mensaje(mensaje_movilidad, fuente);
                     }
                     
                     al_flip_display();

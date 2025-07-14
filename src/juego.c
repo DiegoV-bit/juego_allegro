@@ -228,7 +228,7 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo di
  * @param num_asteroides Número de asteroides en el arreglo.
  * @param imagen_fondo Imagen de fondo del juego.
  */
-void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
+void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int nivel_actual)
 {
     // al_draw_bitmap(imagen_fondo, 0, 0, 0);
     float cx = al_get_bitmap_width(nave.imagen) / 2.0f;
@@ -237,11 +237,15 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
     float escala_y = nave.largo / al_get_bitmap_height(nave.imagen);
     int i;
 
+    // Dibujar la nave
     al_draw_scaled_rotated_bitmap(nave.imagen, cx, cy, nave.x + nave.ancho / 2, nave.y + nave.largo / 2, escala_x, escala_y, nave.angulo, 0);
 
-    for (i = 0; i < num_asteroides; i++)
+    if (asteroides_activados(nivel_actual))
     {
-        al_draw_scaled_bitmap(asteroides[i].imagen, 0, 0, al_get_bitmap_width(asteroides[i].imagen), al_get_bitmap_height(asteroides[i].imagen), asteroides[i].x, asteroides[i].y, asteroides[i].ancho, asteroides[i].alto, 0);
+        for (i = 0; i < num_asteroides; i++)
+        {
+            al_draw_scaled_bitmap(asteroides[i].imagen, 0, 0, al_get_bitmap_width(asteroides[i].imagen), al_get_bitmap_height(asteroides[i].imagen), asteroides[i].x, asteroides[i].y, asteroides[i].ancho, asteroides[i].alto, 0);
+        }
     }
 }
 
@@ -261,6 +265,7 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double tiempo_actual)
 {
     int i;
+    int tipo_movilidad = 0;
 
     if(nave->tipo == 0)
     {
@@ -457,31 +462,35 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
     if (mensaje_powerup->activo) actualizar_mensaje(mensaje_powerup, tiempo_actual);
     if (mensaje_movilidad->activo) actualizar_mensaje(mensaje_movilidad, tiempo_actual);
 
-    for (i = 0; i < num_asteroides; i++)
+    if (asteroides_activados(estado_nivel->nivel_actual))
     {
-        actualizar_asteroide(&asteroides[i], tilemap, nave);
-        
-        bool disparo_impacto = false;
-        for (j = 0; j < num_disparos; j++)
+        for (i = 0; i < num_asteroides; i++)
         {
-            if (disparos[j].activo && detectar_colision_disparo(asteroides[i], disparos[j]))
+            actualizar_asteroide(&asteroides[i], tilemap, nave);
+        
+            // bool disparo_impacto = false;
+            for (j = 0; j < num_disparos; j++)
             {
-                disparos[j].activo = false;
-                asteroides[i].y = -asteroides[i].alto;
-                asteroides[i].x = rand() % (800 - (int)asteroides[i].ancho);
-                (*puntaje)++;
-                nave->kills_para_mejora++;
-                verificar_mejora_disparo_radial(nave, mensaje_powerup);
+                if (disparos[j].activo && detectar_colision_disparo(asteroides[i], disparos[j]))
+                {
+                    disparos[j].activo = false;
+                    asteroides[i].y = -asteroides[i].alto;
+                    asteroides[i].x = rand() % (800 - (int)asteroides[i].ancho);
+                    (*puntaje)++;
+                    nave->kills_para_mejora++;
+                    verificar_mejora_disparo_radial(nave, mensaje_powerup);
+                }
             }
         }
     }
+    
 
     // Colisiones con enemigos
     for (i = 0; i < num_enemigos; i++)
     {
         if (!enemigos[i].activo) continue;
 
-        bool enemigo_impactado = false;
+        //bool enemigo_impactado = false;
         
         // Disparos del jugador vs enemigos (USA LA NUEVA FUNCIÓN)
         for (j = 0; j < num_disparos; j++)
@@ -497,7 +506,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                     nave->kills_para_mejora++;
                     verificar_mejora_disparo_radial(nave, mensaje_powerup);
                 }
-                enemigo_impactado = true;
+                // enemigo_impactado = true;
             }
         }
 
@@ -509,15 +518,17 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
         }
     }
 
+    actualizar_estado_nivel(estado_nivel, enemigos, num_enemigos, tiempo_actual);
+
     // Disparos de enemigos vs nave (USA LA NUEVA FUNCIÓN)
-    bool nave_impactada = false;
+    // bool nave_impactada = false;
     for (i = 0; i < num_disparos_enemigos; i++)
     {
         if (disparos_enemigos[i].activo && detectar_colision_disparo_enemigo_nave(*nave, disparos_enemigos[i]))
         {
             disparos_enemigos[i].activo = false;
             nave->vida -= 15; // Los enemigos hacen más daño
-            nave_impactada = true;
+            // nave_impactada = true;
         }
     }
 
@@ -999,7 +1010,7 @@ void init_enemigos(Enemigo enemigos[], int num_enemigos, ALLEGRO_BITMAP* imagen_
  * @brief Actualiza la posición y comportamiento de todos los enemigos.
  * 
  * Los enemigos normales (tipo 0) se mueven horizontalmente rebotando en los bordes
- * y disparan hacia la nave. Los enemigos perseguidos (tipo 1) siguen a la nave
+ * y disparan hacia la nave. Los enemigos perseguidores (tipo 1) siguen a la nave
  * cuando está dentro de su rango de visión.
  * 
  * @param enemigos Arreglo de enemigos a actualizar.
@@ -1011,11 +1022,13 @@ void init_enemigos(Enemigo enemigos[], int num_enemigos, ALLEGRO_BITMAP* imagen_
  */
 void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, double tiempo_actual,Nave nave)
 {
-    for (int i = 0; i < num_enemigos; i++)
+    int i;
+
+    for (i = 0; i < num_enemigos; i++)
     {
         if (!enemigos[i].activo) continue;
 
-        if (enemigos[i].tipo == 1)
+        if (enemigos[i].tipo == 1) // Enemigo perseguidor
         {
             // Calcular distancia a la nave
             float dx = nave.x + nave.ancho/2 - (enemigos[i].x + enemigos[i].ancho/2);
@@ -1029,8 +1042,15 @@ void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_
                 float norm = sqrt(dx*dx + dy*dy);
                 if (norm > 0.1f) 
                 {
-                    enemigos[i].x += (dx / norm) * enemigos[i].velocidad;
-                    enemigos[i].y += (dy / norm) * enemigos[i].velocidad;
+                    float velocidad_persecucion = enemigos[i].velocidad * 1.5f; // Aumenta la velocidad de persecución
+                    enemigos[i].x += (dx / norm) * velocidad_persecucion;
+                    enemigos[i].y += (dy / norm) * velocidad_persecucion;
+                }
+
+                if (distancia < 150.0f && tiempo_actual - enemigos[i].ultimo_disparo >= enemigos[i].intervalo_disparo * 1.5f)
+                {
+                    enemigo_disparar(disparos_enemigos, num_disparos_enemigos, enemigos[i]);
+                    enemigos[i].ultimo_disparo = tiempo_actual;
                 }
             }
         }
@@ -1521,4 +1541,10 @@ void actualizar_estado_nivel(EstadoJuego* estado, Enemigo enemigos[], int num_en
             printf("Transición completada. Avanzando al nivel %d.\n", estado->nivel_actual);
         }
     }
+}
+
+
+bool asteroides_activados(int nivel_actual)
+{
+    return nivel_actual == 1;
 }
