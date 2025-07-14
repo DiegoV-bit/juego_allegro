@@ -55,7 +55,7 @@
  * @def MAPA_COLUMNAS
  * @brief Filas y columnas del mapa del juego.
  */
-#define MAPA_FILAS 23
+#define MAPA_FILAS 25
 #define MAPA_COLUMNAS 39
 /**
  * @def MAX_DISPAROS
@@ -234,7 +234,7 @@ void actualizar_disparos(Disparo disparos[], int num_disparos);
 void dibujar_disparos(Disparo disparos[], int num_disparos);
 void disparar(Disparo disparos[], int num_disparos, Nave nave);
 bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo);
-void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad, EstadoJuego* estado_nivel);
+void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad, EstadoJuego* estado_nivel, double tiempo_actual);
 void dibujar_puntaje(int puntaje, ALLEGRO_FONT* fuente);
 void init_botones(Boton botones[]);
 void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y);
@@ -259,8 +259,6 @@ bool detectar_colision_disparo_enemigo(Disparo disparo, Enemigo enemigo);
 bool detectar_colision_nave_enemigo(Nave nave, Enemigo enemigo);
 bool detectar_colision_generica(float x1, float y1, float ancho1, float alto1, float x2, float y2, float ancho2, float alto2);
 void inicializar_elementos_juego(Nave* nave, Asteroide asteroides[], Disparo disparos[], Enemigo enemigos[], Disparo disparos_enemigos[], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, float nave_x, float nave_y);
-void manejar_menu(bool* en_menu, bool* jugando, bool* mostrarRanking, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_FONT* fuente);
-void manejar_ranking(bool* mostrarRanking, bool* en_menu, ALLEGRO_FONT* fuente);
 void disparar_radial(Disparo disparos[], int num_disparos, Nave nave);
 void verificar_mejora_disparo_radial(Nave *nave, Mensaje* mensaje_powerup);
 void dibujar_nivel_powerup(Nave nave, ALLEGRO_FONT* fuente);

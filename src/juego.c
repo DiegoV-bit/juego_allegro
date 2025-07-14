@@ -57,7 +57,9 @@ Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiem
  */ 
 void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana, ALLEGRO_BITMAP* imagen_asteroide)
 {
-    for (int i = 0; i < num_asteroides; i++)
+    int i;
+
+    for (i = 0; i < num_asteroides; i++)
     {
         asteroides[i].x = rand() % (ancho_ventana - 50);
         asteroides[i].y = rand() % 600 - 600;
@@ -78,8 +80,6 @@ void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_venta
  */
 void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave* nave)
 {
-    asteroide->y += asteroide->velocidad;
-
     // Verifica colisión con la nave
     float centro_nave_x = nave->x + nave->ancho / 2;
     float centro_nave_y = nave->y + nave->largo / 2;
@@ -87,6 +87,18 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
     float centro_asteroide_x = asteroide->x + asteroide->ancho / 2;
     float centro_asteroide_y = asteroide->y + asteroide->alto / 2;
     float radio_asteroide = asteroide->ancho / 2.0f;
+
+    // Verifica colisión con escudos del tilemap (MEJORADO)
+    int col_izquierda = (int)(asteroide->x / TILE_ANCHO);
+    int col_derecha = (int)((asteroide->x + asteroide->ancho - 1) / TILE_ANCHO);
+    int fila_superior = (int)(asteroide->y / TILE_ALTO);
+    int fila_inferior = (int)((asteroide->y + asteroide->alto - 1) / TILE_ALTO);
+
+    int fila;
+    int col;
+
+
+    asteroide->y += asteroide->velocidad;
 
     if (detectar_colision_circular(centro_nave_x, centro_nave_y, radio_nave, centro_asteroide_x, centro_asteroide_y, radio_asteroide)) {
         // Asteroide impacta la nave: desaparece
@@ -96,15 +108,9 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
         return;
     }
 
-    // Verifica colisión con escudos del tilemap (MEJORADO)
-    int col_izquierda = (int)(asteroide->x / TILE_ANCHO);
-    int col_derecha = (int)((asteroide->x + asteroide->ancho - 1) / TILE_ANCHO);
-    int fila_superior = (int)(asteroide->y / TILE_ALTO);
-    int fila_inferior = (int)((asteroide->y + asteroide->alto - 1) / TILE_ALTO);
-
     // Verifica TODAS las celdas que ocupa el asteroide
-    for (int fila = fila_superior; fila <= fila_inferior; fila++) {
-        for (int col = col_izquierda; col <= col_derecha; col++) {
+    for (fila = fila_superior; fila <= fila_inferior; fila++) {
+        for (col = col_izquierda; col <= col_derecha; col++) {
             if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS) {
                 if (tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0) {
                     tilemap[fila][col].vida--;
@@ -225,17 +231,17 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo di
 void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
 {
     // al_draw_bitmap(imagen_fondo, 0, 0, 0);
-
     float cx = al_get_bitmap_width(nave.imagen) / 2.0f;
     float cy = al_get_bitmap_height(nave.imagen) / 2.0f;
     float escala_x = nave.ancho / al_get_bitmap_width(nave.imagen);
     float escala_y = nave.largo / al_get_bitmap_height(nave.imagen);
+    int i;
+
     al_draw_scaled_rotated_bitmap(nave.imagen, cx, cy, nave.x + nave.ancho / 2, nave.y + nave.largo / 2, escala_x, escala_y, nave.angulo, 0);
 
-    for (int i = 0; i < num_asteroides; i++)
+    for (i = 0; i < num_asteroides; i++)
     {
-        al_draw_scaled_bitmap(asteroides[i].imagen, 0, 0, al_get_bitmap_width(asteroides[i].imagen), al_get_bitmap_height(asteroides[i].imagen),
-                              asteroides[i].x, asteroides[i].y, asteroides[i].ancho, asteroides[i].alto, 0);
+        al_draw_scaled_bitmap(asteroides[i].imagen, 0, 0, al_get_bitmap_width(asteroides[i].imagen), al_get_bitmap_height(asteroides[i].imagen), asteroides[i].x, asteroides[i].y, asteroides[i].ancho, asteroides[i].alto, 0);
     }
 }
 
@@ -254,6 +260,8 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides)
  */
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double tiempo_actual)
 {
+    int i;
+
     if(nave->tipo == 0)
     {
         // Movilidad tipo Space Invaders: solo izquierda/derecha
@@ -277,11 +285,6 @@ void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double t
             nave->x += cos(nave->angulo - ALLEGRO_PI/2) * 5;
             nave->y += sin(nave->angulo - ALLEGRO_PI/2) * 5;
         }
-        if (teclas[1]) // Abajo (retroceder, opcional)
-        {
-            nave->x -= cos(nave->angulo - ALLEGRO_PI/2) * 2.5; // Retrocede más lento
-            nave->y -= sin(nave->angulo - ALLEGRO_PI/2) * 2.5;
-        }
 
         // Limitar el movimiento de la nave dentro de la ventana
         if (nave->x < 0) nave->x = 0;
@@ -290,7 +293,7 @@ void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double t
         if (nave->y > 600 - nave->largo) nave->y = 600 - nave->largo;
     }
 
-    for (int i = 0; i < NUM_ASTEROIDES; i++)
+    for (i = 0; i < NUM_ASTEROIDES; i++)
     {
         if (detectar_colision(nave, asteroides[i]))
         {
@@ -305,6 +308,7 @@ void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double t
         }        
     }
 }
+
 
 /**
  * @brief Dibuja la barra de vida de la nave.
@@ -326,7 +330,8 @@ void dibujar_barra_vida(Nave nave)
  */
 void init_disparos(Disparo disparos[], int num_disparos)
 {
-    for (int i = 0; i < num_disparos; i++)
+    int i;
+    for (i = 0; i < num_disparos; i++)
     {
         disparos[i].activo = false;
     }
@@ -433,9 +438,8 @@ bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo)
  * @param puntaje Puntero al puntaje del jugador
  * 
  */
-void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad, EstadoJuego *estado_nivel)
+void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad, EstadoJuego *estado_nivel, double tiempo_actual)
 {
-    double tiempo_actual = al_get_time();
     int i;
     int j;
 
@@ -450,12 +454,14 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
     actualizar_enemigos(enemigos, num_enemigos, disparos_enemigos, num_disparos_enemigos, tiempo_actual, *nave);
     actualizar_disparos_enemigos(disparos_enemigos, num_disparos_enemigos);
 
-    actualizar_mensaje(mensaje_powerup, tiempo_actual);
-    actualizar_mensaje(mensaje_movilidad, tiempo_actual);
+    if (mensaje_powerup->activo) actualizar_mensaje(mensaje_powerup, tiempo_actual);
+    if (mensaje_movilidad->activo) actualizar_mensaje(mensaje_movilidad, tiempo_actual);
 
     for (i = 0; i < num_asteroides; i++)
     {
         actualizar_asteroide(&asteroides[i], tilemap, nave);
+        
+        bool disparo_impacto = false;
         for (j = 0; j < num_disparos; j++)
         {
             if (disparos[j].activo && detectar_colision_disparo(asteroides[i], disparos[j]))
@@ -468,13 +474,14 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                 verificar_mejora_disparo_radial(nave, mensaje_powerup);
             }
         }
-        //detectar_colision(nave, asteroides[i]);
     }
 
     // Colisiones con enemigos
     for (i = 0; i < num_enemigos; i++)
     {
         if (!enemigos[i].activo) continue;
+
+        bool enemigo_impactado = false;
         
         // Disparos del jugador vs enemigos (USA LA NUEVA FUNCIÓN)
         for (j = 0; j < num_disparos; j++)
@@ -490,7 +497,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                     nave->kills_para_mejora++;
                     verificar_mejora_disparo_radial(nave, mensaje_powerup);
                 }
-                break;
+                enemigo_impactado = true;
             }
         }
 
@@ -503,12 +510,14 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
     }
 
     // Disparos de enemigos vs nave (USA LA NUEVA FUNCIÓN)
+    bool nave_impactada = false;
     for (i = 0; i < num_disparos_enemigos; i++)
     {
         if (disparos_enemigos[i].activo && detectar_colision_disparo_enemigo_nave(*nave, disparos_enemigos[i]))
         {
             disparos_enemigos[i].activo = false;
             nave->vida -= 15; // Los enemigos hacen más daño
+            nave_impactada = true;
         }
     }
 
@@ -1175,145 +1184,6 @@ bool detectar_colision_disparo_enemigo_nave(Nave nave, Disparo disparo)
 }
 
 
-/**
- * @brief Inicializa todos los elementos del juego.
- * 
- * Prepara asteroides, nave, disparos del jugador, enemigos desde el tilemap
- * y disparos de enemigos. Los enemigos se copian desde el arreglo del mapa
- * y los elementos no utilizados se marcan como inactivos.
- * 
- * @param nave Puntero a la nave del jugador.
- * @param asteroides Arreglo de asteroides a inicializar.
- * @param disparos Arreglo de disparos del jugador a inicializar.
- * @param enemigos Arreglo de enemigos del juego.
- * @param disparos_enemigos Arreglo de disparos de enemigos a inicializar.
- * @param enemigos_mapa Enemigos cargados desde el tilemap.
- * @param num_enemigos_cargados Número de enemigos cargados desde el mapa.
- * @param imagen_nave Imagen de la nave del jugador.
- * @param imagen_asteroide Imagen de los asteroides.
- */
-void inicializar_elementos_juego(Nave* nave, Asteroide asteroides[], Disparo disparos[], Enemigo enemigos[], Disparo disparos_enemigos[], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, float nave_x, float nave_y)
-{
-    // Inicializar asteroides
-    init_asteroides(asteroides, NUM_ASTEROIDES, 800, imagen_asteroide);
-
-    // Inicializar nave
-    *nave = init_nave(nave_x, nave_y, 50, 50, 100, 0.1, imagen_nave);
-
-    // Inicializar disparos del jugador
-    init_disparos(disparos, MAX_DISPAROS);
-
-    // Inicializar enemigos desde el tilemap
-    for (int i = 0; i < num_enemigos_cargados && i < NUM_ENEMIGOS; i++) {
-        enemigos[i] = enemigos_mapa[i];
-    }
-    for (int i = num_enemigos_cargados; i < NUM_ENEMIGOS; i++) {
-        enemigos[i].activo = false;
-    }
-    
-    // Inicializar disparos de enemigos
-    init_disparos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
-}
-
-/**
- * @brief Maneja el menú principal del juego.
- * 
- * Muestra los botones del menú (Jugar, Ranking, Salir) y procesa los eventos
- * del mouse para navegar entre las opciones. Actualiza los estados del juego
- * según la opción seleccionada.
- * 
- * @param en_menu Puntero a la variable que controla si está en el menú.
- * @param jugando Puntero a la variable que controla si está jugando.
- * @param mostrarRanking Puntero a la variable que controla si muestra el ranking.
- * @param cola_eventos Cola de eventos de Allegro.
- * @param fuente Fuente para renderizar el texto de los botones.
- */
-void manejar_menu(bool* en_menu, bool* jugando, bool* mostrarRanking, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_FONT* fuente)
-{
-    Boton botones[3];
-    init_botones(botones);
-    
-    int cursor_x = 0;
-    int cursor_y = 0;
-
-    while (*en_menu)
-    {
-        ALLEGRO_EVENT evento;
-        al_wait_for_event(cola_eventos, &evento);
-
-        if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
-        {
-            *en_menu = false;
-            *jugando = false;
-            *mostrarRanking = false;
-            break;
-        }
-    
-        if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN)
-        {
-            int boton_clicado = detectar_click(botones, 3, evento.mouse.x, evento.mouse.y);
-            if (boton_clicado == 0) // Jugar
-            {
-                *en_menu = false;
-                *jugando = true;
-            }
-            else if (boton_clicado == 1) // Ranking
-            {
-                *en_menu = false;
-                *mostrarRanking = true;
-            }
-            else if (boton_clicado == 2) // Salir
-            {
-                *en_menu = false;
-                *jugando = false;
-                *mostrarRanking = false;
-                break;
-            }
-        }
-
-        if (evento.type == ALLEGRO_EVENT_MOUSE_AXES)
-        {
-            cursor_x = evento.mouse.x;
-            cursor_y = evento.mouse.y;
-        }
-
-        if (evento.type == ALLEGRO_EVENT_TIMER)
-        {
-            al_clear_to_color(al_map_rgb(0, 0, 0));
-            dibujar_botones(botones, 3, fuente, cursor_x, cursor_y);
-            al_flip_display();
-        }
-    }
-}
-
-
-/**
- * @brief Maneja la pantalla de ranking.
- * 
- * Carga el ranking desde archivo, lo muestra en pantalla y permite
- * volver al menú principal cuando el usuario lo desee.
- * 
- * @param mostrarRanking Puntero a la variable que controla si muestra el ranking.
- * @param en_menu Puntero a la variable que controla si está en el menú.
- * @param fuente Fuente para renderizar el texto del ranking.
- */
-void manejar_ranking(bool* mostrarRanking, bool* en_menu, ALLEGRO_FONT* fuente)
-{
-    Jugador ranking[MAX_JUGADORES];
-    int num_jugadores;
-    bool volver_menu_ranking = false;
-    
-    cargar_ranking(ranking, &num_jugadores);
-    mostrar_ranking(fuente, ranking, num_jugadores, &volver_menu_ranking);
-    
-    if (volver_menu_ranking)
-    {
-        *mostrarRanking = false;
-        *en_menu = true;
-    }
-}
-
-
 void disparar_radial(Disparo disparos[], int num_disparos, Nave nave)
 {
     if (nave.nivel_disparo_radial == 0) 
@@ -1445,14 +1315,26 @@ void actualizar_mensaje(Mensaje *mensaje, double tiempo_actual)
 
 void dibujar_mensaje(Mensaje mensaje, ALLEGRO_FONT* fuente)
 {
-    if (mensaje.activo)
+    static int ultimo_ancho = 0;
+    static char ultimo_texto[100] = "";
+    int ancho_texto;
+
+    if (!mensaje.activo) return;
+
+    if (strcmp(ultimo_texto, mensaje.texto) != 0) 
     {
-        // Dibujar fondo semi-transparente
-        al_draw_filled_rectangle(mensaje.x - 10, mensaje.y - 5, mensaje.x + strlen(mensaje.texto) * 12 + 10, mensaje.y + 25, al_map_rgba(0, 0, 0, 128));
-        
-        // Dibujar texto
-        al_draw_text(fuente, mensaje.color, mensaje.x, mensaje.y, ALLEGRO_ALIGN_LEFT, mensaje.texto);
+        ancho_texto = strlen(mensaje.texto) * 12;
+        ultimo_ancho = ancho_texto;
+        strcpy(ultimo_texto, mensaje.texto);
+    } 
+    else 
+    {
+        ancho_texto = ultimo_ancho;
     }
+    
+    al_draw_filled_rectangle(mensaje.x - 10, mensaje.y - 5, mensaje.x + ancho_texto + 10, mensaje.y + 25, al_map_rgba(0, 0, 0, 128));
+    
+    al_draw_text(fuente, mensaje.color, mensaje.x, mensaje.y, ALLEGRO_ALIGN_LEFT, mensaje.texto);
 }
 
 
@@ -1618,11 +1500,11 @@ bool cargar_siguiente_nivel(int nivel, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], 
  */
 void actualizar_estado_nivel(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual) {
     // Verificar si todos los enemigos han sido eliminados
-    if (!estado->todos_enemigos_eliminados && verificar_nivel_completado(enemigos, num_enemigos)) {
+    if (!estado->todos_enemigos_eliminados && verificar_nivel_completado(enemigos, num_enemigos)) 
+    {
         estado->todos_enemigos_eliminados = true;
         estado->mostrar_transicion = true;
         estado->tiempo_inicio_transicion = tiempo_actual;
-        estado->nivel_completado = true;
         
         printf("¡Nivel %d completado! Iniciando transición...\n", estado->nivel_actual);
     }
@@ -1633,10 +1515,8 @@ void actualizar_estado_nivel(EstadoJuego* estado, Enemigo enemigos[], int num_en
         
         if (tiempo_transcurrido >= estado->duracion_transicion) {
             // Finalizar transición
+            estado->nivel_completado = true;
             estado->mostrar_transicion = false;
-            estado->nivel_actual++;
-            estado->todos_enemigos_eliminados = false;
-            estado->nivel_completado = false;
             
             printf("Transición completada. Avanzando al nivel %d.\n", estado->nivel_actual);
         }

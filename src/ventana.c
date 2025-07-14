@@ -88,33 +88,6 @@ ALLEGRO_DISPLAY *crear_ventana(int ancho, int largo, const char *titulo) {
     return ventana;
 }
 
-/**
- * @brief Muestra la ventana y maneja los eventos.
- *
- * Esta función entra en un bucle que espera eventos y actualiza la ventana.
- * Se cierra cuando se recibe un evento de cierre de ventana.
- */
-void mostrar_ventana() {
-    
-    if (!cola_eventos) {
-        fprintf(stderr, "Error: La cola de eventos no está inicializada.\n");
-        return;
-    }
-    bool ejec = true;
-
-    while (ejec) {
-        ALLEGRO_EVENT evento;
-        al_wait_for_event(cola_eventos, &evento);
-
-        if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE) {
-            ejec = false;
-        }
-
-        al_clear_to_color(al_map_rgb(0, 0, 0)); // Fondo negro
-        al_flip_display();
-        al_rest(0.01); // Reduce la carga del procesador
-    }
-}
 
 /**
  * @brief Destruye todos los recursos del juego una vez acabado de jugar
