@@ -104,6 +104,9 @@ int main()
     
         if (jugando)
         {
+            // Recargo el nivel 1 desde cero
+            cargar_tilemap("Nivel1.txt", tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_enemigo, &nave_x_inicial, &nave_y_inicial);
+
             // Inicializar estado del juego
             EstadoJuego estado_nivel;
             init_estado_juego(&estado_nivel);
@@ -191,9 +194,19 @@ int main()
                             estado_nivel.nivel_actual = siguiente_nivel;
                             estado_nivel.todos_enemigos_eliminados = false;
 
-                            // REINICIALIZAR NAVE COMPLETAMENTE
+                            // Guardar el estado de la nave antes de reinicializarla
+                            int nivel_disparo_radial_guardado = nave.nivel_disparo_radial;
+                            int kills_para_mejora_guardado = nave.kills_para_mejora;
+                            int tipo_nave_guardado = nave.tipo;
+
+                            // Reinicializar la nave con los valores guardados
                             nave = init_nave(nave_x_inicial, nave_y_inicial, 50, 50, 100, 0.1, imagen_nave);
-                            
+
+                            // Restaurar los valores guardados
+                            nave.nivel_disparo_radial = nivel_disparo_radial_guardado;
+                            nave.kills_para_mejora = kills_para_mejora_guardado;
+                            nave.tipo = tipo_nave_guardado;
+
                             // Limpiar todas las teclas
                             for(int k = 0; k < ALLEGRO_KEY_MAX; k++)
                             {
@@ -205,9 +218,12 @@ int main()
                                 // Reinicializar asteroides para el nuevo nivel
                                 init_asteroides(asteroides, NUM_ASTEROIDES, 800, imagen_asteroide);
                                 printf("Asteroides ACTIVADOS en nivel %d\n", estado_nivel.nivel_actual);
-                            } else {
+                            }
+                            else
+                            {
                                 // Desactivar completamente los asteroides
-                                for (int k = 0; k < NUM_ASTEROIDES; k++) {
+                                for (int k = 0; k < NUM_ASTEROIDES; k++)
+                                {
                                     asteroides[k].y = -1000; // Fuera de la pantalla
                                     asteroides[k].x = -1000;
                                     asteroides[k].velocidad = 0; // Sin movimiento
@@ -233,6 +249,7 @@ int main()
                             init_disparos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
                         
                             printf("Nivel %d iniciado con %d enemigos.\n", estado_nivel.nivel_actual, num_enemigos_cargados);
+                            printf("Powerups conservados: Radial Nv.%d, Tipo Nave: %d\n", nave.nivel_disparo_radial, nave.tipo);
                         }
                         else 
                         {
@@ -299,8 +316,35 @@ int main()
                     }
                     
                     // Si terminamos todos los niveles, salir del juego
-                    if (juego_terminado) {
+                    if (juego_terminado)
+                    {
                         jugando = false;
+                        // Capturar nombre para el ranking
+                        char nombre_jugador[MAX_NOMBRE];
+                        
+                        // Mostrar mensaje de victoria antes de pedir el nombre
+                        al_clear_to_color(al_map_rgb(0, 0, 0));
+                        al_draw_text(fuente, al_map_rgb(0, 255, 0), 400, 250, ALLEGRO_ALIGN_CENTER, "FELICIDADES!");
+                        al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 300, ALLEGRO_ALIGN_CENTER, "Has completado todos los niveles!");
+                        char texto_puntaje_final[100];
+                        sprintf(texto_puntaje_final, "Puntaje final: %d", puntaje);
+                        al_draw_text(fuente, al_map_rgb(255, 255, 0), 400, 350, ALLEGRO_ALIGN_CENTER, texto_puntaje_final);
+                        al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 400, ALLEGRO_ALIGN_CENTER, "Presiona cualquier tecla para continuar...");
+                        al_flip_display();
+
+                        bool esperando = true;
+                        while (esperando)
+                        {
+                            ALLEGRO_EVENT victoria;
+                            al_wait_for_event(cola_eventos, &victoria);
+                            if (victoria.type == ALLEGRO_EVENT_KEY_DOWN || victoria.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
+                            {
+                                esperando = false;
+                            }
+                        }
+
+                        capturar_nombre(fuente, nombre_jugador, cola_eventos);
+                        guardar_puntaje(nombre_jugador, puntaje);
                         volver_menu = true;
                     }
                 }
