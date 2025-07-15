@@ -272,4 +272,7 @@ void mostrar_pantalla_transicion(int nivel_completado, int nivel_siguiente, ALLE
 bool cargar_siguiente_nivel(int nivel, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos_mapa[], int* num_enemigos_cargados, ALLEGRO_BITMAP* imagen_enemigo, float* nave_x, float* nave_y);
 void actualizar_estado_nivel(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual);
 bool asteroides_activados(int nivel_actual);
+void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BITMAP* imagen_enemigo);
+void francotirador_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo, Nave nave);
+void tanque_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo);
 #endif

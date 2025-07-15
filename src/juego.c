@@ -527,8 +527,18 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
         if (disparos_enemigos[i].activo && detectar_colision_disparo_enemigo_nave(*nave, disparos_enemigos[i]))
         {
             disparos_enemigos[i].activo = false;
-            nave->vida -= 15; // Los enemigos hacen más daño
-            // nave_impactada = true;
+            
+            int dano = 15;
+            if (disparos_enemigos[i].velocidad <= 2.5f)
+            {
+                dano = 25;
+            }
+            else if (disparos_enemigos[i].velocidad <= 4.0f)
+            {
+                dano = 20;
+            }
+            
+            nave->vida -= dano;
         }
     }
 
@@ -879,7 +889,8 @@ bool detectar_colision_generica(float x1, float y1, float ancho1, float alto1, f
  */
 void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagen_enemigo, float *nave_x, float *nave_y) {
     FILE* archivo = fopen(filename, "r");
-    if (!archivo) {
+    if (!archivo) 
+    {
         fprintf(stderr, "No se pudo abrir el archivo del tilemap.\n");
         *num_enemigos = 0;
         // Posicion por defecto si no se encuentra la nave en el mapa
@@ -888,53 +899,124 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
         return;
     }
 
-    char linea[MAPA_COLUMNAS + 2]; // +2 por '\n' y '\0'
     *num_enemigos = 0;
     bool nave_encontrada = false;
 
     for (int fila = 0; fila < MAPA_FILAS; fila++) 
     {
-        if (fgets(linea, sizeof(linea), archivo)) 
+        for (int col = 0; col < MAPA_COLUMNAS; col++)
         {
-            for (int col = 0; col < MAPA_COLUMNAS; col++) {
-                int tipo = linea[col] - '0';
+            int c = fgetc(archivo);
 
-                if(tipo == 3 || tipo == 4)
-                {
-                    if (*num_enemigos < NUM_ENEMIGOS) {
-                        enemigos[*num_enemigos].x = col * TILE_ANCHO;
-                        enemigos[*num_enemigos].y = fila * TILE_ALTO;
-                        enemigos[*num_enemigos].ancho = 60;
-                        enemigos[*num_enemigos].alto = 40;
-                        enemigos[*num_enemigos].velocidad = 0.5f + (rand() % 100) / 100.0f;
-                        enemigos[*num_enemigos].vida = 2;
-                        enemigos[*num_enemigos].activo = true;
-                        enemigos[*num_enemigos].ultimo_disparo = 0;
-                        enemigos[*num_enemigos].intervalo_disparo = 1.5 + (rand() % 200) / 100.0;
-                        enemigos[*num_enemigos].imagen = imagen_enemigo;
-                        enemigos[*num_enemigos].tipo = (tipo == 4) ? 1 : 0; // 3: enemigo perseguidor, 4: enemigo de lado
-                        (*num_enemigos)++;
-                    }
+            if (c == EOF)
+            {
+                fprintf(stderr, "Archivo terminó inesperadamente en fila %d, columna %d\n", fila, col);
+                fclose(archivo);
+                return;
+            }
+            
+            if (c == '\n' || c == '\r')
+            {
+                col--;
+                continue;
+            }
+            
+            char tipo_char = (char)c;
 
-                    // En el tilemap, marcamos como vacío (el enemigo ya está en el arreglo)
+            switch (tipo_char)
+            {
+                case '0':
                     tilemap[fila][col].tipo = 0;
                     tilemap[fila][col].vida = 0;
-                }
-                else if (tipo == 5)
-                {
-                    // Nave del jugador
+                    break;
+            
+                case '1':
+                    tilemap[fila][col].tipo = 1;
+                    tilemap[fila][col].vida = 0;
+                    break;
+
+                case '2':
+                    tilemap[fila][col].tipo = 2;
+                    tilemap[fila][col].vida = 3; // Escudo con 3 vidas
+                    break;
+
+                case 'P':
                     *nave_x = col * TILE_ANCHO;
                     *nave_y = fila * TILE_ALTO;
-                    nave_encontrada = true;
-                }
-                else
-                {
-                    tilemap[fila][col].tipo = tipo; // 0: vacío, 1: asteroide, 2: escudo
-                    tilemap[fila][col].vida = (tipo == 2) ? 3 : 0; // Escudos tienen vida, asteroides no
-                }
+                    nave_encontrada = true; // Indicamos que se encontró la nave
+                    tilemap[fila][col].tipo = 0; // La posición de la nave se considera vacía en el tilemap
+                    tilemap[fila][col].vida = 0; // No tiene vida, es solo una referencia
+                    break;
+
+                case 'E':
+                    if (*num_enemigos < NUM_ENEMIGOS)
+                    {
+                        init_enemigo_tipo(&enemigos[*num_enemigos], col, fila, 0, imagen_enemigo);
+                        (*num_enemigos)++;
+                    }
+                    tilemap[fila][col].tipo = 0;
+                    tilemap[fila][col].vida = 0; // No tiene vida, es solo una referencia
+                    break;
+
+                case 'H':
+                    if (*num_enemigos < NUM_ENEMIGOS)
+                    {
+                        init_enemigo_tipo(&enemigos[*num_enemigos], col, fila, 1, imagen_enemigo);
+                        (*num_enemigos)++;
+                    }
+                    tilemap[fila][col].tipo = 0;
+                    tilemap[fila][col].vida = 0; // No tiene vida, es solo una referencia
+                    break;
+
+                case 'S':
+                    if (*num_enemigos < NUM_ENEMIGOS)
+                    {
+                        init_enemigo_tipo(&enemigos[*num_enemigos], col, fila, 2, imagen_enemigo);
+                        (*num_enemigos)++;
+                    }
+                    tilemap[fila][col].tipo = 0;
+                    tilemap[fila][col].vida = 0;
+                    break;
+                
+                case 'T':
+                    if (*num_enemigos < NUM_ENEMIGOS)
+                    {
+                        init_enemigo_tipo(&enemigos[*num_enemigos], col, fila, 3, imagen_enemigo);
+                        (*num_enemigos)++;
+                    }
+                    tilemap[fila][col].tipo = 0;
+                    tilemap[fila][col].vida = 0;
+                    break;
+
+                case 'K':
+                    if (*num_enemigos < NUM_ENEMIGOS)
+                    {
+                        init_enemigo_tipo(&enemigos[*num_enemigos], col, fila, 4, imagen_enemigo);
+                        (*num_enemigos)++;
+                    }
+                    tilemap[fila][col].tipo = 0;
+                    tilemap[fila][col].vida = 0;
+                    break;
+
+                default:
+                    tilemap[fila][col].tipo = 0; // Por defecto, vacío
+                    tilemap[fila][col].vida = 0; // No tiene vida, es
+                    break;
             }
         }
+
+        int c = fgetc(archivo);
+        while(c == '\n' || c == '\r')
+        {
+            c = fgetc(archivo);
+        }
+
+        if (c != EOF)
+        {
+            ungetc(c, archivo);
+        }
     }
+    
     // Si no se encontró la nave, asignamos una posición por defecto
     if (!nave_encontrada)
     {
@@ -942,6 +1024,7 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
         *nave_y = 500; // Posición por defecto
         printf("Advertencia: No se encontró la posición de la nave en el mapa. Usando posición por defecto.\n");
     }
+
     fclose(archivo);
 }
 
@@ -1028,53 +1111,104 @@ void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_
     {
         if (!enemigos[i].activo) continue;
 
-        if (enemigos[i].tipo == 1) // Enemigo perseguidor
+        switch (enemigos[i].tipo)
         {
-            // Calcular distancia a la nave
-            float dx = nave.x + nave.ancho/2 - (enemigos[i].x + enemigos[i].ancho/2);
-            float dy = nave.y + nave.largo/2 - (enemigos[i].y + enemigos[i].alto/2);
-            float distancia = sqrt(dx*dx + dy*dy);
-
-            float rango_vision = 250.0f; // Puedes ajustar este valor
+            case 0: // Enemigo normal
+                // Movimiento horizontal (de lado a lado)
+                enemigos[i].x += enemigos[i].velocidad;
             
-            if (distancia < rango_vision)
-            {
-                float norm = sqrt(dx*dx + dy*dy);
-                if (norm > 0.1f) 
+                // Rebota en los bordes
+                if (enemigos[i].x <= 0 || enemigos[i].x >= 800 - enemigos[i].ancho)
                 {
-                    float velocidad_persecucion = enemigos[i].velocidad * 1.5f; // Aumenta la velocidad de persecución
-                    enemigos[i].x += (dx / norm) * velocidad_persecucion;
-                    enemigos[i].y += (dy / norm) * velocidad_persecucion;
+                    enemigos[i].velocidad *= -1;
                 }
-
-                if (distancia < 150.0f && tiempo_actual - enemigos[i].ultimo_disparo >= enemigos[i].intervalo_disparo * 1.5f)
+            
+                // Disparar hacia la nave
+                if (tiempo_actual - enemigos[i].ultimo_disparo >= enemigos[i].intervalo_disparo)
                 {
                     enemigo_disparar(disparos_enemigos, num_disparos_enemigos, enemigos[i]);
                     enemigos[i].ultimo_disparo = tiempo_actual;
                 }
-            }
-        }
-        else
-        {
-            // Movimiento horizontal (de lado a lado)
-            enemigos[i].x += enemigos[i].velocidad;
-        
-            // Rebota en los bordes
-            if (enemigos[i].x <= 0 || enemigos[i].x >= 800 - enemigos[i].ancho)
-            {
-                enemigos[i].velocidad *= -1;
-            }
-        
-            // Disparar hacia la nave
-            if (tiempo_actual - enemigos[i].ultimo_disparo >= enemigos[i].intervalo_disparo)
-            {
-                enemigo_disparar(disparos_enemigos, num_disparos_enemigos, enemigos[i]);
-                enemigos[i].ultimo_disparo = tiempo_actual;
-            }
+                break;
+                
+            case 1: // Enemigo perseguidor
+                {
+                    // Calcular distancia a la nave
+                    float dx = nave.x + nave.ancho/2 - (enemigos[i].x + enemigos[i].ancho/2);
+                    float dy = nave.y + nave.largo/2 - (enemigos[i].y + enemigos[i].alto/2);
+                    float distancia = sqrt(dx*dx + dy*dy);
+
+                    float rango_vision = 250.0f;
+                    
+                    if (distancia < rango_vision)
+                    {
+                        float norm = sqrt(dx*dx + dy*dy);
+                        if (norm > 0.1f) 
+                        {
+                            float velocidad_persecucion = enemigos[i].velocidad * 1.5f;
+                            enemigos[i].x += (dx / norm) * velocidad_persecucion;
+                            enemigos[i].y += (dy / norm) * velocidad_persecucion;
+                        }
+
+                        if (distancia < 150.0f && tiempo_actual - enemigos[i].ultimo_disparo >= enemigos[i].intervalo_disparo * 1.5f)
+                        {
+                            enemigo_disparar(disparos_enemigos, num_disparos_enemigos, enemigos[i]);
+                            enemigos[i].ultimo_disparo = tiempo_actual;
+                        }
+                    }
+                }
+                break;
+                
+            case 2: // Francotirador
+                // No se mueve, solo dispara con precisión hacia la nave
+                if (tiempo_actual - enemigos[i].ultimo_disparo >= enemigos[i].intervalo_disparo)
+                {
+                    francotirador_disparar(disparos_enemigos, num_disparos_enemigos, enemigos[i], nave);
+                    enemigos[i].ultimo_disparo = tiempo_actual;
+                }
+                break;
+                
+            case 3: // Tanque
+                // Movimiento lento horizontal
+                enemigos[i].x += enemigos[i].velocidad;
+                
+                // Rebota en los bordes
+                if (enemigos[i].x <= 0 || enemigos[i].x >= 800 - enemigos[i].ancho)
+                {
+                    enemigos[i].velocidad *= -1;
+                }
+                
+                // Disparo potente pero lento
+                if (tiempo_actual - enemigos[i].ultimo_disparo >= enemigos[i].intervalo_disparo)
+                {
+                    tanque_disparar(disparos_enemigos, num_disparos_enemigos, enemigos[i]);
+                    enemigos[i].ultimo_disparo = tiempo_actual;
+                }
+                break;
+                
+            case 4: // Kamikaze
+                {
+                    // Se lanza directamente hacia la nave
+                    float dx = nave.x + nave.ancho/2 - (enemigos[i].x + enemigos[i].ancho/2);
+                    float dy = nave.y + nave.largo/2 - (enemigos[i].y + enemigos[i].alto/2);
+                    float distancia = sqrt(dx*dx + dy*dy);
+                    
+                    if (distancia > 10.0f) {
+                        // Moverse hacia la nave a alta velocidad
+                        float velocidad_kamikaze = enemigos[i].velocidad * 2.0f;
+                        enemigos[i].x += (dx / distancia) * velocidad_kamikaze;
+                        enemigos[i].y += (dy / distancia) * velocidad_kamikaze;
+                    } else {
+                        // Explotar al llegar cerca de la nave
+                        nave.vida -= 35; // Mucho daño
+                        enemigos[i].activo = false;
+                        printf("¡Enemigo kamikaze impactó! Vida restante: %d\n", nave.vida);
+                    }
+                }
+                break;
         }
     }
 }
-
 
 
 void dibujar_enemigos(Enemigo enemigos[], int num_enemigos)
@@ -1083,11 +1217,74 @@ void dibujar_enemigos(Enemigo enemigos[], int num_enemigos)
     {
         if (enemigos[i].activo)
         {
+            // Dibujar enemigo base
             al_draw_scaled_bitmap(enemigos[i].imagen, 0, 0, 
                                 al_get_bitmap_width(enemigos[i].imagen), 
                                 al_get_bitmap_height(enemigos[i].imagen),
                                 enemigos[i].x, enemigos[i].y, 
                                 enemigos[i].ancho, enemigos[i].alto, 0);
+            
+            // Overlay de color según tipo de enemigo
+            ALLEGRO_COLOR color_overlay;
+            bool aplicar_overlay = true;
+            
+            switch (enemigos[i].tipo) {
+                case 0: // Normal - sin overlay
+                    aplicar_overlay = false;
+                    break;
+                case 1: // Perseguidor - tinte azul
+                    color_overlay = al_map_rgba(100, 150, 255, 120);
+                    break;
+                case 2: // Francotirador - tinte rojo
+                    color_overlay = al_map_rgba(255, 100, 100, 120);
+                    break;
+                case 3: // Tanque - tinte verde
+                    color_overlay = al_map_rgba(100, 255, 100, 120);
+                    break;
+                case 4: // Kamikaze - tinte amarillo parpadeante
+                    {
+                        static int parpadeo = 0;
+                        parpadeo = (parpadeo + 1) % 30;
+                        if (parpadeo < 15) {
+                            color_overlay = al_map_rgba(255, 255, 100, 150);
+                        } else {
+                            color_overlay = al_map_rgba(255, 200, 0, 150);
+                        }
+                    }
+                    break;
+                default:
+                    aplicar_overlay = false;
+                    break;
+            }
+            
+            // Aplicar overlay de color
+            if (aplicar_overlay) {
+                al_draw_filled_rectangle(enemigos[i].x, enemigos[i].y, 
+                                       enemigos[i].x + enemigos[i].ancho, 
+                                       enemigos[i].y + enemigos[i].alto, 
+                                       color_overlay);
+            }
+            
+            // Mostrar barra de vida para tanques
+            if (enemigos[i].tipo == 3) {
+                float porcentaje_vida = (float)enemigos[i].vida / 6.0f;
+                
+                // Fondo de la barra
+                al_draw_filled_rectangle(enemigos[i].x, enemigos[i].y - 8, 
+                                       enemigos[i].x + enemigos[i].ancho, enemigos[i].y - 4, 
+                                       al_map_rgb(100, 0, 0));
+                
+                // Vida actual
+                al_draw_filled_rectangle(enemigos[i].x, enemigos[i].y - 8, 
+                                       enemigos[i].x + (enemigos[i].ancho * porcentaje_vida), 
+                                       enemigos[i].y - 4, 
+                                       al_map_rgb(255, 0, 0));
+                
+                // Borde
+                al_draw_rectangle(enemigos[i].x, enemigos[i].y - 8, 
+                                enemigos[i].x + enemigos[i].ancho, enemigos[i].y - 4, 
+                                al_map_rgb(255, 255, 255), 1);
+            }
         }
     }
 }
@@ -1547,4 +1744,129 @@ void actualizar_estado_nivel(EstadoJuego* estado, Enemigo enemigos[], int num_en
 bool asteroides_activados(int nivel_actual)
 {
     return nivel_actual == 1;
+}
+
+
+/**
+ * @brief Inicializa un enemigo según su tipo.
+ * 
+ * @param enemigo Puntero al enemigo a inicializar.
+ * @param col Columna en el mapa.
+ * @param fila Fila en el mapa.
+ * @param tipo Tipo de enemigo (0-4).
+ * @param imagen_enemigo Imagen del enemigo.
+ */
+void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BITMAP* imagen_enemigo)
+{
+    enemigo->x = col * TILE_ANCHO;
+    enemigo->y = fila * TILE_ALTO;
+    enemigo->activo = true;
+    enemigo->ultimo_disparo = 0;
+    enemigo->imagen = imagen_enemigo;
+    enemigo->tipo = tipo;
+    
+    switch (tipo)
+    {
+        case 0: // Enemigo normal
+            enemigo->ancho = 50;
+            enemigo->alto = 40;
+            enemigo->velocidad = 1.0f;
+            enemigo->vida = 2;
+            enemigo->intervalo_disparo = 2.0 + (rand() % 100) / 100.0;
+            break;
+            
+        case 1: // Perseguidor
+            enemigo->ancho = 45;
+            enemigo->alto = 35;
+            enemigo->velocidad = 0.8f;
+            enemigo->vida = 2;
+            enemigo->intervalo_disparo = 2.5;
+            break;
+            
+        case 2: // Francotirador
+            enemigo->ancho = 40;
+            enemigo->alto = 30;
+            enemigo->velocidad = 0; // Inmóvil
+            enemigo->vida = 1;
+            enemigo->intervalo_disparo = 1.5;
+            break;
+            
+        case 3: // Tanque
+            enemigo->ancho = 70;
+            enemigo->alto = 50;
+            enemigo->velocidad = 0.3f;
+            enemigo->vida = 6;
+            enemigo->intervalo_disparo = 3.0;
+            break;
+            
+        case 4: // Kamikaze
+            enemigo->ancho = 35;
+            enemigo->alto = 30;
+            enemigo->velocidad = 1.5f;
+            enemigo->vida = 1;
+            enemigo->intervalo_disparo = 999; // No dispara
+            break;
+    }
+}
+
+
+/**
+ * @brief Disparo especializado del francotirador - apunta directamente a la nave.
+ * 
+ * @param disparos Arreglo de disparos de enemigos.
+ * @param num_disparos Número total de disparos.
+ * @param enemigo Enemigo francotirador que dispara.
+ * @param nave Nave objetivo.
+ */
+void francotirador_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo, Nave nave)
+{
+    for(int i = 0; i < num_disparos; i++)
+    {
+        if (!disparos[i].activo)
+        {
+            // Calcular ángulo hacia la nave
+            float dx = nave.x + nave.ancho/2 - (enemigo.x + enemigo.ancho/2);
+            float dy = nave.y + nave.largo/2 - (enemigo.y + enemigo.alto/2);
+            float angulo_hacia_nave = atan2(dy, dx);
+            
+            disparos[i].x = enemigo.x + enemigo.ancho / 2;
+            disparos[i].y = enemigo.y + enemigo.alto;
+            disparos[i].velocidad = 4.0f; // Más rápido que disparos normales
+            disparos[i].angulo = angulo_hacia_nave;
+            disparos[i].activo = true;
+            break;
+        }
+    }
+}
+
+
+/**
+ * @brief Disparo especializado del tanque - más lento pero potente.
+ * 
+ * @param disparos Arreglo de disparos de enemigos.
+ * @param num_disparos Número total de disparos.
+ * @param enemigo Enemigo tanque que dispara.
+ */
+void tanque_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo)
+{
+    // El tanque dispara 3 proyectiles en abanico
+    float angulos[3] = {
+        ALLEGRO_PI / 2 - 0.3f, // Izquierda
+        ALLEGRO_PI / 2,        // Centro
+        ALLEGRO_PI / 2 + 0.3f  // Derecha
+    };
+    
+    int disparos_creados = 0;
+    for(int i = 0; i < num_disparos && disparos_creados < 3; i++)
+    {
+        if (!disparos[i].activo)
+        {
+            disparos[i].x = enemigo.x + enemigo.ancho / 2;
+            disparos[i].y = enemigo.y + enemigo.alto;
+            disparos[i].velocidad = 2.5f; // Más lento pero más daño
+            disparos[i].angulo = angulos[disparos_creados];
+            disparos[i].activo = true;
+            disparos_creados++;
+        }
+    }
 }
