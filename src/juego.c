@@ -265,7 +265,6 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int ni
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double tiempo_actual)
 {
     int i;
-    int tipo_movilidad = 0;
 
     if(nave->tipo == 0)
     {
@@ -528,18 +527,61 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
         {
             disparos_enemigos[i].activo = false;
             
-            int dano = 15;
+            // determinar dano segun la velocidad
+            int dano = 15;  // dano por defecto
             if (disparos_enemigos[i].velocidad <= 2.5f)
             {
-                dano = 25;
+                dano = 25;  // dano del tanque
             }
             else if (disparos_enemigos[i].velocidad <= 4.0f)
             {
-                dano = 20;
+                dano = 20;  // dano del francotirador
             }
             
             nave->vida -= dano;
         }
+    }
+
+    for (i = 0; i < num_disparos_enemigos; i++)
+    {
+        if (disparos_enemigos[i].activo)
+        {
+            bool disparo_procesado = false;
+            for (int fila = 0; fila < MAPA_FILAS && !disparo_procesado; fila++)
+            {
+                for (int col = 0; col < MAPA_COLUMNAS && !disparo_procesado; col++)
+                {
+                    if (tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0)
+                    {
+                        float tile_x = col * TILE_ANCHO;
+                        float tile_y = fila * TILE_ALTO;
+
+                        if (detectar_colision_disparo_enemigo_escudo(disparos_enemigos[i], tile_x, tile_y))
+                        {
+                            disparos_enemigos[i].activo = false;
+                            tilemap[fila][col].vida--;
+
+                            printf("¡Disparo enemigo impactó escudo en (%d, %d)! Vida restante: %d\n", col, fila, tilemap[fila][col].vida);
+
+                            if (tilemap[fila][col].vida <= 0)
+                            {
+                                tilemap[fila][col].tipo = 0; // El escudo se destruye
+                                printf("¡Escudo en (%d, %d) destruido completamente!\n", col, fila);
+                            }
+
+                            disparo_procesado = true;
+                        }
+                        else
+                        {
+                            printf("Escudo dañado en (%d, %d). Vida restante: %d\n", col, fila, tilemap[fila][col].vida);
+                        }
+                        
+                        goto siguiente_disparo_enemigo; // Salta al siguiente disparo
+                    }
+                }
+            }
+        }
+        siguiente_disparo_enemigo:; // Etiqueta para saltar al siguiente disparo
     }
 
     actualizar_estado_nivel(estado_nivel, enemigos, num_enemigos, tiempo_actual);
@@ -887,13 +929,13 @@ bool detectar_colision_generica(float x1, float y1, float ancho1, float alto1, f
  * @param num_enemigos Puntero al contador de enemigos cargados.
  * @param imagen_enemigo Imagen que se asignará a todos los enemigos.
  */
-void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagen_enemigo, float *nave_x, float *nave_y) {
+void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagen_enemigo, float *nave_x, float *nave_y) 
+{
     FILE* archivo = fopen(filename, "r");
     if (!archivo) 
     {
-        fprintf(stderr, "No se pudo abrir el archivo del tilemap.\n");
+        fprintf(stderr, "ERROR: No se pudo abrir %s\n", filename);
         *num_enemigos = 0;
-        // Posicion por defecto si no se encuentra la nave en el mapa
         *nave_x = 400;
         *nave_y = 500;
         return;
@@ -901,130 +943,107 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
 
     *num_enemigos = 0;
     bool nave_encontrada = false;
+    char linea[50]; // Buffer más grande para estar seguros
 
-    for (int fila = 0; fila < MAPA_FILAS; fila++) 
+    printf("=== CARGANDO: %s ===\n", filename);
+
+    for (int fila = 0; fila < MAPA_FILAS; fila++)
     {
-        for (int col = 0; col < MAPA_COLUMNAS; col++)
+        // Leer línea completa
+        if (fgets(linea, sizeof(linea), archivo) == NULL)
         {
-            int c = fgetc(archivo);
+            printf("ERROR: No se pudo leer la fila %d\n", fila);
+            break;
+        }
 
-            if (c == EOF)
-            {
-                fprintf(stderr, "Archivo terminó inesperadamente en fila %d, columna %d\n", fila, col);
-                fclose(archivo);
-                return;
-            }
-            
-            if (c == '\n' || c == '\r')
-            {
-                col--;
-                continue;
-            }
-            
-            char tipo_char = (char)c;
+        printf("Fila %d: %.10s... (primeros 10 chars)\n", fila, linea);
 
-            switch (tipo_char)
+        // Procesar cada columna de la línea
+        for (int col = 0; col < MAPA_COLUMNAS && col < strlen(linea); col++)
+        {
+            char c = linea[col];
+
+            // Inicializar tile por defecto
+            tilemap[fila][col].tipo = 0;
+            tilemap[fila][col].vida = 0;
+
+            switch (c) 
             {
-                case '0':
-                    tilemap[fila][col].tipo = 0;
-                    tilemap[fila][col].vida = 0;
-                    break;
-            
                 case '1':
                     tilemap[fila][col].tipo = 1;
-                    tilemap[fila][col].vida = 0;
                     break;
 
                 case '2':
                     tilemap[fila][col].tipo = 2;
-                    tilemap[fila][col].vida = 3; // Escudo con 3 vidas
+                    tilemap[fila][col].vida = 3;
                     break;
 
                 case 'P':
                     *nave_x = col * TILE_ANCHO;
                     *nave_y = fila * TILE_ALTO;
-                    nave_encontrada = true; // Indicamos que se encontró la nave
-                    tilemap[fila][col].tipo = 0; // La posición de la nave se considera vacía en el tilemap
-                    tilemap[fila][col].vida = 0; // No tiene vida, es solo una referencia
+                    nave_encontrada = true;
+                    printf("*** NAVE ENCONTRADA: fila=%d, col=%d -> (%.0f, %.0f) ***\n", fila, col, *nave_x, *nave_y);
                     break;
 
                 case 'E':
-                    if (*num_enemigos < NUM_ENEMIGOS)
+                    if (*num_enemigos < NUM_ENEMIGOS) 
                     {
                         init_enemigo_tipo(&enemigos[*num_enemigos], col, fila, 0, imagen_enemigo);
+                        printf("E: enemigo normal en (%d,%d)\n", col, fila);
                         (*num_enemigos)++;
                     }
-                    tilemap[fila][col].tipo = 0;
-                    tilemap[fila][col].vida = 0; // No tiene vida, es solo una referencia
                     break;
 
                 case 'H':
-                    if (*num_enemigos < NUM_ENEMIGOS)
+                    if (*num_enemigos < NUM_ENEMIGOS) 
                     {
                         init_enemigo_tipo(&enemigos[*num_enemigos], col, fila, 1, imagen_enemigo);
+                        printf("H: perseguidor en (%d,%d)\n", col, fila);
                         (*num_enemigos)++;
                     }
-                    tilemap[fila][col].tipo = 0;
-                    tilemap[fila][col].vida = 0; // No tiene vida, es solo una referencia
                     break;
 
                 case 'S':
                     if (*num_enemigos < NUM_ENEMIGOS)
                     {
                         init_enemigo_tipo(&enemigos[*num_enemigos], col, fila, 2, imagen_enemigo);
+                        printf("S: francotirador en (%d,%d)\n", col, fila);
                         (*num_enemigos)++;
                     }
-                    tilemap[fila][col].tipo = 0;
-                    tilemap[fila][col].vida = 0;
                     break;
-                
+
                 case 'T':
                     if (*num_enemigos < NUM_ENEMIGOS)
                     {
                         init_enemigo_tipo(&enemigos[*num_enemigos], col, fila, 3, imagen_enemigo);
+                        printf("T: tanque en (%d,%d)\n", col, fila);
                         (*num_enemigos)++;
                     }
-                    tilemap[fila][col].tipo = 0;
-                    tilemap[fila][col].vida = 0;
                     break;
 
                 case 'K':
                     if (*num_enemigos < NUM_ENEMIGOS)
                     {
                         init_enemigo_tipo(&enemigos[*num_enemigos], col, fila, 4, imagen_enemigo);
+                        printf("K: kamikaze en (%d,%d)\n", col, fila);
                         (*num_enemigos)++;
                     }
-                    tilemap[fila][col].tipo = 0;
-                    tilemap[fila][col].vida = 0;
                     break;
 
+                case '0':
                 default:
-                    tilemap[fila][col].tipo = 0; // Por defecto, vacío
-                    tilemap[fila][col].vida = 0; // No tiene vida, es
                     break;
             }
         }
-
-        int c = fgetc(archivo);
-        while(c == '\n' || c == '\r')
-        {
-            c = fgetc(archivo);
-        }
-
-        if (c != EOF)
-        {
-            ungetc(c, archivo);
-        }
-    }
-    
-    // Si no se encontró la nave, asignamos una posición por defecto
-    if (!nave_encontrada)
-    {
-        *nave_x = 400; // Posición por defecto
-        *nave_y = 500; // Posición por defecto
-        printf("Advertencia: No se encontró la posición de la nave en el mapa. Usando posición por defecto.\n");
     }
 
+    if (!nave_encontrada) {
+        *nave_x = 400;
+        *nave_y = 500;
+        printf("ADVERTENCIA: Nave no encontrada, usando (400, 500)\n");
+    }
+
+    printf("=== RESULTADO: %d enemigos, nave en (%.0f, %.0f) ===\n", *num_enemigos, *nave_x, *nave_y);
     fclose(archivo);
 }
 
@@ -1093,7 +1112,7 @@ void init_enemigos(Enemigo enemigos[], int num_enemigos, ALLEGRO_BITMAP* imagen_
  * @brief Actualiza la posición y comportamiento de todos los enemigos.
  * 
  * Los enemigos normales (tipo 0) se mueven horizontalmente rebotando en los bordes
- * y disparan hacia la nave. Los enemigos perseguidores (tipo 1) siguen a la nave
+ * y disparan hacia la nave. Los enemigos perseguidos (tipo 1) siguen a la nave
  * cuando está dentro de su rango de visión.
  * 
  * @param enemigos Arreglo de enemigos a actualizar.
@@ -1806,6 +1825,15 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->vida = 1;
             enemigo->intervalo_disparo = 999; // No dispara
             break;
+            
+        default:
+            // Valores por defecto
+            enemigo->ancho = 50;
+            enemigo->alto = 40;
+            enemigo->velocidad = 1.0f;
+            enemigo->vida = 1;
+            enemigo->intervalo_disparo = 2.0;
+            break;
     }
 }
 
@@ -1869,4 +1897,10 @@ void tanque_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo)
             disparos_creados++;
         }
     }
+}
+
+
+bool detectar_colision_disparo_enemigo_escudo(Disparo disparo, float tile_x, float tile_y)
+{
+    return (disparo.x >= tile_x && disparo.x <= tile_x + TILE_ANCHO && disparo.y >= tile_y && disparo.y <= tile_y + TILE_ALTO);
 }

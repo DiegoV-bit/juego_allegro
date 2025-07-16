@@ -37,8 +37,6 @@ int main()
         return -1;
     }
 
-    cargar_tilemap("Nivel1.txt", tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_enemigo, &nave_x_inicial, &nave_y_inicial);
-
     /*Inicializar los botones del menu*/
     Boton botones[3];
     init_botones(botones);

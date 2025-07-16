@@ -55,7 +55,7 @@
  * @def MAPA_COLUMNAS
  * @brief Filas y columnas del mapa del juego.
  */
-#define MAPA_FILAS 25
+#define MAPA_FILAS 24
 #define MAPA_COLUMNAS 39
 /**
  * @def MAX_DISPAROS
@@ -275,4 +275,5 @@ bool asteroides_activados(int nivel_actual);
 void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BITMAP* imagen_enemigo);
 void francotirador_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo, Nave nave);
 void tanque_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo);
+bool detectar_colision_disparo_enemigo_escudo(Disparo disparo, float tile_x, float tile_y);
 #endif
