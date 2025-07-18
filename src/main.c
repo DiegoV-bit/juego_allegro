@@ -14,6 +14,7 @@ int main()
     srand(time(NULL)); // Inicializa el generador de números aleatorios
     bool teclas[ALLEGRO_KEY_MAX] = {false};
     int i;
+    int k;
     float nave_x_inicial;
     float nave_y_inicial;
 
@@ -123,6 +124,13 @@ int main()
             Disparo disparos[MAX_DISPAROS];
             init_disparos(disparos, MAX_DISPAROS);
 
+            // Inicializar Powerups
+            Powerup powerups[MAX_POWERUPS];
+            for (k = 0; k < MAX_POWERUPS; k++)
+            {
+                init_powerup(&powerups[k]);
+            }
+            
             // Inicializar Enemigos
             Disparo disparos_enemigos[NUM_DISPAROS_ENEMIGOS];
 
@@ -255,6 +263,12 @@ int main()
                             juego_terminado = true;
                             printf("¡Felicidades! Has completado todos los niveles.\n");
                         }
+
+                        for (k = 0; k < MAX_POWERUPS; k++)
+                        {
+                            init_powerup(&powerups[k]);
+                        }
+
                         recargar_nivel = false;
                     }
 
@@ -269,7 +283,7 @@ int main()
                         mostrar_mensaje(&mensaje_movilidad, "Nueva movilidad desbloqueada descubre como usarla", 150, 200, 4.0, al_map_rgb(0, 255, 0));
                     }
 
-                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &mensaje_powerup, &mensaje_movilidad, &estado_nivel, tiempo_cache);
+                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &mensaje_powerup, &mensaje_movilidad, &estado_nivel, tiempo_cache, powerups, MAX_POWERUPS);
                     
                     al_clear_to_color(al_map_rgb(0, 0, 0));
                     
@@ -284,10 +298,12 @@ int main()
                         // Dibujar el juego normal
                         dibujar_tilemap(tilemap, imagen_asteroide);
                         dibujar_juego(nave, asteroides, 10, estado_nivel.nivel_actual);
+                        dibujar_escudo(nave);
                         dibujar_disparos(disparos, 10);
                         
                         dibujar_enemigos(enemigos, num_enemigos_cargados);
                         dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
+                        dibujar_powerups(powerups, MAX_POWERUPS);
                         dibujar_puntaje(puntaje, fuente);
                         dibujar_barra_vida(nave);
                         dibujar_nivel_powerup(nave, fuente);
@@ -299,6 +315,13 @@ int main()
                         char texto_nivel[50];
                         sprintf(texto_nivel, "Nivel: %d", estado_nivel.nivel_actual);
                         al_draw_text(fuente, al_map_rgb(255, 255, 255), 10, 120, ALLEGRO_ALIGN_LEFT, texto_nivel);
+
+                        if (escudo_activo(nave))
+                        {
+                            char texto_escudo[50];
+                            sprintf(texto_escudo, "Escudo: %.1fs", nave.escudo.duracion_restante);
+                            al_draw_text(fuente, al_map_rgb(0, 255, 255), 10, 100, ALLEGRO_ALIGN_LEFT, texto_escudo);
+                        }
                     }
                     
                     al_flip_display();

@@ -38,6 +38,8 @@ Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiem
     nave.nivel_disparo_radial = 0;
     nave.kills_para_mejora = 0;
 
+    init_escudo(&nave.escudo);
+
     for(i = 0; i < MAX_DISPAROS; i++)
     {
         nave.disparos[i].activo = false;
@@ -442,7 +444,7 @@ bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo)
  * @param puntaje Puntero al puntaje del jugador
  * 
  */
-void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad, EstadoJuego *estado_nivel, double tiempo_actual)
+void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad, EstadoJuego *estado_nivel, double tiempo_actual, Powerup powerups[], int max_powerups)
 {
     int i;
     int j;
@@ -458,6 +460,18 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
     actualizar_enemigos(enemigos, num_enemigos, disparos_enemigos, num_disparos_enemigos, tiempo_actual, *nave);
     actualizar_disparos_enemigos(disparos_enemigos, num_disparos_enemigos);
 
+    actualizar_escudo(&nave->escudo, tiempo_actual);
+    actualizar_powerups(powerups, max_powerups, tiempo_actual);
+
+    for (i = 0; i < max_powerups; i++)
+    {
+        if (powerups[i].activo && detectar_colision_powerup(*nave, powerups[i]))
+        {
+            recoger_powerup(nave, &powerups[i], mensaje_powerup);
+        }
+        
+    }
+    
     if (mensaje_powerup->activo) actualizar_mensaje(mensaje_powerup, tiempo_actual);
     if (mensaje_movilidad->activo) actualizar_mensaje(mensaje_movilidad, tiempo_actual);
 
@@ -504,15 +518,44 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                     (*puntaje) += 5; // Más puntos por destruir enemigo
                     nave->kills_para_mejora++;
                     verificar_mejora_disparo_radial(nave, mensaje_powerup);
+
+                    if (rand() % 100 < POWERUP_PROB)
+                    {
+                        crear_powerup_escudo(powerups, max_powerups, enemigos[i].x, enemigos[i].y);
+                    }
                 }
-                // enemigo_impactado = true;
             }
         }
 
         // Nave vs enemigos (USA LA NUEVA FUNCIÓN)
         if (detectar_colision_nave_enemigo(*nave, enemigos[i]))
         {
-            nave->vida -= 20; // Daño por tocar enemigo
+            if (escudo_activo(*nave))
+            {
+                printf("Escudo absorbio el impacto\n");
+            }
+            else
+            {
+                nave->vida -= 20; // Daño por tocar enemigo
+            }
+
+            if (!escudo_recibir_dano(&nave->escudo))
+            {
+                // Solo recibir daño si el escudo no lo absorbió
+                int dano = 15;
+                if (disparos_enemigos[i].velocidad <= 2.5f)
+                {
+                    dano = 25;
+                }
+                else if (disparos_enemigos[i].velocidad <= 4.0f)
+                {
+                    dano = 20;
+                }
+                
+                nave->vida -= dano;
+                printf("Nave recibió %d de daño por disparo enemigo. Vida restante: %d\n", dano, nave->vida);
+            }
+
             enemigos[i].activo = false; // El enemigo también se destruye
         }
     }
@@ -520,25 +563,31 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
     actualizar_estado_nivel(estado_nivel, enemigos, num_enemigos, tiempo_actual);
 
     // Disparos de enemigos vs nave (USA LA NUEVA FUNCIÓN)
-    // bool nave_impactada = false;
     for (i = 0; i < num_disparos_enemigos; i++)
     {
         if (disparos_enemigos[i].activo && detectar_colision_disparo_enemigo_nave(*nave, disparos_enemigos[i]))
         {
             disparos_enemigos[i].activo = false;
             
-            // determinar dano segun la velocidad
-            int dano = 15;  // dano por defecto
-            if (disparos_enemigos[i].velocidad <= 2.5f)
+           if (escudo_activo(*nave))
             {
-                dano = 25;  // dano del tanque
+                // El escudo absorbe el daño
+                printf("¡Escudo absorbió disparo enemigo!\n");
             }
-            else if (disparos_enemigos[i].velocidad <= 4.0f)
+            else
             {
-                dano = 20;  // dano del francotirador
+                int dano = 15;
+                if (disparos_enemigos[i].velocidad <= 2.5f)
+                {
+                    dano = 25;
+                }
+                else if (disparos_enemigos[i].velocidad <= 4.0f)
+                {
+                    dano = 20;
+                }
+                
+                nave->vida -= dano;
             }
-            
-            nave->vida -= dano;
         }
     }
 
@@ -959,7 +1008,8 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
         printf("Fila %d: %.10s... (primeros 10 chars)\n", fila, linea);
 
         // Procesar cada columna de la línea
-        for (int col = 0; col < MAPA_COLUMNAS && col < strlen(linea); col++)
+        int longitud_linea = (int)strlen(linea);
+        for (int col = 0; col < MAPA_COLUMNAS && col < longitud_linea; col++)
         {
             char c = linea[col];
 
@@ -1903,4 +1953,287 @@ void tanque_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo)
 bool detectar_colision_disparo_enemigo_escudo(Disparo disparo, float tile_x, float tile_y)
 {
     return (disparo.x >= tile_x && disparo.x <= tile_x + TILE_ANCHO && disparo.y >= tile_y && disparo.y <= tile_y + TILE_ALTO);
+}
+
+
+void init_powerup(Powerup *powerup)
+{
+    powerup->x = 0;
+    powerup->y = 0;
+    powerup->activo = false;
+    powerup->tipo = 0;
+    powerup->tiempo_aparicion = 0;
+    powerup->duracion_vida = 10.0;
+    powerup->color = al_map_rgb(0, 255, 255);
+}
+
+
+void crear_powerup_escudo(Powerup powerups[], int max_powerups, float x, float y)
+{
+    int i;
+
+    for (i = 0; i < max_powerups; i++)
+    {
+        if (!powerups[i].activo)
+        {
+            powerups[i].x = x;
+            powerups[i].y = y;
+            powerups[i].tipo = 0;
+            powerups[i].activo = true;
+            powerups[i].tiempo_aparicion = al_get_time();
+            powerups[i].duracion_vida = 15.0;
+            powerups[i].color = al_map_rgb(0, 255, 255);
+            printf("Powerup de escudo creado en (%.0f, %.0f)\n", x, y);
+            break;
+        }
+    }
+}
+
+
+void actualizar_powerups(Powerup powerups[], int max_powerups, double tiempo_actual)
+{
+    int i;
+
+    for (i = 0; i < max_powerups; i++)
+    {
+        if (powerups[i].activo)
+        {
+            powerups[i].y += 2.0f;
+
+            if (powerups[i].y > 600) // Sale por la parte inferior
+            {
+                powerups[i].activo = false;
+                printf("Powerup se perdió al salir de la pantalla.\n");
+            }
+            else if (tiempo_actual - powerups[i].tiempo_aparicion >= powerups[i].duracion_vida)
+            {
+                powerups[i].activo = false;
+                printf("Powerup expirado por tiempo.\n");
+            }
+        }
+    }
+}
+
+
+void dibujar_powerups(Powerup powerups[], int max_powerups)
+{
+    int i;
+
+    for (i = 0; i < max_powerups; i++)
+    {
+        if (powerups[i].activo)
+        {
+            static int parpadeo = 0;
+            parpadeo = (parpadeo + 1) % 60;
+
+            ALLEGRO_COLOR color_powerup = powerups[i].color;
+            if (parpadeo < 30)
+            {
+                color_powerup = al_map_rgb(50, 255, 255);
+            }
+            
+            if (powerups[i].tipo == 0)
+            {
+                float cx = powerups[i].x + 15;
+                float cy = powerups[i].y + 15;
+
+                al_draw_filled_circle(cx, cy, 15, al_map_rgba(0, 255, 255, 100)); // Dibujar círculo para el powerup de escudo
+                al_draw_circle(cx, cy, 15, color_powerup, 3);
+
+                float hex_x[6];
+                float hex_y[6];
+                int j;
+
+                for (j = 0; j < 6; j++)
+                {
+                    hex_x[j] = cx + cos(j * ALLEGRO_PI / 3) * 8;
+                    hex_y[j] = cy + sin(j * ALLEGRO_PI / 3) * 8;
+                }
+                
+                for (j = 0; j < 6; j++)
+                {
+                    al_draw_line(hex_x[j], hex_y[j], hex_x[(j + 1) % 6], hex_y[(j + 1) % 6], color_powerup, 2);
+                }
+                
+                al_draw_line(cx - 4, cy, cx + 4, cy, color_powerup, 2);
+                al_draw_line(cx, cy - 4, cx, cy + 4, color_powerup, 2);
+            }
+        }
+    }
+}
+
+
+bool detectar_colision_powerup(Nave nave, Powerup powerup)
+{
+    return detectar_colision_generica(nave.x, nave.y, nave.ancho, nave.largo, powerup.x, powerup.y, 30, 30);
+}
+
+
+void recoger_powerup(Nave* nave, Powerup* powerup, Mensaje* mensaje)
+{
+    if (powerup->tipo == 0) // Escudo
+    {
+        activar_escudo(&nave->escudo, 3);
+        mostrar_mensaje(mensaje, "¡Escudo Activado! (+15s)", 200, 100, 3.0, al_map_rgb(0, 255, 255));
+        printf("¡Escudo activado por 15 segundos!\n");
+    }
+    
+    powerup->activo = false;
+}
+
+
+void init_escudo(Escudo* escudo)
+{
+    escudo->activo = false;
+    escudo->hits_max = 0;
+    escudo->hits_restantes = 0;
+    escudo->tiempo_activacion = 0;
+    escudo->color = al_map_rgba(0, 255, 255, 150);
+    escudo->intensidad = 1.0f;
+}
+
+
+void activar_escudo(Escudo* escudo, int hits_maximos)
+{
+    escudo->activo = true;
+    escudo->hits_max = hits_maximos;
+    escudo->hits_restantes = hits_maximos;
+    escudo->tiempo_activacion = al_get_time();
+    escudo->intensidad = 1.0f;
+}
+
+
+void actualizar_escudo(Escudo *escudo, double tiempo_actual)
+{
+    if (escudo->activo)
+    {
+        if (escudo->hits_restantes <= 0)
+        {
+            escudo->activo = false;
+            printf("Escudo desactivado\n");
+        }
+        else
+        {
+            if (escudo->hits_restantes == 1)
+            {
+                escudo->intensidad = 0.3f + 0.7f * sin(tiempo_actual * 15.0f);
+            }
+            else if (escudo->hits_restantes == 2)
+            {
+                escudo->intensidad = 0.5f + 0.3f * sin(tiempo_actual * 8.0f);
+            }
+            else
+            {
+                escudo->intensidad = 0.8f + 0.2f * sin(tiempo_actual * 3.0f);
+            }
+        }
+    }
+}
+
+
+void dibujar_escudo(Nave nave)
+{
+    if (nave.escudo.activo)
+    {
+        float cx = nave.x + nave.ancho / 2;
+        float cy = nave.y + nave.largo / 2;
+        float radio = (nave.ancho + nave.largo) / 3.0f + 10;
+        
+        // ✅ CAMBIAR COLOR SEGÚN HITS RESTANTES - SIN usar al_get_r/g/b
+        ALLEGRO_COLOR color_base;
+        if (nave.escudo.hits_restantes >= 3) {
+            color_base = al_map_rgb(0, 255, 255);      // Cian (full)
+        } else if (nave.escudo.hits_restantes == 2) {
+            color_base = al_map_rgb(255, 255, 0);      // Amarillo (medio)
+        } else {
+            color_base = al_map_rgb(255, 100, 100);    // Rojo (crítico)
+        }
+        
+        // ✅ CALCULAR COLOR CON INTENSIDAD SIN al_get_r/g/b
+        int alpha = (int)(255 * nave.escudo.intensidad * 0.6f);
+        
+        ALLEGRO_COLOR color_escudo;
+        if (nave.escudo.hits_restantes >= 3) {
+            // Cian con transparencia
+            color_escudo = al_map_rgba(0, 255, 255, alpha);
+        } else if (nave.escudo.hits_restantes == 2) {
+            // Amarillo con transparencia
+            color_escudo = al_map_rgba(255, 255, 0, alpha);
+        } else {
+            // Rojo con transparencia
+            color_escudo = al_map_rgba(255, 100, 100, alpha);
+        }
+        
+        // Círculo principal del escudo
+        al_draw_circle(cx, cy, radio, color_escudo, 3);
+        al_draw_circle(cx, cy, radio - 3, al_map_rgba(100, 200, 255, alpha/2), 1);
+        
+        // Efecto de hexágono rotatorio
+        float hex_x[6], hex_y[6];
+        for (int i = 0; i < 6; i++) {
+            hex_x[i] = cx + cos(i * ALLEGRO_PI / 3 + al_get_time()) * (radio - 5);
+            hex_y[i] = cy + sin(i * ALLEGRO_PI / 3 + al_get_time()) * (radio - 5);
+        }
+        
+        // ✅ CORREGIR: Color del hexágono sin al_get_r/g/b
+        ALLEGRO_COLOR color_hexagono;
+        if (nave.escudo.hits_restantes >= 3) {
+            color_hexagono = al_map_rgba(0, 255, 255, alpha/3);
+        } else if (nave.escudo.hits_restantes == 2) {
+            color_hexagono = al_map_rgba(255, 255, 0, alpha/3);
+        } else {
+            color_hexagono = al_map_rgba(255, 100, 100, alpha/3);
+        }
+        
+        for (int i = 0; i < 6; i++) {
+            al_draw_line(hex_x[i], hex_y[i], hex_x[(i+1)%6], hex_y[(i+1)%6], color_hexagono, 2);
+        }
+        
+        // MOSTRAR HITS RESTANTES EN LUGAR DE TIEMPO
+        float barra_ancho = 60;
+        float barra_alto = 8;
+        float barra_x = cx - barra_ancho / 2;
+        float barra_y = cy + radio + 15;
+        
+        // Dibujar hits como segmentos
+        float segment_width = barra_ancho / nave.escudo.hits_max;
+        
+        // Fondo de la barra
+        al_draw_filled_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
+                                al_map_rgba(0, 0, 0, 150));
+        
+        // Dibujar segmentos activos
+        for (int i = 0; i < nave.escudo.hits_restantes; i++) {
+            float seg_x = barra_x + (i * segment_width);
+            al_draw_filled_rectangle(seg_x + 1, barra_y + 1, seg_x + segment_width - 1, barra_y + barra_alto - 1, 
+                                    color_base);
+        }
+        
+        // Borde
+        al_draw_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
+                         al_map_rgb(255, 255, 255), 1);
+    }
+}
+
+
+bool escudo_activo(Nave nave)
+{
+    return nave.escudo.activo;
+}
+
+
+bool escudo_recibir_dano(Escudo* escudo)
+{
+    if (!escudo->activo) return false;
+    
+    escudo->hits_restantes--;
+    printf("¡Escudo impactado! Hits restantes: %d\n", escudo->hits_restantes);
+    
+    if (escudo->hits_restantes <= 0)
+    {
+        escudo->activo = false;
+        printf("¡Escudo destruido!\n");
+    }
+    
+    return true; // Indica que el escudo absorbió el daño
 }

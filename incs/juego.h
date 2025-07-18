@@ -75,7 +75,31 @@
  */
 #define NUM_DISPAROS_ENEMIGOS 15
 
+#define MAX_POWERUPS 10
+#define POWERUP_PROB 25
+
 /*Estructuras usadas en el juego*/
+
+typedef struct
+{
+    float x;
+    float y;
+    int tipo;
+    bool activo;
+    double tiempo_aparicion;
+    double duracion_vida;
+    ALLEGRO_COLOR color;
+} Powerup;
+
+typedef struct
+{
+    bool activo;
+    int hits_restantes;
+    int hits_max;
+    double tiempo_activacion;
+    ALLEGRO_COLOR color;
+    float intensidad;
+} Escudo;
 
 /**
  * @struct Disparo
@@ -118,6 +142,7 @@ typedef struct
     Disparo disparos[MAX_DISPAROS]; /**< Arreglo de disparos de la nave */
     int nivel_disparo_radial;
     int kills_para_mejora;
+    Escudo escudo;
 } Nave;
 
 /**
@@ -234,7 +259,7 @@ void actualizar_disparos(Disparo disparos[], int num_disparos);
 void dibujar_disparos(Disparo disparos[], int num_disparos);
 void disparar(Disparo disparos[], int num_disparos, Nave nave);
 bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo);
-void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad, EstadoJuego* estado_nivel, double tiempo_actual);
+void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad, EstadoJuego* estado_nivel, double tiempo_actual, Powerup powerups[], int max_powerups);
 void dibujar_puntaje(int puntaje, ALLEGRO_FONT* fuente);
 void init_botones(Boton botones[]);
 void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y);
@@ -258,7 +283,6 @@ void enemigo_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo);
 bool detectar_colision_disparo_enemigo(Disparo disparo, Enemigo enemigo);
 bool detectar_colision_nave_enemigo(Nave nave, Enemigo enemigo);
 bool detectar_colision_generica(float x1, float y1, float ancho1, float alto1, float x2, float y2, float ancho2, float alto2);
-void inicializar_elementos_juego(Nave* nave, Asteroide asteroides[], Disparo disparos[], Enemigo enemigos[], Disparo disparos_enemigos[], Enemigo enemigos_mapa[], int num_enemigos_cargados, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, float nave_x, float nave_y);
 void disparar_radial(Disparo disparos[], int num_disparos, Nave nave);
 void verificar_mejora_disparo_radial(Nave *nave, Mensaje* mensaje_powerup);
 void dibujar_nivel_powerup(Nave nave, ALLEGRO_FONT* fuente);
@@ -276,4 +300,26 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
 void francotirador_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo, Nave nave);
 void tanque_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo);
 bool detectar_colision_disparo_enemigo_escudo(Disparo disparo, float tile_x, float tile_y);
+void init_powerup(Powerup* powerup);
+void crear_powerup_escudo(Powerup powerups[], int max_powerups, float x, float y);
+void actualizar_powerups(Powerup powerups[], int max_powerups, double tiempo_actual);
+void dibujar_powerups(Powerup powerups[], int max_powerups);
+bool detectar_colision_powerup(Nave nave, Powerup powerup);
+void recoger_powerup(Nave* nave, Powerup* powerup, Mensaje* mensaje);
+void init_escudo(Escudo* escudo);
+void actualizar_escudo(Escudo* escudo, double tiempo_actual);
+void dibujar_escudo(Nave nave);
+bool escudo_activo(Nave nave);
+void init_powerup(Powerup* powerup);
+void crear_powerup_escudo(Powerup powerups[], int max_powerups, float x, float y);
+void actualizar_powerups(Powerup powerups[], int max_powerups, double tiempo_actual);
+void dibujar_powerups(Powerup powerups[], int max_powerups);
+bool detectar_colision_powerup(Nave nave, Powerup powerup);
+void recoger_powerup(Nave* nave, Powerup* powerup, Mensaje* mensaje);
+void init_escudo(Escudo* escudo);
+void activar_escudo(Escudo* escudo, int hits_maximos);
+void actualizar_escudo(Escudo* escudo, double tiempo_actual);
+void dibujar_escudo(Nave nave);
+bool escudo_activo(Nave nave);
+bool escudo_recibir_dano(Escudo* escudo);
 #endif
