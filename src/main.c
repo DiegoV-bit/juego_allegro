@@ -1,6 +1,8 @@
 #include "ventana.h"
 #include "juego.h"
 
+Tile tilemap_global[MAPA_FILAS][MAPA_COLUMNAS];
+
 /**
  * @file main.c 
  *
@@ -105,6 +107,8 @@ int main()
         {
             // Recargo el nivel 1 desde cero
             cargar_tilemap("Nivel1.txt", tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_enemigo, &nave_x_inicial, &nave_y_inicial);
+
+            memcpy(tilemap_global, tilemap, sizeof(tilemap));
 
             // Inicializar estado del juego
             EstadoJuego estado_nivel;
@@ -253,6 +257,8 @@ int main()
                             // LIMPIAR DISPAROS
                             init_disparos(disparos, MAX_DISPAROS);
                             init_disparos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
+
+                            memcpy(tilemap_global, tilemap, sizeof(tilemap));
                         
                             printf("Nivel %d iniciado con %d enemigos.\n", estado_nivel.nivel_actual, num_enemigos_cargados);
                             printf("Powerups conservados: Radial Nv.%d, Tipo Nave: %d\n", nave.nivel_disparo_radial, nave.tipo);
@@ -319,7 +325,7 @@ int main()
                         if (escudo_activo(nave))
                         {
                             char texto_escudo[50];
-                            sprintf(texto_escudo, "Escudo: %.1fs", nave.escudo.duracion_restante);
+                            sprintf(texto_escudo, "Escudo: %d hits", nave.escudo.hits_restantes);
                             al_draw_text(fuente, al_map_rgb(0, 255, 255), 10, 100, ALLEGRO_ALIGN_LEFT, texto_escudo);
                         }
                     }

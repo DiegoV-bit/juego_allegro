@@ -99,10 +99,10 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
     int fila;
     int col;
 
-
     asteroide->y += asteroide->velocidad;
 
-    if (detectar_colision_circular(centro_nave_x, centro_nave_y, radio_nave, centro_asteroide_x, centro_asteroide_y, radio_asteroide)) {
+    if (detectar_colision_circular(centro_nave_x, centro_nave_y, radio_nave, centro_asteroide_x, centro_asteroide_y, radio_asteroide))
+    {
         // Asteroide impacta la nave: desaparece
         asteroide->y = -asteroide->alto;
         asteroide->x = rand() % (800 - (int)asteroide->ancho);
@@ -111,22 +111,24 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
     }
 
     // Verifica TODAS las celdas que ocupa el asteroide
-    for (fila = fila_superior; fila <= fila_inferior; fila++) {
-        for (col = col_izquierda; col <= col_derecha; col++) {
-            if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS) {
-                if (tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0) {
-                    tilemap[fila][col].vida--;
-                    if (tilemap[fila][col].vida <= 0) {
-                        tilemap[fila][col].tipo = 0; // El escudo se destruye
+    for (fila = fila_superior; fila <= fila_inferior; fila++)
+    {
+        for (col = col_izquierda; col <= col_derecha; col++)
+        {
+            if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
+            {
+                if ((tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0) || tilemap[fila][col].tipo == 3 || tilemap[fila][col].tipo == 1)
+                {
+                    if (tilemap[fila][col].tipo == 2)
+                    {
+                        tilemap[fila][col].vida--;
+                        if (tilemap[fila][col].vida <= 0)
+                        {
+                            tilemap[fila][col].tipo = 0; // El escudo se destruye
+                        }
                     }
+                    
                     // Asteroide desaparece
-                    asteroide->y = -asteroide->alto;
-                    asteroide->x = rand() % (800 - (int)asteroide->ancho);
-                    return;
-                }
-                
-                // Colisión con asteroide fijo (tipo 1)
-                if (tilemap[fila][col].tipo == 1) {
                     asteroide->y = -asteroide->alto;
                     asteroide->x = rand() % (800 - (int)asteroide->ancho);
                     return;
@@ -267,16 +269,24 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int ni
 void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double tiempo_actual)
 {
     int i;
+    float nueva_x = nave->x;
+    float nueva_y = nave->y;
 
     if(nave->tipo == 0)
     {
         // Movilidad tipo Space Invaders: solo izquierda/derecha
-        if (teclas[2]) nave->x -= 5; // Izquierda
-        if (teclas[3]) nave->x += 5; // Derecha
+        if (teclas[2]) nueva_x -= 5; // Izquierda
+        if (teclas[3]) nueva_x += 5; // Derecha
 
         // Limitar el movimiento de la nave dentro de la ventana
-        if (nave->x < 0) nave->x = 0;
-        if (nave->x > 800 - nave->ancho) nave->x = 800 - nave->ancho;
+        if (nueva_x < 0) nueva_x = 0;
+        if (nueva_x > 800 - nave->ancho) nueva_x = 800 - nave->ancho;
+
+        if (!verificar_colision_nave_muro(nueva_x, nave->y, nave->ancho, nave->largo))
+        {
+            nave->x = nueva_x;
+        }
+        
         // No permitir movimiento vertical ni rotación
         nave->angulo = 0.0f;
     }
@@ -288,15 +298,21 @@ void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double t
 
         if (teclas[0]) // Arriba (avanzar)
         {
-            nave->x += cos(nave->angulo - ALLEGRO_PI/2) * 5;
-            nave->y += sin(nave->angulo - ALLEGRO_PI/2) * 5;
+            nueva_x += cos(nave->angulo - ALLEGRO_PI/2) * 5;
+            nueva_y += sin(nave->angulo - ALLEGRO_PI/2) * 5;
         }
 
         // Limitar el movimiento de la nave dentro de la ventana
-        if (nave->x < 0) nave->x = 0;
-        if (nave->x > 800 - nave->ancho) nave->x = 800 - nave->ancho;
-        if (nave->y < 0) nave->y = 0;
-        if (nave->y > 600 - nave->largo) nave->y = 600 - nave->largo;
+        if (nueva_x < 0) nueva_x = 0;
+        if (nueva_x > 800 - nave->ancho) nueva_x = 800 - nave->ancho;
+        if (nueva_y < 0) nueva_y = 0;
+        if (nueva_y > 600 - nave->largo) nueva_y = 600 - nave->largo;
+
+        if (!verificar_colision_nave_muro(nueva_x, nueva_y, nave->ancho, nave->largo))
+        {
+            nave->x = nueva_x;
+            nave->y = nueva_y;
+        }
     }
 
     for (i = 0; i < NUM_ASTEROIDES; i++)
@@ -530,33 +546,12 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
         // Nave vs enemigos (USA LA NUEVA FUNCIÓN)
         if (detectar_colision_nave_enemigo(*nave, enemigos[i]))
         {
-            if (escudo_activo(*nave))
-            {
-                printf("Escudo absorbio el impacto\n");
-            }
-            else
-            {
-                nave->vida -= 20; // Daño por tocar enemigo
-            }
-
             if (!escudo_recibir_dano(&nave->escudo))
             {
-                // Solo recibir daño si el escudo no lo absorbió
-                int dano = 15;
-                if (disparos_enemigos[i].velocidad <= 2.5f)
-                {
-                    dano = 25;
-                }
-                else if (disparos_enemigos[i].velocidad <= 4.0f)
-                {
-                    dano = 20;
-                }
-                
-                nave->vida -= dano;
-                printf("Nave recibió %d de daño por disparo enemigo. Vida restante: %d\n", dano, nave->vida);
+                nave->vida -= 20;
+                printf("La nave recibio 20 de daño, Vida restante: %d\n", nave->vida);
             }
-
-            enemigos[i].activo = false; // El enemigo también se destruye
+            enemigos[i].activo = false;
         }
     }
 
@@ -616,17 +611,35 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
 
                             disparo_procesado = true;
                         }
-                        else
-                        {
-                            printf("Escudo dañado en (%d, %d). Vida restante: %d\n", col, fila, tilemap[fila][col].vida);
-                        }
-                        
-                        goto siguiente_disparo_enemigo; // Salta al siguiente disparo
                     }
+                    else if (tilemap[fila][col].tipo == 3)
+                    {
+                        float tile_x = col * TILE_ANCHO;
+                        float tile_y = fila * TILE_ALTO;
+
+                        if (detectar_colision_disparo_enemigo_escudo(disparos_enemigos[i], tile_x, tile_y))
+                        {
+                            disparos_enemigos[i].activo = false;
+                            printf("¡Disparo enemigo rebotó en muro indestructible en (%d, %d)!\n", col, fila);
+                            disparo_procesado = true;
+                        }
+                    }
+                    else if (tilemap[fila][col].tipo == 1)
+                    {
+                        float tile_x = col * TILE_ANCHO;
+                        float tile_y = fila * TILE_ALTO;
+
+                        if (detectar_colision_disparo_enemigo_escudo(disparos_enemigos[i], tile_x, tile_y))
+                        {
+                            disparos_enemigos[i].activo = false;
+                            printf("¡Disparo enemigo impactó asteroide fijo en (%d, %d)!\n", col, fila);
+                            disparo_procesado = true;
+                        }
+                    }
+                    
                 }
             }
         }
-        siguiente_disparo_enemigo:; // Etiqueta para saltar al siguiente disparo
     }
 
     actualizar_estado_nivel(estado_nivel, enemigos, num_enemigos, tiempo_actual);
@@ -988,7 +1001,7 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
 
     *num_enemigos = 0;
     bool nave_encontrada = false;
-    char linea[50]; // Buffer más grande para estar seguros
+    char linea[50];
 
     printf("=== CARGANDO: %s ===\n", filename);
 
@@ -1024,9 +1037,14 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
                     tilemap[fila][col].vida = 3;
                     break;
 
+                case '3':
+                    tilemap[fila][col].tipo = 3;
+                    tilemap[fila][col].vida = 999;
+                    break;
+
                 case 'P':
-                    *nave_x = col * TILE_ANCHO;
-                    *nave_y = fila * TILE_ALTO;
+                    *nave_x = col * TILE_ANCHO + (TILE_ANCHO - 50)/2;
+                    *nave_y = fila * TILE_ALTO + (TILE_ALTO - 50)/2;
                     nave_encontrada = true;
                     printf("*** NAVE ENCONTRADA: fila=%d, col=%d -> (%.0f, %.0f) ***\n", fila, col, *nave_x, *nave_y);
                     break;
@@ -1101,27 +1119,25 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
  * @param imagen_asteroide Imagen para los tiles de tipo asteroide.
  */
 void dibujar_tilemap(Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], ALLEGRO_BITMAP* imagen_asteroide) {
-    for (int fila = 0; fila < MAPA_FILAS; fila++) {
-        for (int col = 0; col < MAPA_COLUMNAS; col++) {
-            if (tilemap[fila][col].tipo == 1) {
-                al_draw_scaled_bitmap(
-                    imagen_asteroide,
-                    0, 0,
-                    al_get_bitmap_width(imagen_asteroide), al_get_bitmap_height(imagen_asteroide),
-                    col * TILE_ANCHO, fila * TILE_ALTO,
-                    TILE_ANCHO, TILE_ALTO,
-                    0
-                );
-            } else if (tilemap[fila][col].tipo == 2) {
+    for (int fila = 0; fila < MAPA_FILAS; fila++)
+    {
+        for (int col = 0; col < MAPA_COLUMNAS; col++)
+        {
+            if (tilemap[fila][col].tipo == 1)
+            {
+                al_draw_scaled_bitmap(imagen_asteroide, 0, 0, al_get_bitmap_width(imagen_asteroide), al_get_bitmap_height(imagen_asteroide), col * TILE_ANCHO, fila * TILE_ALTO, TILE_ANCHO, TILE_ALTO, 0);
+            }
+            else if (tilemap[fila][col].tipo == 2) 
+            {
                 // Dibuja el escudo como un rectángulo azul (puedes usar una imagen si prefieres)
                 ALLEGRO_COLOR color = al_map_rgb(0, 128, 255);
                 if (tilemap[fila][col].vida == 2) color = al_map_rgb(0, 200, 255);
                 if (tilemap[fila][col].vida == 1) color = al_map_rgb(100, 100, 255);
-                al_draw_filled_rectangle(
-                    col * TILE_ANCHO, fila * TILE_ALTO,
-                    (col + 1) * TILE_ANCHO, (fila + 1) * TILE_ALTO,
-                    color
-                );
+                al_draw_filled_rectangle(col * TILE_ANCHO, fila * TILE_ALTO, (col + 1) * TILE_ANCHO, (fila + 1) * TILE_ALTO, color);
+            }
+            else if (tilemap[fila][col].tipo == 3)
+            {
+                al_draw_filled_rectangle(col * TILE_ANCHO, fila * TILE_ALTO, (col + 1) * TILE_ANCHO, (fila + 1) * TILE_ALTO, al_map_rgb(80, 80, 80));
             }
         }
     }
@@ -1948,7 +1964,8 @@ void tanque_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo)
 
 bool detectar_colision_disparo_enemigo_escudo(Disparo disparo, float tile_x, float tile_y)
 {
-    return (disparo.x >= tile_x && disparo.x <= tile_x + TILE_ANCHO && disparo.y >= tile_y && disparo.y <= tile_y + TILE_ALTO);
+    return (disparo.x >= tile_x && disparo.x <= tile_x + TILE_ANCHO && 
+            disparo.y >= tile_y && disparo.y <= tile_y + TILE_ALTO);
 }
 
 
@@ -2237,4 +2254,39 @@ bool escudo_recibir_dano(Escudo* escudo)
     }
     
     return true; // Indica que el escudo absorbió el daño
+}
+
+
+bool verificar_colision_nave_muro(float x, float y, float ancho, float largo)
+{
+    // Obtener el tilemap global (necesitaremos pasarlo como parámetro)
+    extern Tile tilemap_global[MAPA_FILAS][MAPA_COLUMNAS];
+    
+    // Calcular qué tiles ocupa la nave
+    int col_izquierda = (int)(x / TILE_ANCHO);
+    int col_derecha = (int)((x + ancho - 1) / TILE_ANCHO);
+    int fila_superior = (int)(y / TILE_ALTO);
+    int fila_inferior = (int)((y + largo - 1) / TILE_ALTO);
+
+    // Verificar todos los tiles que ocuparía la nave
+    for (int fila = fila_superior; fila <= fila_inferior; fila++)
+    {
+        for (int col = col_izquierda; col <= col_derecha; col++)
+        {
+            // Verificar si el tile está dentro del mapa
+            if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
+            {
+                // Verificar colisión con muros indestructibles (tipo 3), escudos (tipo 2) o asteroides fijos (tipo 1)
+                if (tilemap_global[fila][col].tipo == 3 || 
+                    (tilemap_global[fila][col].tipo == 2 && tilemap_global[fila][col].vida > 0) ||
+                    tilemap_global[fila][col].tipo == 1)
+                {
+                    printf("¡Colisión detectada con tile tipo %d en (%d, %d)!\n", tilemap_global[fila][col].tipo, col, fila);
+                    return true; // Hay colisión
+                }
+            }
+        }
+    }
+    
+    return false; // No hay colisión
 }
