@@ -569,13 +569,8 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
         {
             disparos_enemigos[i].activo = false;
             
-           if (escudo_activo(*nave))
-            {
-                // El escudo absorbe el daño
-                printf("¡Escudo absorbió disparo enemigo!\n");
-            }
-            else
-            {
+           if (!escudo_recibir_dano(&nave->escudo))
+           {
                 int dano = 15;
                 if (disparos_enemigos[i].velocidad <= 2.5f)
                 {
@@ -587,7 +582,8 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                 }
                 
                 nave->vida -= dano;
-            }
+                printf("Nave recibio %d de daño por disparo enemigo. vida restante: %d\n", dano, nave->vida);
+           }
         }
     }
 
@@ -2139,17 +2135,22 @@ void dibujar_escudo(Nave nave)
         float cy = nave.y + nave.largo / 2;
         float radio = (nave.ancho + nave.largo) / 3.0f + 10;
         
-        // ✅ CAMBIAR COLOR SEGÚN HITS RESTANTES - SIN usar al_get_r/g/b
+        // cambio de color en base al daño que recibe el escudo
         ALLEGRO_COLOR color_base;
-        if (nave.escudo.hits_restantes >= 3) {
-            color_base = al_map_rgb(0, 255, 255);      // Cian (full)
-        } else if (nave.escudo.hits_restantes == 2) {
+        if (nave.escudo.hits_restantes >= 3)
+        {
+            color_base = al_map_rgb(0, 255, 255);      // Celeste (Completo)
+        }
+        else if (nave.escudo.hits_restantes == 2)
+        {
             color_base = al_map_rgb(255, 255, 0);      // Amarillo (medio)
-        } else {
+        }
+        else
+        {
             color_base = al_map_rgb(255, 100, 100);    // Rojo (crítico)
         }
         
-        // ✅ CALCULAR COLOR CON INTENSIDAD SIN al_get_r/g/b
+        // CALCULAR COLOR CON INTENSIDAD
         int alpha = (int)(255 * nave.escudo.intensidad * 0.6f);
         
         ALLEGRO_COLOR color_escudo;
@@ -2170,12 +2171,12 @@ void dibujar_escudo(Nave nave)
         
         // Efecto de hexágono rotatorio
         float hex_x[6], hex_y[6];
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < 6; i++) 
+        {
             hex_x[i] = cx + cos(i * ALLEGRO_PI / 3 + al_get_time()) * (radio - 5);
             hex_y[i] = cy + sin(i * ALLEGRO_PI / 3 + al_get_time()) * (radio - 5);
         }
         
-        // ✅ CORREGIR: Color del hexágono sin al_get_r/g/b
         ALLEGRO_COLOR color_hexagono;
         if (nave.escudo.hits_restantes >= 3) {
             color_hexagono = al_map_rgba(0, 255, 255, alpha/3);
