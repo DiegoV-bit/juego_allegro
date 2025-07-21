@@ -78,6 +78,8 @@
 #define MAX_POWERUPS 10
 #define POWERUP_PROB 25
 
+#define MAX_COLA_MENSAJES 5
+
 /*Estructuras usadas en el juego*/
 
 typedef struct
@@ -233,6 +235,7 @@ typedef struct
     double duracion;
     bool activo;
     ALLEGRO_COLOR color;
+    bool centrado;
 } Mensaje;
 
 typedef struct
@@ -244,6 +247,24 @@ typedef struct
     double duracion_transicion;
     bool nivel_completado;
 } EstadoJuego;
+
+typedef struct
+{
+    char texto[100];
+    double duracion;
+    ALLEGRO_COLOR color;
+    bool centrado;
+} MensajeEnCola;
+
+typedef struct
+{
+    MensajeEnCola mensajes[MAX_COLA_MENSAJES];
+    int inicio;
+    int fin;
+    int cantidad;
+    Mensaje mensaje_actual;
+    bool procesando;
+} ColaMensajes;
 
 
 /*Funciones*/
@@ -260,7 +281,7 @@ void actualizar_disparos(Disparo disparos[], int num_disparos);
 void dibujar_disparos(Disparo disparos[], int num_disparos);
 void disparar(Disparo disparos[], int num_disparos, Nave nave);
 bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo);
-void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad, EstadoJuego* estado_nivel, double tiempo_actual, Powerup powerups[], int max_powerups);
+void actualizar_juego(Nave* nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, ColaMensajes *cola_mensajes, EstadoJuego* estado_nivel, double tiempo_actual, Powerup powerups[], int max_powerups);
 void dibujar_puntaje(int puntaje, ALLEGRO_FONT* fuente);
 void init_botones(Boton botones[]);
 void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y);
@@ -285,7 +306,7 @@ bool detectar_colision_disparo_enemigo(Disparo disparo, Enemigo enemigo);
 bool detectar_colision_nave_enemigo(Nave nave, Enemigo enemigo);
 bool detectar_colision_generica(float x1, float y1, float ancho1, float alto1, float x2, float y2, float ancho2, float alto2);
 void disparar_radial(Disparo disparos[], int num_disparos, Nave nave);
-void verificar_mejora_disparo_radial(Nave *nave, Mensaje* mensaje_powerup);
+void verificar_mejora_disparo_radial(Nave *nave, ColaMensajes *cola_mensajes);
 void dibujar_nivel_powerup(Nave nave, ALLEGRO_FONT* fuente);
 void init_mensaje(Mensaje* mensaje);
 void mostrar_mensaje(Mensaje* mensaje, const char* texto, float x, float y, double duracion, ALLEGRO_COLOR color);
@@ -306,7 +327,7 @@ void crear_powerup_escudo(Powerup powerups[], int max_powerups, float x, float y
 void actualizar_powerups(Powerup powerups[], int max_powerups, double tiempo_actual);
 void dibujar_powerups(Powerup powerups[], int max_powerups);
 bool detectar_colision_powerup(Nave nave, Powerup powerup);
-void recoger_powerup(Nave* nave, Powerup* powerup, Mensaje* mensaje);
+void recoger_powerup(Nave* nave, Powerup* powerup, ColaMensajes *cola_mensajes);
 void init_escudo(Escudo* escudo);
 void actualizar_escudo(Escudo* escudo, double tiempo_actual);
 void dibujar_escudo(Nave nave);
@@ -316,7 +337,7 @@ void crear_powerup_escudo(Powerup powerups[], int max_powerups, float x, float y
 void actualizar_powerups(Powerup powerups[], int max_powerups, double tiempo_actual);
 void dibujar_powerups(Powerup powerups[], int max_powerups);
 bool detectar_colision_powerup(Nave nave, Powerup powerup);
-void recoger_powerup(Nave* nave, Powerup* powerup, Mensaje* mensaje);
+void recoger_powerup(Nave* nave, Powerup* powerup, ColaMensajes *cola_mensajes);
 void init_escudo(Escudo* escudo);
 void activar_escudo(Escudo* escudo, int hits_maximos);
 void actualizar_escudo(Escudo* escudo, double tiempo_actual);
@@ -324,4 +345,11 @@ void dibujar_escudo(Nave nave);
 bool escudo_activo(Nave nave);
 bool escudo_recibir_dano(Escudo* escudo);
 bool verificar_colision_nave_muro(float x, float y, float ancho, float largo);
+void init_cola_mensajes(ColaMensajes* cola);
+void agregar_mensaje_cola(ColaMensajes* cola, const char* texto, double duracion, ALLEGRO_COLOR color, bool centrado);
+void actualizar_cola_mensajes(ColaMensajes* cola, double tiempo_actual);
+void dibujar_cola_mensajes(ColaMensajes cola, ALLEGRO_FONT* fuente);
+void mostrar_mensaje_centrado(Mensaje* mensaje, const char* texto, double duracion, ALLEGRO_COLOR color);
+void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Disparo disparos[], int num_disparos, Disparo disparos_enemigos[], int num_disparos_enemigos, Asteroide asteroides[], int num_asteroides, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
+void limpiar_memoria_juego(Disparo disparos[], int num_disparos, Disparo disparos_enemigos[], int num_disparos_enemigos, Powerup powerups[], int max_powerups, Enemigo enemigos[], int num_enemigos, ColaMensajes* cola_mensajes);
 #endif

@@ -118,17 +118,16 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
             if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
             {
                 if ((tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0) || tilemap[fila][col].tipo == 3 || tilemap[fila][col].tipo == 1)
-                {
+            {
                     if (tilemap[fila][col].tipo == 2)
                     {
                         tilemap[fila][col].vida--;
                         if (tilemap[fila][col].vida <= 0)
                         {
-                            tilemap[fila][col].tipo = 0; // El escudo se destruye
+                            tilemap[fila][col].tipo = 0;
                         }
                     }
-                    
-                    // Asteroide desaparece
+    
                     asteroide->y = -asteroide->alto;
                     asteroide->x = rand() % (800 - (int)asteroide->ancho);
                     return;
@@ -369,7 +368,9 @@ void init_disparos(Disparo disparos[], int num_disparos)
  */
 void actualizar_disparos(Disparo disparos[], int num_disparos)
 {
-    for (int i = 0; i < num_disparos; i++)
+    int i;
+
+    for (i = 0; i < num_disparos; i++)
     {
         if (disparos[i].activo)
         {
@@ -391,7 +392,9 @@ void actualizar_disparos(Disparo disparos[], int num_disparos)
  */
 void dibujar_disparos(Disparo disparos[], int num_disparos)
 {
-    for (int i = 0; i < num_disparos; i++)
+    int i;
+
+    for (i = 0; i < num_disparos; i++)
     {
         if (disparos[i].activo)
         {
@@ -460,7 +463,7 @@ bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo)
  * @param puntaje Puntero al puntaje del jugador
  * 
  */
-void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, Mensaje *mensaje_powerup, Mensaje *mensaje_movilidad, EstadoJuego *estado_nivel, double tiempo_actual, Powerup powerups[], int max_powerups)
+void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, ColaMensajes *cola_mensajes, EstadoJuego *estado_nivel, double tiempo_actual, Powerup powerups[], int max_powerups)
 {
     int i;
     int j;
@@ -483,13 +486,47 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
     {
         if (powerups[i].activo && detectar_colision_powerup(*nave, powerups[i]))
         {
-            recoger_powerup(nave, &powerups[i], mensaje_powerup);
+            recoger_powerup(nave, &powerups[i], cola_mensajes);
         }
-        
     }
-    
-    if (mensaje_powerup->activo) actualizar_mensaje(mensaje_powerup, tiempo_actual);
-    if (mensaje_movilidad->activo) actualizar_mensaje(mensaje_movilidad, tiempo_actual);
+
+    for (i = 0; i < num_disparos; i++)
+    {
+        if (disparos[i].activo)
+        {
+            int col_disparo = (int)(disparos[i].x / TILE_ANCHO);
+            int fila_disparo = (int)(disparos[i].y / TILE_ALTO);
+
+            if (fila_disparo >= 0 && fila_disparo < MAPA_FILAS && col_disparo >= 0 && col_disparo < MAPA_COLUMNAS)
+            {
+                Tile *tile = &tilemap[fila_disparo][col_disparo];
+
+                if (tile->tipo == 3)
+                {
+                    disparos[i].activo = false;
+                    printf("Disparo rebotó en bloque sólido en (%d, %d)\n", col_disparo, fila_disparo);
+                    continue;
+                }
+                
+                if (tile->tipo == 2 && tile->vida > 0)
+                {
+                    disparos[i].activo = false;
+                    tile->vida--;
+                    
+                    if (tile->vida <= 0)
+                    {
+                        tile->tipo = 0;
+                        printf("Escudo destruido por disparo jugador en (%d, %d)\n", col_disparo, fila_disparo);
+                    }
+                    else
+                    {
+                        printf("Escudo dañado por disparo jugador en (%d, %d). Vida restante: %d\n", col_disparo, fila_disparo, tile->vida);
+                    }
+                    continue;
+                }
+            }
+        }
+    }
 
     if (asteroides_activados(estado_nivel->nivel_actual))
     {
@@ -507,7 +544,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                     asteroides[i].x = rand() % (800 - (int)asteroides[i].ancho);
                     (*puntaje)++;
                     nave->kills_para_mejora++;
-                    verificar_mejora_disparo_radial(nave, mensaje_powerup);
+                    verificar_mejora_disparo_radial(nave, cola_mensajes);
                 }
             }
         }
@@ -533,7 +570,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                     enemigos[i].activo = false;
                     (*puntaje) += 5; // Más puntos por destruir enemigo
                     nave->kills_para_mejora++;
-                    verificar_mejora_disparo_radial(nave, mensaje_powerup);
+                    verificar_mejora_disparo_radial(nave, cola_mensajes);
 
                     if (rand() % 100 < POWERUP_PROB)
                     {
@@ -569,11 +606,11 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                 int dano = 15;
                 if (disparos_enemigos[i].velocidad <= 2.5f)
                 {
-                    dano = 25;
+                    dano = 25; // Tanques hacen más daño
                 }
-                else if (disparos_enemigos[i].velocidad <= 4.0f)
+                else if (disparos_enemigos[i].velocidad >= 4.0f)
                 {
-                    dano = 20;
+                    dano = 20; // Francotiradores hacen daño medio-alto
                 }
                 
                 nave->vida -= dano;
@@ -636,7 +673,6 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                             disparo_procesado = true;
                         }
                     }
-                    
                 }
             }
         }
@@ -855,7 +891,7 @@ void capturar_nombre(ALLEGRO_FONT* fuente, char* nombre, ALLEGRO_EVENT_QUEUE* co
                     pos++;
                     nombre[pos] = '\0';
                     necesita_redibujar = true;
-                }
+                }   
             }
             else if (evento.keyboard.keycode == ALLEGRO_KEY_BACKSPACE && pos > 0)
             {
@@ -1197,28 +1233,24 @@ void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_
             case 0: // Enemigo normal
                 // Movimiento horizontal (de lado a lado)
                 enemigos[i].x += enemigos[i].velocidad;
-            
-                // Rebota en los bordes
+    
                 if (enemigos[i].x <= 0 || enemigos[i].x >= 800 - enemigos[i].ancho)
                 {
                     enemigos[i].velocidad *= -1;
                 }
-            
-                // Disparar hacia la nave
+    
                 if (tiempo_actual - enemigos[i].ultimo_disparo >= enemigos[i].intervalo_disparo)
                 {
                     enemigo_disparar(disparos_enemigos, num_disparos_enemigos, enemigos[i]);
                     enemigos[i].ultimo_disparo = tiempo_actual;
                 }
                 break;
-                
+
             case 1: // Enemigo perseguidor
                 {
-                    // Calcular distancia a la nave
                     float dx = nave.x + nave.ancho/2 - (enemigos[i].x + enemigos[i].ancho/2);
                     float dy = nave.y + nave.largo/2 - (enemigos[i].y + enemigos[i].alto/2);
                     float distancia = sqrt(dx*dx + dy*dy);
-
                     float rango_vision = 250.0f;
                     
                     if (distancia < rango_vision)
@@ -1239,49 +1271,42 @@ void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_
                     }
                 }
                 break;
-                
+
             case 2: // Francotirador
-                // No se mueve, solo dispara con precisión hacia la nave
                 if (tiempo_actual - enemigos[i].ultimo_disparo >= enemigos[i].intervalo_disparo)
                 {
                     francotirador_disparar(disparos_enemigos, num_disparos_enemigos, enemigos[i], nave);
                     enemigos[i].ultimo_disparo = tiempo_actual;
                 }
                 break;
-                
+
             case 3: // Tanque
-                // Movimiento lento horizontal
                 enemigos[i].x += enemigos[i].velocidad;
-                
-                // Rebota en los bordes
+    
                 if (enemigos[i].x <= 0 || enemigos[i].x >= 800 - enemigos[i].ancho)
                 {
                     enemigos[i].velocidad *= -1;
                 }
-                
-                // Disparo potente pero lento
+    
                 if (tiempo_actual - enemigos[i].ultimo_disparo >= enemigos[i].intervalo_disparo)
                 {
                     tanque_disparar(disparos_enemigos, num_disparos_enemigos, enemigos[i]);
                     enemigos[i].ultimo_disparo = tiempo_actual;
                 }
                 break;
-                
+
             case 4: // Kamikaze
                 {
-                    // Se lanza directamente hacia la nave
                     float dx = nave.x + nave.ancho/2 - (enemigos[i].x + enemigos[i].ancho/2);
                     float dy = nave.y + nave.largo/2 - (enemigos[i].y + enemigos[i].alto/2);
                     float distancia = sqrt(dx*dx + dy*dy);
                     
                     if (distancia > 10.0f) {
-                        // Moverse hacia la nave a alta velocidad
                         float velocidad_kamikaze = enemigos[i].velocidad * 2.0f;
                         enemigos[i].x += (dx / distancia) * velocidad_kamikaze;
                         enemigos[i].y += (dy / distancia) * velocidad_kamikaze;
                     } else {
-                        // Explotar al llegar cerca de la nave
-                        nave.vida -= 35; // Mucho daño
+                        nave.vida -= 35;
                         enemigos[i].activo = false;
                         printf("¡Enemigo kamikaze impactó! Vida restante: %d\n", nave.vida);
                     }
@@ -1434,7 +1459,7 @@ void enemigo_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo)
         {
             disparos[i].x = enemigo.x + enemigo.ancho / 2;
             disparos[i].y = enemigo.y + enemigo.alto;
-            disparos[i].velocidad = 3.0f;
+            disparos[i].velocidad = 3.0f; // Disparan hacia abajo
             disparos[i].angulo = ALLEGRO_PI / 2; // Disparan hacia abajo
             disparos[i].activo = true;
             break;
@@ -1548,7 +1573,7 @@ void disparar_radial(Disparo disparos[], int num_disparos, Nave nave)
 }
 
 
-void verificar_mejora_disparo_radial(Nave *nave, Mensaje* mensaje_powerup)
+void verificar_mejora_disparo_radial(Nave *nave, ColaMensajes* cola_mensajes)
 {
     if (nave->kills_para_mejora >= 16 && nave->nivel_disparo_radial < 2) 
     {
@@ -1558,7 +1583,17 @@ void verificar_mejora_disparo_radial(Nave *nave, Mensaje* mensaje_powerup)
         // Mostrar mensaje de mejora
         char texto_mejora[100];
         sprintf(texto_mejora, "¡Disparo Radial Nivel %d Desbloqueado!", nave->nivel_disparo_radial);
-        mostrar_mensaje(mensaje_powerup, texto_mejora, 200, 150, 3.0, al_map_rgb(255, 255, 0));
+        
+        agregar_mensaje_cola(cola_mensajes, texto_mejora, 3.5, al_map_rgb(255, 255, 0), true);
+
+        if (nave->nivel_disparo_radial == 1)
+        {
+            agregar_mensaje_cola(cola_mensajes, "Ahora disparas 3 proyectiles", 2.5, al_map_rgb(255, 255, 255), true);
+        }
+        else if (nave->nivel_disparo_radial == 2)
+        {
+            agregar_mensaje_cola(cola_mensajes, "Ahora disparas 5 proyectiles", 2.5, al_map_rgb(255, 255, 255), true);
+        }
         
         printf("¡Mejora de disparo radial! Nivel actual: %d\n", nave->nivel_disparo_radial);
     }
@@ -1613,26 +1648,56 @@ void actualizar_mensaje(Mensaje *mensaje, double tiempo_actual)
 
 void dibujar_mensaje(Mensaje mensaje, ALLEGRO_FONT* fuente)
 {
-    static int ultimo_ancho = 0;
-    static char ultimo_texto[100] = "";
-    int ancho_texto;
+    int ancho_texto = al_get_text_width(fuente, mensaje.texto);
+    int alto_texto = al_get_font_line_height(fuente);
+    float x_final;
+    float y_final;
+    double tiempo_transcurrido = al_get_time() - mensaje.tiempo_inicio;
+    double progreso = tiempo_transcurrido / mensaje.duracion;
+    float alpha = 1.0f;
+    unsigned char r;
+    unsigned char g;
+    unsigned char b;
+    unsigned char a;
+    float padding = 20;
 
     if (!mensaje.activo) return;
 
-    if (strcmp(ultimo_texto, mensaje.texto) != 0) 
+    if (mensaje.centrado)
     {
-        ancho_texto = strlen(mensaje.texto) * 12;
-        ultimo_ancho = ancho_texto;
-        strcpy(ultimo_texto, mensaje.texto);
-    } 
-    else 
+        x_final = mensaje.x - (ancho_texto / 2);
+        y_final = mensaje.y - (alto_texto / 2);
+    }
+    else
     {
-        ancho_texto = ultimo_ancho;
+        x_final = mensaje.x;
+        y_final = mensaje.y;
     }
     
-    al_draw_filled_rectangle(mensaje.x - 10, mensaje.y - 5, mensaje.x + ancho_texto + 10, mensaje.y + 25, al_map_rgba(0, 0, 0, 128));
-    
-    al_draw_text(fuente, mensaje.color, mensaje.x, mensaje.y, ALLEGRO_ALIGN_LEFT, mensaje.texto);
+    if (progreso < 0.2)
+    {
+        alpha = progreso / 0.2f;
+    }
+    else if (progreso > 0.8)
+    {
+        alpha = (1.0f - progreso) / 0.2f;
+    }
+
+    al_unmap_rgba(mensaje.color, &r, &g, &b, &a);
+    ALLEGRO_COLOR color_alpha = al_map_rgba(r, g, b, (int)(alpha * 255));
+
+    al_draw_filled_rectangle(x_final - padding, y_final - 10, x_final + ancho_texto + padding, y_final + alto_texto + 10, al_map_rgba(0, 0, 0, (int)(180 * alpha)));
+
+    al_draw_rectangle(x_final - padding, y_final - 10, x_final + ancho_texto + padding, y_final + alto_texto + 10, al_map_rgba(255, 255, 255, (int)(150 * alpha)), 2);
+
+    if (mensaje.centrado)
+    {
+        al_draw_text(fuente, color_alpha, mensaje.x, y_final, ALLEGRO_ALIGN_CENTER, mensaje.texto);
+    }
+    else
+    {
+        al_draw_text(fuente, color_alpha, x_final, y_final, ALLEGRO_ALIGN_LEFT, mensaje.texto);
+    }
 }
 
 
@@ -2082,13 +2147,14 @@ bool detectar_colision_powerup(Nave nave, Powerup powerup)
 }
 
 
-void recoger_powerup(Nave* nave, Powerup* powerup, Mensaje* mensaje)
+void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
 {
     if (powerup->tipo == 0) // Escudo
     {
         activar_escudo(&nave->escudo, 3);
-        mostrar_mensaje(mensaje, "¡Escudo Activado! (+15s)", 200, 100, 3.0, al_map_rgb(0, 255, 255));
-        printf("¡Escudo activado por 15 segundos!\n");
+        agregar_mensaje_cola(cola_mensajes, "Escudo Activado!", 2.0, al_map_rgb(0, 255, 255), true);
+        agregar_mensaje_cola(cola_mensajes,"Resistencia: 3 impactos", 2.0, al_map_rgb(255, 255, 255), true);
+        printf("¡Escudo activado activo hasta 3 disparos!\n");
     }
     
     powerup->activo = false;
@@ -2289,4 +2355,286 @@ bool verificar_colision_nave_muro(float x, float y, float ancho, float largo)
     }
     
     return false; // No hay colisión
+}
+
+
+void init_cola_mensajes(ColaMensajes *cola)
+{
+    cola->inicio = 0;
+    cola->fin = 0;
+    cola->cantidad = 0;
+    cola->procesando = false;
+    init_mensaje(&cola->mensaje_actual);
+}
+
+
+void agregar_mensaje_cola(ColaMensajes *cola, const char *texto, double duracion, ALLEGRO_COLOR color, bool centrado)
+{
+    if (cola->cantidad >= MAX_COLA_MENSAJES)
+    {
+        printf("¡Cola de mensajes llena! No se puede agregar el mensaje: %s\n", texto);
+        return;
+    }
+
+    size_t max_len = sizeof(cola->mensajes[cola->fin].texto) - 1;
+    strncpy(cola->mensajes[cola->fin].texto, texto, max_len);
+    cola->mensajes[cola->fin].texto[max_len] = '\0';
+    cola->mensajes[cola->fin].duracion = duracion;
+    cola->mensajes[cola->fin].color = color;
+    cola->mensajes[cola->fin].centrado = centrado;
+
+    cola->fin = (cola->fin + 1) % MAX_COLA_MENSAJES;
+    cola->cantidad++;
+    
+    printf("Mensaje agregado a la cola: %s (Total en cola: %d)\n", texto, cola->cantidad);
+}
+
+
+void actualizar_cola_mensajes(ColaMensajes* cola, double tiempo_actual)
+{
+    if (!cola)
+    {
+        return;
+    }
+
+    if (!cola->mensaje_actual.activo && cola->cantidad > 0) {
+        MensajeEnCola siguiente = cola->mensajes[cola->inicio];
+        
+        if (siguiente.centrado) 
+        {
+            mostrar_mensaje_centrado(&cola->mensaje_actual, siguiente.texto, siguiente.duracion, siguiente.color);
+        }
+        else 
+        {
+            mostrar_mensaje(&cola->mensaje_actual, siguiente.texto, 200, 150, siguiente.duracion, siguiente.color);
+        }
+        
+        // Remover mensaje de la cola
+        cola->inicio = (cola->inicio + 1) % MAX_COLA_MENSAJES;
+        cola->cantidad--;
+        
+        static int debug_counter = 0;
+        if (++debug_counter % 30 == 0) 
+        {
+            printf("Procesando mensaje: %s (Restantes en cola: %d)\n", siguiente.texto, cola->cantidad);
+        }
+    }
+    
+    // Actualizar mensaje actual
+    if (cola->mensaje_actual.activo) {
+        actualizar_mensaje(&cola->mensaje_actual, tiempo_actual);
+        
+        // Si el mensaje terminó, marcar como no procesando
+        if (!cola->mensaje_actual.activo)
+        {
+            cola->procesando = false;
+        }
+    }
+}
+
+
+void dibujar_cola_mensajes(ColaMensajes cola, ALLEGRO_FONT* fuente)
+{
+    if (cola.mensaje_actual.activo)
+    {
+        dibujar_mensaje(cola.mensaje_actual, fuente);
+    }
+}
+
+
+void mostrar_mensaje_centrado(Mensaje* mensaje, const char* texto, double duracion, ALLEGRO_COLOR color)
+{
+    strncpy(mensaje->texto, texto, sizeof(mensaje->texto) - 1);
+    mensaje->texto[sizeof(mensaje->texto) - 1] = '\0';
+    mensaje->x = 400; // Centro de la pantalla (800/2)
+    mensaje->y = 200; // Posición vertical centrada
+    mensaje->tiempo_inicio = al_get_time();
+    mensaje->duracion = duracion;
+    mensaje->activo = true;
+    mensaje->color = color;
+    mensaje->centrado = true;
+}
+
+
+/**
+ * @brief Dibuja las hitboxes de todos los objetos para depuración.
+ * 
+ * @param nave Nave del jugador.
+ * @param enemigos Arreglo de enemigos.
+ * @param num_enemigos Número de enemigos.
+ * @param disparos Disparos del jugador.
+ * @param num_disparos Número de disparos del jugador.
+ * @param disparos_enemigos Disparos de enemigos.
+ * @param num_disparos_enemigos Número de disparos de enemigos.
+ * @param asteroides Arreglo de asteroides.
+ * @param num_asteroides Número de asteroides.
+ * @param tilemap Mapa de tiles.
+ */
+void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Disparo disparos[], int num_disparos, Disparo disparos_enemigos[], int num_disparos_enemigos, Asteroide asteroides[], int num_asteroides, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
+{
+    static ALLEGRO_FONT* fuente_debug = NULL;
+    if (!fuente_debug) 
+    {
+        fuente_debug = al_create_builtin_font();
+    }
+
+    // Hitbox de la nave - Verde
+    al_draw_rectangle(nave.x, nave.y, nave.x + nave.ancho, nave.y + nave.largo, al_map_rgb(0, 255, 0), 2);
+    
+    // Centro de la nave - punto verde
+    float centro_nave_x = nave.x + nave.ancho / 2;
+    float centro_nave_y = nave.y + nave.largo / 2;
+    al_draw_filled_circle(centro_nave_x, centro_nave_y, 3, al_map_rgb(0, 255, 0));
+    
+    // Hitbox del escudo si está activo - Cian
+    if (nave.escudo.activo)
+    {
+        float radio_escudo = (nave.ancho + nave.largo) / 3.0f + 10;
+        al_draw_circle(centro_nave_x, centro_nave_y, radio_escudo, al_map_rgb(0, 255, 255), 1);
+    }
+
+    // Hitboxes de enemigos - Rojo con diferentes tonos según tipo
+    for (int i = 0; i < num_enemigos; i++)
+    {
+        if (enemigos[i].activo)
+        {
+            ALLEGRO_COLOR color_enemigo;
+            switch (enemigos[i].tipo)
+            {
+                case 0: color_enemigo = al_map_rgb(255, 0, 0); break;     // Normal - rojo
+                case 1: color_enemigo = al_map_rgb(255, 100, 0); break;   // Perseguidor - naranja
+                case 2: color_enemigo = al_map_rgb(255, 0, 100); break;   // Francotirador - magenta
+                case 3: color_enemigo = al_map_rgb(200, 0, 0); break;     // Tanque - rojo oscuro
+                case 4: color_enemigo = al_map_rgb(255, 200, 0); break;   // Kamikaze - amarillo
+                default: color_enemigo = al_map_rgb(255, 0, 0); break;
+            }
+            
+            al_draw_rectangle(enemigos[i].x, enemigos[i].y, 
+                            enemigos[i].x + enemigos[i].ancho, enemigos[i].y + enemigos[i].alto, 
+                            color_enemigo, 2);
+            
+            // Centro del enemigo
+            float centro_x = enemigos[i].x + enemigos[i].ancho / 2;
+            float centro_y = enemigos[i].y + enemigos[i].alto / 2;
+            al_draw_filled_circle(centro_x, centro_y, 2, color_enemigo);
+            
+            // Texto con tipo de enemigo
+            char tipo_texto[20];
+            sprintf(tipo_texto, "T%d", enemigos[i].tipo);
+            al_draw_text(fuente_debug, al_map_rgb(255, 255, 255), 
+                        centro_x, centro_y - 15, ALLEGRO_ALIGN_CENTER, tipo_texto);
+        }
+    }
+
+    // Hitboxes de disparos del jugador - Azul
+    for (int i = 0; i < num_disparos; i++)
+    {
+        if (disparos[i].activo)
+        {
+            al_draw_rectangle(disparos[i].x, disparos[i].y, 
+                            disparos[i].x + 5, disparos[i].y + 10, 
+                            al_map_rgb(0, 0, 255), 1);
+        }
+    }
+
+    // Hitboxes de disparos de enemigos - Amarillo
+    for (int i = 0; i < num_disparos_enemigos; i++)
+    {
+        if (disparos_enemigos[i].activo)
+        {
+            al_draw_rectangle(disparos_enemigos[i].x, disparos_enemigos[i].y, 
+                            disparos_enemigos[i].x + 4, disparos_enemigos[i].y + 8, 
+                            al_map_rgb(255, 255, 0), 1);
+        }
+    }
+
+    // Hitboxes de asteroides - Blanco
+    for (int i = 0; i < num_asteroides; i++)
+    {
+        al_draw_rectangle(asteroides[i].x, asteroides[i].y, 
+                        asteroides[i].x + asteroides[i].ancho, asteroides[i].y + asteroides[i].alto, 
+                        al_map_rgb(255, 255, 255), 1);
+    }
+
+    // Hitboxes del tilemap - Varios colores
+    for (int fila = 0; fila < MAPA_FILAS; fila++)
+    {
+        for (int col = 0; col < MAPA_COLUMNAS; col++)
+        {
+            if (tilemap[fila][col].tipo > 0)
+            {
+                float x = col * TILE_ANCHO;
+                float y = fila * TILE_ALTO;
+                ALLEGRO_COLOR color_tile;
+                
+                switch (tilemap[fila][col].tipo)
+                {
+                    case 1: color_tile = al_map_rgb(128, 128, 128); break; // Asteroide fijo - gris
+                    case 2: color_tile = al_map_rgb(0, 128, 255); break;   // Escudo - azul
+                    case 3: color_tile = al_map_rgb(80, 80, 80); break;    // Bloque sólido - gris oscuro
+                    default: color_tile = al_map_rgb(255, 255, 255); break;
+                }
+                
+                al_draw_rectangle(x, y, x + TILE_ANCHO, y + TILE_ALTO, color_tile, 1);
+                
+                // Mostrar vida del tile si es aplicable
+                if (tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0)
+                {
+                    char vida_texto[12]; // Buffer más grande
+                    sprintf(vida_texto, "%d", tilemap[fila][col].vida);
+                    al_draw_text(fuente_debug, al_map_rgb(255, 255, 255), 
+                               x + TILE_ANCHO/2, y + TILE_ALTO/2, ALLEGRO_ALIGN_CENTER, vida_texto);
+                }
+            }
+        }
+    }
+
+    // Leyenda en la esquina superior derecha
+    int leyenda_x = 600;
+    int leyenda_y = 10;
+    
+    al_draw_text(fuente_debug, al_map_rgb(255, 255, 255), leyenda_x, leyenda_y, ALLEGRO_ALIGN_LEFT, "DEBUG HITBOXES:");
+    al_draw_text(fuente_debug, al_map_rgb(0, 255, 0), leyenda_x, leyenda_y + 15, ALLEGRO_ALIGN_LEFT, "Verde: Nave");
+    al_draw_text(fuente_debug, al_map_rgb(255, 0, 0), leyenda_x, leyenda_y + 30, ALLEGRO_ALIGN_LEFT, "Rojo: Enemigos");
+    al_draw_text(fuente_debug, al_map_rgb(0, 0, 255), leyenda_x, leyenda_y + 45, ALLEGRO_ALIGN_LEFT, "Azul: Disparos nave");
+    al_draw_text(fuente_debug, al_map_rgb(255, 255, 0), leyenda_x, leyenda_y + 60, ALLEGRO_ALIGN_LEFT, "Amarillo: Disparos enemigos");
+    al_draw_text(fuente_debug, al_map_rgb(255, 255, 255), leyenda_x, leyenda_y + 75, ALLEGRO_ALIGN_LEFT, "Blanco: Asteroides");
+    al_draw_text(fuente_debug, al_map_rgb(0, 128, 255), leyenda_x, leyenda_y + 90, ALLEGRO_ALIGN_LEFT, "Azul claro: Escudos");
+}
+
+
+/**
+ * @brief Limpia recursos y memoria del juego.
+ */
+void limpiar_memoria_juego(Disparo disparos[], int num_disparos, Disparo disparos_enemigos[], int num_disparos_enemigos, Powerup powerups[], int max_powerups, Enemigo enemigos[], int num_enemigos, ColaMensajes* cola_mensajes)
+{
+    // Limpiar disparos
+    for (int i = 0; i < num_disparos; i++) {
+        disparos[i].activo = false;
+    }
+    
+    for (int i = 0; i < num_disparos_enemigos; i++) {
+        disparos_enemigos[i].activo = false;
+    }
+    
+    // Limpiar powerups
+    for (int i = 0; i < max_powerups; i++) {
+        powerups[i].activo = false;
+    }
+    
+    // Limpiar enemigos
+    for (int i = 0; i < num_enemigos; i++) {
+        enemigos[i].activo = false;
+    }
+    
+    // Limpiar cola de mensajes
+    if (cola_mensajes) {
+        cola_mensajes->cantidad = 0;
+        cola_mensajes->inicio = 0;
+        cola_mensajes->fin = 0;
+        cola_mensajes->mensaje_actual.activo = false;
+        cola_mensajes->procesando = false;
+    }
+    
+    printf("Memoria del juego limpiada.\n");
 }

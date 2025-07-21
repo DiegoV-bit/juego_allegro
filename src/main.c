@@ -19,6 +19,7 @@ int main()
     int k;
     float nave_x_inicial;
     float nave_y_inicial;
+    bool debug_mode = false;
 
     // Inicializar Allegro y sus addons
     ALLEGRO_DISPLAY *ventana = NULL;
@@ -154,10 +155,8 @@ int main()
             int puntaje = 0;
 
             // Inicializar Mensajes
-            Mensaje mensaje_powerup;
-            Mensaje mensaje_movilidad;
-            init_mensaje(&mensaje_powerup);
-            init_mensaje(&mensaje_movilidad);
+            ColaMensajes cola_mensajes;
+            init_cola_mensajes(&cola_mensajes);
 
             double tiempo_cache = 0;
 
@@ -180,6 +179,12 @@ int main()
                     if (!estado_nivel.mostrar_transicion)
                     {
                         manejar_eventos(evento, &nave, teclas, disparos, MAX_DISPAROS);
+
+                        if (evento.type == ALLEGRO_EVENT_KEY_DOWN && evento.keyboard.keycode == ALLEGRO_KEY_F1)
+                        {
+                            debug_mode = !debug_mode;
+                            printf("Modo debug %s\n", debug_mode ? "ACTIVADO" : "DESACTIVADO");
+                        }
                     }
                 }
 
@@ -204,10 +209,22 @@ int main()
                             estado_nivel.nivel_actual = siguiente_nivel;
                             estado_nivel.todos_enemigos_eliminados = false;
 
+                            for (int clear_i = 0; clear_i < MAX_DISPAROS; clear_i++)
+                            {
+                                disparos[clear_i].activo = false;
+                            }
+
+                            for (int clear_i = 0; clear_i < NUM_DISPAROS_ENEMIGOS; clear_i++)
+                            {
+                                disparos_enemigos[clear_i].activo = false;
+                            }
+
                             // Guardar el estado de la nave antes de reinicializarla
                             int nivel_disparo_radial_guardado = nave.nivel_disparo_radial;
                             int kills_para_mejora_guardado = nave.kills_para_mejora;
                             int tipo_nave_guardado = nave.tipo;
+
+                            nave.escudo.activo = false;
 
                             // Reinicializar la nave con los valores guardados
                             nave = init_nave(nave_x_inicial, nave_y_inicial, 50, 50, 100, 0.1, imagen_nave);
@@ -217,10 +234,23 @@ int main()
                             nave.kills_para_mejora = kills_para_mejora_guardado;
                             nave.tipo = tipo_nave_guardado;
 
-                            // Limpiar todas las teclas
-                            for(int k = 0; k < ALLEGRO_KEY_MAX; k++)
+                            memset(teclas, false, sizeof(teclas)); // Reiniciar teclas
+
+                            if (asteroides_activados(estado_nivel.nivel_actual)) 
                             {
-                                teclas[k] = false;
+                                init_asteroides(asteroides, NUM_ASTEROIDES, 800, imagen_asteroide);
+                            }
+                            else
+                            {
+                                for (int k = 0; k < NUM_ASTEROIDES; k++)
+                                {
+                                    asteroides[k].y = -2000;
+                                    asteroides[k].x = -2000;
+                                    asteroides[k].velocidad = 0;
+                                    asteroides[k].ancho = 0;
+                                    asteroides[k].alto = 0;
+                                }
+                                printf("Asteroides DESACTIVADOS en nivel %d\n", estado_nivel.nivel_actual);
                             }
 
                             // MANEJAR ASTEROIDES SEGÚN EL NIVEL
@@ -248,11 +278,18 @@ int main()
                             {
                                 enemigos[k] = enemigos_mapa[k];
                                 enemigos[k].imagen = imagen_enemigo;
+                                enemigos[k].activo = true;
                             }
 
+                            /*
                             for (int k = num_enemigos_cargados; k < NUM_ENEMIGOS; k++) {
                                 enemigos[k].activo = false;
                             }
+                            */
+
+                            memcpy(tilemap_global, tilemap, sizeof(tilemap));
+                            printf("Nivel %d iniciado con %d enemigos.\n", estado_nivel.nivel_actual, num_enemigos_cargados);
+                            printf("Powerups conservados: Radial Nv.%d, Tipo Nave: %d\n", nave.nivel_disparo_radial, nave.tipo);
 
                             // LIMPIAR DISPAROS
                             init_disparos(disparos, MAX_DISPAROS);
@@ -278,6 +315,15 @@ int main()
                         recargar_nivel = false;
                     }
 
+                    for (k = 0; k < MAX_POWERUPS; k++)
+                    {
+                        powerups[k].activo = false; // Reiniciar powerups
+                        powerups[k].x = 0;
+                        powerups[k].y = 0;
+                    }
+
+                    recargar_nivel = false;
+
                     // Cambiar movilidad si corresponde se puso en 30 para probar
                     if (puntaje >= 30 && nave.tipo == 0)
                     {
@@ -286,10 +332,13 @@ int main()
                         {
                             teclas[k] = false; // Reiniciar teclas para evitar problemas de movimiento
                         }
-                        mostrar_mensaje(&mensaje_movilidad, "Nueva movilidad desbloqueada descubre como usarla", 150, 200, 4.0, al_map_rgb(0, 255, 0));
+                        
+                        agregar_mensaje_cola(&cola_mensajes, "¡Nueva Movilidad Desbloqueada!", 4.0, al_map_rgb(0, 255, 0), true); // Centrado
+                        
+                        agregar_mensaje_cola(&cola_mensajes, "Usa las flechas para rotar y avanzar", 3.0, al_map_rgb(255, 255, 255), true); // Centrado
                     }
 
-                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &mensaje_powerup, &mensaje_movilidad, &estado_nivel, tiempo_cache, powerups, MAX_POWERUPS);
+                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &cola_mensajes, &estado_nivel, tiempo_cache, powerups, MAX_POWERUPS);
                     
                     al_clear_to_color(al_map_rgb(0, 0, 0));
                     
@@ -310,12 +359,18 @@ int main()
                         dibujar_enemigos(enemigos, num_enemigos_cargados);
                         dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
                         dibujar_powerups(powerups, MAX_POWERUPS);
+
+                        if (debug_mode)
+                        {
+                            dibujar_hitboxes_debug(nave, enemigos, num_enemigos_cargados, disparos, MAX_DISPAROS, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, asteroides, NUM_ASTEROIDES, tilemap);
+                        }
+                        
+
                         dibujar_puntaje(puntaje, fuente);
                         dibujar_barra_vida(nave);
                         dibujar_nivel_powerup(nave, fuente);
 
-                        if (mensaje_powerup.activo) dibujar_mensaje(mensaje_powerup, fuente);
-                        if (mensaje_movilidad.activo) dibujar_mensaje(mensaje_movilidad, fuente);
+                        dibujar_cola_mensajes(cola_mensajes, fuente);
                         
                         // Mostrar nivel actual
                         char texto_nivel[50];
@@ -326,7 +381,7 @@ int main()
                         {
                             char texto_escudo[50];
                             sprintf(texto_escudo, "Escudo: %d hits", nave.escudo.hits_restantes);
-                            al_draw_text(fuente, al_map_rgb(0, 255, 255), 10, 100, ALLEGRO_ALIGN_LEFT, texto_escudo);
+                            al_draw_text(fuente, al_map_rgb(0, 255, 255), 10, 100, ALLEGRO_ALIGN_CENTER, texto_escudo);
                         }
                     }
                     
