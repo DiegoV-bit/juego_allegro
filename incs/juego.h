@@ -80,6 +80,8 @@
 
 #define MAX_COLA_MENSAJES 5
 
+extern ALLEGRO_BITMAP *imagen_fondo_global;
+
 /*Estructuras usadas en el juego*/
 
 typedef struct

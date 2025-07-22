@@ -241,12 +241,22 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo di
  */
 void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int nivel_actual)
 {
-    // al_draw_bitmap(imagen_fondo, 0, 0, 0);
+    extern ALLEGRO_BITMAP *imagen_fondo_global;
     float cx = al_get_bitmap_width(nave.imagen) / 2.0f;
     float cy = al_get_bitmap_height(nave.imagen) / 2.0f;
     float escala_x = nave.ancho / al_get_bitmap_width(nave.imagen);
     float escala_y = nave.largo / al_get_bitmap_height(nave.imagen);
     int i;
+
+    if (imagen_fondo_global)
+    {
+        al_draw_scaled_bitmap(imagen_fondo_global, 0, 0, al_get_bitmap_width(imagen_fondo_global), al_get_bitmap_height(imagen_fondo_global), 0, 0, 800, 600, 0);
+    }
+    else
+    {
+        // Fondo negro por defecto si no hay imagen
+        al_clear_to_color(al_map_rgb(0, 0, 0));
+    }
 
     // Dibujar la nave
     al_draw_scaled_rotated_bitmap(nave.imagen, cx, cy, nave.x + nave.ancho / 2, nave.y + nave.largo / 2, escala_x, escala_y, nave.angulo, 0);
@@ -2126,12 +2136,12 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
             powerups_activos++;
 
             static int parpadeo = 0;
-            parpadeo = (parpadeo + 1) % 120;
+            parpadeo = (parpadeo + 1) % 60;
 
             ALLEGRO_COLOR color_powerup = powerups[i].color;
-            if (parpadeo < 60)
+            if (parpadeo < 30)
             {
-                color_powerup = al_map_rgb(100, 255, 255);
+                color_powerup = al_map_rgb(150, 255, 255);
             }
             
             if (powerups[i].tipo == 0)
@@ -2139,10 +2149,12 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
                 float cx = powerups[i].x + 15;
                 float cy = powerups[i].y + 15;
 
-                // Halo más grande y visible
-                al_draw_filled_circle(cx, cy, 20, al_map_rgba(0, 255, 255, 60));
-                al_draw_filled_circle(cx, cy, 15, al_map_rgba(0, 255, 255, 120)); 
-                al_draw_circle(cx, cy, 15, color_powerup, 4); // Borde más grueso
+                // Círculo exterior (halo)
+                al_draw_filled_circle(cx, cy, 16, al_map_rgba(0, 255, 255, 50)); // Halo suave
+                
+                // Círculo principal
+                al_draw_filled_circle(cx, cy, 12, al_map_rgba(0, 255, 255, 80)); 
+                al_draw_circle(cx, cy, 12, color_powerup, 2); // Borde del círculo principal
 
                 float hex_x[6];
                 float hex_y[6];
@@ -2159,12 +2171,18 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
                     al_draw_line(hex_x[j], hex_y[j], hex_x[(j + 1) % 6], hex_y[(j + 1) % 6], color_powerup, 2);
                 }
                 
-                al_draw_line(cx - 4, cy, cx + 4, cy, color_powerup, 2);
-                al_draw_line(cx, cy - 4, cx, cy + 4, color_powerup, 2);
+                al_draw_line(cx - 5, cy, cx + 5, cy, color_powerup, 2);
+                al_draw_line(cx, cy - 5, cx, cy + 5, color_powerup, 2);
 
-                if (parpadeo < 60)
+                for (int j = 0; j < 6; j++)
                 {
-                    al_draw_text(al_create_builtin_font(), al_map_rgb(255, 255, 255), cx, cy + 30, ALLEGRO_ALIGN_CENTER, "ESCUDO");
+                    al_draw_filled_circle(hex_x[j], hex_y[j], 1.5f, color_powerup);
+                }
+                
+                if (parpadeo < 15) // Solo 1/4 del tiempo
+                {
+                    al_draw_text(al_create_builtin_font(), al_map_rgb(200, 255, 255), 
+                                cx, cy + 20, ALLEGRO_ALIGN_CENTER, "ESCUDO");
                 }
             }
         }
@@ -2312,12 +2330,14 @@ bool verificar_colision_nave_muro(float x, float y, float ancho, float largo)
             if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
             {
                 // Verificar colisión con muros indestructibles (tipo 3), escudos (tipo 2) o asteroides fijos (tipo 1)
-                if (tilemap_global[fila][col].tipo == 3 || 
-                    (tilemap_global[fila][col].tipo == 2 && tilemap_global[fila][col].vida > 0) ||
-                    tilemap_global[fila][col].tipo == 1)
+                if (tilemap_global[fila][col].tipo == 3 || tilemap_global[fila][col].tipo == 1)
                 {
                     printf("¡Colisión detectada con tile tipo %d en (%d, %d)!\n", tilemap_global[fila][col].tipo, col, fila);
                     return true; // Hay colisión
+                }
+                else if (tilemap_global[fila][col].tipo == 2 && tilemap_global[fila][col].vida > 0)
+                {
+                    printf("Nave atravesando escudo en (%d, %d) - Sin colisión\n", col, fila);
                 }
             }
         }
@@ -2546,12 +2566,15 @@ void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Dis
                 al_draw_rectangle(x, y, x + TILE_ANCHO, y + TILE_ALTO, color_tile, 1);
                 
                 // Mostrar vida del tile si es aplicable
-                if (tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0)
-                {
-                    char vida_texto[12]; // Buffer más grande
+                if (tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0) {
+                    char vida_texto[12];
                     sprintf(vida_texto, "%d", tilemap[fila][col].vida);
-                    al_draw_text(fuente_debug, al_map_rgb(255, 255, 255), 
-                               x + TILE_ANCHO/2, y + TILE_ALTO/2, ALLEGRO_ALIGN_CENTER, vida_texto);
+                    al_draw_text(fuente_debug, al_map_rgb(255, 255, 255), x + TILE_ANCHO/2, y + TILE_ALTO/2, ALLEGRO_ALIGN_CENTER, vida_texto);
+                    al_draw_text(fuente_debug, al_map_rgb(150, 255, 150), x + TILE_ANCHO/2, y + TILE_ALTO/2 - 8, ALLEGRO_ALIGN_CENTER, "T");
+                } 
+                else if (tilemap[fila][col].tipo == 1 || tilemap[fila][col].tipo == 3) 
+                {
+                    al_draw_text(fuente_debug, al_map_rgb(255, 255, 255), x + TILE_ANCHO/2, y + TILE_ALTO/2, ALLEGRO_ALIGN_CENTER, "S");
                 }
             }
         }

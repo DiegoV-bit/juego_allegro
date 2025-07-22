@@ -2,6 +2,7 @@
 #include "juego.h"
 
 Tile tilemap_global[MAPA_FILAS][MAPA_COLUMNAS];
+ALLEGRO_BITMAP *imagen_fondo_global = NULL;
 
 /**
  * @file main.c 
@@ -39,6 +40,18 @@ int main()
     if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo) != 0)
     {
         return -1;
+    }
+
+    imagen_fondo_global = fondo_juego;
+
+    if (imagen_fondo_global) 
+    {
+        printf("Imagen de fondo asignada correctamente.\n");
+        printf("Dimensiones: %dx%d\n", al_get_bitmap_width(imagen_fondo_global), al_get_bitmap_height(imagen_fondo_global));
+    } 
+    else
+    {
+        printf("ERROR: imagen_fondo_global es NULL\n");
     }
 
     /*Inicializar los botones del menu*/
@@ -343,8 +356,8 @@ int main()
                     else
                     {
                         // Dibujar el juego normal
-                        dibujar_tilemap(tilemap, imagen_asteroide);
                         dibujar_juego(nave, asteroides, 10, estado_nivel.nivel_actual);
+                        dibujar_tilemap(tilemap, imagen_asteroide);
                         dibujar_escudo(nave);
                         dibujar_disparos(disparos, 10);
                         
