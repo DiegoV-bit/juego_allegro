@@ -117,19 +117,27 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
         {
             if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
             {
-                if ((tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0) || tilemap[fila][col].tipo == 3 || tilemap[fila][col].tipo == 1)
-            {
-                    if (tilemap[fila][col].tipo == 2)
-                    {
-                        tilemap[fila][col].vida--;
-                        if (tilemap[fila][col].vida <= 0)
-                        {
-                            tilemap[fila][col].tipo = 0;
-                        }
-                    }
-    
+                Tile *tile = &tilemap[fila][col];
+
+                if (tile->tipo == 3)
+                {
                     asteroide->y = -asteroide->alto;
                     asteroide->x = rand() % (800 - (int)asteroide->ancho);
+                    printf("Asteroide rebotó en bloque sólido\n");
+                    return;
+                }
+                else if (tile->tipo == 1)
+                {
+                    asteroide->y = -asteroide->alto;
+                    asteroide->x = rand() % (800 - (int)asteroide->ancho);
+                    printf("Asteroide rebotó en asteroide fijo\n");
+                    return;
+                }
+                else if (tile->tipo == 2 && tile->vida > 0)
+                {
+                    asteroide->y = -asteroide->alto;
+                    asteroide->x = rand() % (800 - (int)asteroide->ancho);
+                    printf("Asteroide rebotó en escudo (sin dañarlo)\n");
                     return;
                 }
             }
@@ -510,19 +518,12 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                 
                 if (tile->tipo == 2 && tile->vida > 0)
                 {
-                    disparos[i].activo = false;
-                    tile->vida--;
-                    
-                    if (tile->vida <= 0)
-                    {
-                        tile->tipo = 0;
-                        printf("Escudo destruido por disparo jugador en (%d, %d)\n", col_disparo, fila_disparo);
-                    }
-                    else
-                    {
-                        printf("Escudo dañado por disparo jugador en (%d, %d). Vida restante: %d\n", col_disparo, fila_disparo, tile->vida);
-                    }
-                    continue;
+                    printf("Disparo del jugador atravesó escudo del mapa en (%d, %d)\n", col_disparo, fila_disparo);
+                }
+
+                if (tile->tipo == 1)
+                {
+                    printf("Disparo del jugador atravesó escudo del mapa en (%d, %d)\n", col_disparo, fila_disparo);
                 }
             }
         }
@@ -534,7 +535,6 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
         {
             actualizar_asteroide(&asteroides[i], tilemap, nave);
         
-            // bool disparo_impacto = false;
             for (j = 0; j < num_disparos; j++)
             {
                 if (disparos[j].activo && detectar_colision_disparo(asteroides[i], disparos[j]))
@@ -565,18 +565,29 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
             {
                 disparos[j].activo = false;
                 enemigos[i].vida--;
+
                 if (enemigos[i].vida <= 0)
                 {
+                    float pos_enemigo_x = enemigos[i].x;
+                    float pos_enemigo_y = enemigos[i].y;
+                    int tipo_enemigo = enemigos[i].tipo;
+
                     enemigos[i].activo = false;
-                    (*puntaje) += 5; // Más puntos por destruir enemigo
+                    (*puntaje) += 10; // Incrementa el puntaje por destruir un enemigo
                     nave->kills_para_mejora++;
                     verificar_mejora_disparo_radial(nave, cola_mensajes);
 
                     if (rand() % 100 < POWERUP_PROB)
                     {
-                        crear_powerup_escudo(powerups, max_powerups, enemigos[i].x, enemigos[i].y);
+                        crear_powerup_escudo(powerups, max_powerups, pos_enemigo_x, pos_enemigo_y);
+                        printf("Powerup generado tras eliminar enemigo tipo %d en (%.0f, %.0f)\n", tipo_enemigo, pos_enemigo_x, pos_enemigo_y);
+                    }
+                    else
+                    {
+                        printf("No se generó powerup (probabilidad %d%%)\n", POWERUP_PROB);
                     }
                 }
+                break;
             }
         }
 
@@ -2059,7 +2070,7 @@ void crear_powerup_escudo(Powerup powerups[], int max_powerups, float x, float y
             powerups[i].tipo = 0;
             powerups[i].activo = true;
             powerups[i].tiempo_aparicion = al_get_time();
-            powerups[i].duracion_vida = 15.0;
+            powerups[i].duracion_vida = 20.0;
             powerups[i].color = al_map_rgb(0, 255, 255);
             printf("Powerup de escudo creado en (%.0f, %.0f)\n", x, y);
             break;
@@ -2076,7 +2087,7 @@ void actualizar_powerups(Powerup powerups[], int max_powerups, double tiempo_act
     {
         if (powerups[i].activo)
         {
-            powerups[i].y += 2.0f;
+            powerups[i].y += 1.5f;
 
             if (powerups[i].y > 600) // Sale por la parte inferior
             {
@@ -2088,6 +2099,16 @@ void actualizar_powerups(Powerup powerups[], int max_powerups, double tiempo_act
                 powerups[i].activo = false;
                 printf("Powerup expirado por tiempo.\n");
             }
+            else
+            {
+                static double ultimo_debug = 0;
+                if (tiempo_actual - ultimo_debug >= 3.0)
+                {
+                    double tiempo_restante = powerups[i].duracion_vida - (tiempo_actual - powerups[i].tiempo_aparicion);
+                    printf("Powerup %d activo: pos(%.1f, %.1f), tiempo restante: %.1fs\n", i, powerups[i].x, powerups[i].y, tiempo_restante);
+                    ultimo_debug = tiempo_actual;
+                }
+            }
         }
     }
 }
@@ -2096,18 +2117,21 @@ void actualizar_powerups(Powerup powerups[], int max_powerups, double tiempo_act
 void dibujar_powerups(Powerup powerups[], int max_powerups)
 {
     int i;
+    int powerups_activos = 0;
 
     for (i = 0; i < max_powerups; i++)
     {
         if (powerups[i].activo)
         {
+            powerups_activos++;
+
             static int parpadeo = 0;
-            parpadeo = (parpadeo + 1) % 60;
+            parpadeo = (parpadeo + 1) % 120;
 
             ALLEGRO_COLOR color_powerup = powerups[i].color;
-            if (parpadeo < 30)
+            if (parpadeo < 60)
             {
-                color_powerup = al_map_rgb(50, 255, 255);
+                color_powerup = al_map_rgb(100, 255, 255);
             }
             
             if (powerups[i].tipo == 0)
@@ -2115,8 +2139,10 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
                 float cx = powerups[i].x + 15;
                 float cy = powerups[i].y + 15;
 
-                al_draw_filled_circle(cx, cy, 15, al_map_rgba(0, 255, 255, 100)); // Dibujar círculo para el powerup de escudo
-                al_draw_circle(cx, cy, 15, color_powerup, 3);
+                // Halo más grande y visible
+                al_draw_filled_circle(cx, cy, 20, al_map_rgba(0, 255, 255, 60));
+                al_draw_filled_circle(cx, cy, 15, al_map_rgba(0, 255, 255, 120)); 
+                al_draw_circle(cx, cy, 15, color_powerup, 4); // Borde más grueso
 
                 float hex_x[6];
                 float hex_y[6];
@@ -2135,8 +2161,19 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
                 
                 al_draw_line(cx - 4, cy, cx + 4, cy, color_powerup, 2);
                 al_draw_line(cx, cy - 4, cx, cy + 4, color_powerup, 2);
+
+                if (parpadeo < 60)
+                {
+                    al_draw_text(al_create_builtin_font(), al_map_rgb(255, 255, 255), cx, cy + 30, ALLEGRO_ALIGN_CENTER, "ESCUDO");
+                }
             }
         }
+    }
+
+    static int debug_contador = 0;
+    if (++debug_contador % 60 == 0) // Cada segundo
+    {
+        printf("Powerups activos en pantalla: %d/%d\n", powerups_activos, max_powerups);
     }
 }
 
@@ -2149,15 +2186,27 @@ bool detectar_colision_powerup(Nave nave, Powerup powerup)
 
 void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
 {
-    if (powerup->tipo == 0) // Escudo
-    {
-        activar_escudo(&nave->escudo, 3);
-        agregar_mensaje_cola(cola_mensajes, "Escudo Activado!", 2.0, al_map_rgb(0, 255, 255), true);
-        agregar_mensaje_cola(cola_mensajes,"Resistencia: 3 impactos", 2.0, al_map_rgb(255, 255, 255), true);
-        printf("¡Escudo activado activo hasta 3 disparos!\n");
+    if (powerup->tipo == 0) { // Escudo
+        if (nave->escudo.activo) {
+            // Si ya tiene escudo, renovar con máxima resistencia
+            nave->escudo.hits_restantes = 3;
+            nave->escudo.hits_max = 3;
+            nave->escudo.tiempo_activacion = al_get_time();
+            nave->escudo.intensidad = 1.0f;
+            
+            agregar_mensaje_cola(cola_mensajes, "¡Escudo Renovado!", 2.0, al_map_rgb(0, 255, 255), true);
+            agregar_mensaje_cola(cola_mensajes, "Resistencia restaurada a 3 hits", 2.0, al_map_rgb(255, 255, 255), true);
+            printf("Escudo renovado - Resistencia restaurada a 3 hits\n");
+        } else {
+            activar_escudo(&nave->escudo, 3);
+            agregar_mensaje_cola(cola_mensajes, "¡Escudo Activado!", 2.0, al_map_rgb(0, 255, 255), true);
+            agregar_mensaje_cola(cola_mensajes, "Resistencia: 3 impactos", 2.0, al_map_rgb(255, 255, 255), true);
+            printf("Escudo activado - Resistencia: 3 hits\n");
+        }
     }
     
     powerup->activo = false;
+    printf("Powerup recogido y desactivado correctamente\n");
 }
 
 
@@ -2167,7 +2216,7 @@ void init_escudo(Escudo* escudo)
     escudo->hits_max = 0;
     escudo->hits_restantes = 0;
     escudo->tiempo_activacion = 0;
-    escudo->color = al_map_rgba(0, 255, 255, 150);
+    escudo->color = al_map_rgb(0, 255, 255);
     escudo->intensidad = 1.0f;
 }
 
@@ -2179,147 +2228,67 @@ void activar_escudo(Escudo* escudo, int hits_maximos)
     escudo->hits_restantes = hits_maximos;
     escudo->tiempo_activacion = al_get_time();
     escudo->intensidad = 1.0f;
+    escudo->color = al_map_rgb(0, 255, 255);
 }
 
 
 void actualizar_escudo(Escudo *escudo, double tiempo_actual)
 {
-    if (escudo->activo)
+    if (!escudo->activo) return;
+    
+    if (escudo->hits_restantes == 1)
     {
-        if (escudo->hits_restantes <= 0)
-        {
-            escudo->activo = false;
-            printf("Escudo desactivado\n");
-        }
-        else
-        {
-            if (escudo->hits_restantes == 1)
-            {
-                escudo->intensidad = 0.3f + 0.7f * sin(tiempo_actual * 15.0f);
-            }
-            else if (escudo->hits_restantes == 2)
-            {
-                escudo->intensidad = 0.5f + 0.3f * sin(tiempo_actual * 8.0f);
-            }
-            else
-            {
-                escudo->intensidad = 0.8f + 0.2f * sin(tiempo_actual * 3.0f);
-            }
-        }
+        escudo->intensidad = 0.7f + 0.3f * sin(tiempo_actual * 8);
+    }
+    else if (escudo->hits_restantes == 2) {
+        escudo->intensidad = 0.8f + 0.2f * sin(tiempo_actual * 4);
+    } 
+    else 
+    {
+        escudo->intensidad = 1.0f;
     }
 }
 
 
 void dibujar_escudo(Nave nave)
 {
-    if (nave.escudo.activo)
-    {
-        float cx = nave.x + nave.ancho / 2;
-        float cy = nave.y + nave.largo / 2;
-        float radio = (nave.ancho + nave.largo) / 3.0f + 10;
-        
-        // cambio de color en base al daño que recibe el escudo
-        ALLEGRO_COLOR color_base;
-        if (nave.escudo.hits_restantes >= 3)
-        {
-            color_base = al_map_rgb(0, 255, 255);      // Celeste (Completo)
-        }
-        else if (nave.escudo.hits_restantes == 2)
-        {
-            color_base = al_map_rgb(255, 255, 0);      // Amarillo (medio)
-        }
-        else
-        {
-            color_base = al_map_rgb(255, 100, 100);    // Rojo (crítico)
-        }
-        
-        // CALCULAR COLOR CON INTENSIDAD
-        int alpha = (int)(255 * nave.escudo.intensidad * 0.6f);
-        
-        ALLEGRO_COLOR color_escudo;
-        if (nave.escudo.hits_restantes >= 3) {
-            // Cian con transparencia
-            color_escudo = al_map_rgba(0, 255, 255, alpha);
-        } else if (nave.escudo.hits_restantes == 2) {
-            // Amarillo con transparencia
-            color_escudo = al_map_rgba(255, 255, 0, alpha);
-        } else {
-            // Rojo con transparencia
-            color_escudo = al_map_rgba(255, 100, 100, alpha);
-        }
-        
-        // Círculo principal del escudo
-        al_draw_circle(cx, cy, radio, color_escudo, 3);
-        al_draw_circle(cx, cy, radio - 3, al_map_rgba(100, 200, 255, alpha/2), 1);
-        
-        // Efecto de hexágono rotatorio
-        float hex_x[6], hex_y[6];
-        for (int i = 0; i < 6; i++) 
-        {
-            hex_x[i] = cx + cos(i * ALLEGRO_PI / 3 + al_get_time()) * (radio - 5);
-            hex_y[i] = cy + sin(i * ALLEGRO_PI / 3 + al_get_time()) * (radio - 5);
-        }
-        
-        ALLEGRO_COLOR color_hexagono;
-        if (nave.escudo.hits_restantes >= 3) {
-            color_hexagono = al_map_rgba(0, 255, 255, alpha/3);
-        } else if (nave.escudo.hits_restantes == 2) {
-            color_hexagono = al_map_rgba(255, 255, 0, alpha/3);
-        } else {
-            color_hexagono = al_map_rgba(255, 100, 100, alpha/3);
-        }
-        
-        for (int i = 0; i < 6; i++) {
-            al_draw_line(hex_x[i], hex_y[i], hex_x[(i+1)%6], hex_y[(i+1)%6], color_hexagono, 2);
-        }
-        
-        // MOSTRAR HITS RESTANTES EN LUGAR DE TIEMPO
-        float barra_ancho = 60;
-        float barra_alto = 8;
-        float barra_x = cx - barra_ancho / 2;
-        float barra_y = cy + radio + 15;
-        
-        // Dibujar hits como segmentos
-        float segment_width = barra_ancho / nave.escudo.hits_max;
-        
-        // Fondo de la barra
-        al_draw_filled_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
-                                al_map_rgba(0, 0, 0, 150));
-        
-        // Dibujar segmentos activos
-        for (int i = 0; i < nave.escudo.hits_restantes; i++) {
-            float seg_x = barra_x + (i * segment_width);
-            al_draw_filled_rectangle(seg_x + 1, barra_y + 1, seg_x + segment_width - 1, barra_y + barra_alto - 1, 
-                                    color_base);
-        }
-        
-        // Borde
-        al_draw_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
-                         al_map_rgb(255, 255, 255), 1);
-    }
+    if (!nave.escudo.activo) return;
+    
+    float centro_x = nave.x + nave.ancho / 2;
+    float centro_y = nave.y + nave.largo / 2;
+    float radio = (nave.ancho + nave.largo) / 3.0f + 10;
+    
+    unsigned char r, g, b, a;
+    al_unmap_rgba(nave.escudo.color, &r, &g, &b, &a);
+    
+    ALLEGRO_COLOR color_escudo = al_map_rgba(r, g, b, (int)(nave.escudo.intensidad * 150));
+    
+    al_draw_circle(centro_x, centro_y, radio, color_escudo, 3);
+    al_draw_circle(centro_x, centro_y, radio - 2, color_escudo, 2);
 }
 
 
 bool escudo_activo(Nave nave)
 {
-    return nave.escudo.activo;
+    return nave.escudo.activo && nave.escudo.hits_restantes > 0;
 }
 
 
 bool escudo_recibir_dano(Escudo* escudo)
 {
-    if (!escudo->activo) return false;
-    
-    escudo->hits_restantes--;
-    printf("¡Escudo impactado! Hits restantes: %d\n", escudo->hits_restantes);
-    
-    if (escudo->hits_restantes <= 0)
-    {
-        escudo->activo = false;
-        printf("¡Escudo destruido!\n");
+    if (!escudo->activo || escudo->hits_restantes <= 0) {
+        return false;
     }
     
-    return true; // Indica que el escudo absorbió el daño
+    escudo->hits_restantes--;
+    printf("Escudo recibió daño. Hits restantes: %d\n", escudo->hits_restantes);
+    
+    if (escudo->hits_restantes <= 0) {
+        escudo->activo = false;
+        printf("Escudo destruido!\n");
+    }
+    
+    return true;
 }
 
 
@@ -2379,6 +2348,7 @@ void agregar_mensaje_cola(ColaMensajes *cola, const char *texto, double duracion
     size_t max_len = sizeof(cola->mensajes[cola->fin].texto) - 1;
     strncpy(cola->mensajes[cola->fin].texto, texto, max_len);
     cola->mensajes[cola->fin].texto[max_len] = '\0';
+
     cola->mensajes[cola->fin].duracion = duracion;
     cola->mensajes[cola->fin].color = color;
     cola->mensajes[cola->fin].centrado = centrado;
@@ -2531,9 +2501,7 @@ void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Dis
     {
         if (disparos[i].activo)
         {
-            al_draw_rectangle(disparos[i].x, disparos[i].y, 
-                            disparos[i].x + 5, disparos[i].y + 10, 
-                            al_map_rgb(0, 0, 255), 1);
+            al_draw_rectangle(disparos[i].x, disparos[i].y, disparos[i].x + 5, disparos[i].y + 10, al_map_rgb(0, 0, 255), 1);
         }
     }
 
@@ -2637,4 +2605,28 @@ void limpiar_memoria_juego(Disparo disparos[], int num_disparos, Disparo disparo
     }
     
     printf("Memoria del juego limpiada.\n");
+}
+
+
+/**
+ * @brief Verifica si la nave está atravesando un escudo.
+ */
+bool nave_atravesando_escudo(float x, float y, float ancho, float largo, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
+{
+    int col_izquierda = (int)(x / TILE_ANCHO);
+    int col_derecha = (int)((x + ancho - 1) / TILE_ANCHO);
+    int fila_superior = (int)(y / TILE_ALTO);
+    int fila_inferior = (int)((y + largo - 1) / TILE_ALTO);
+
+    for (int fila = fila_superior; fila <= fila_inferior; fila++) {
+        for (int col = col_izquierda; col <= col_derecha; col++) {
+            if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS) {
+                if (tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0) {
+                    return true;
+                }
+            }
+        }
+    }
+    
+    return false;
 }

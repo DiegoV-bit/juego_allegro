@@ -209,6 +209,13 @@ int main()
                             estado_nivel.nivel_actual = siguiente_nivel;
                             estado_nivel.todos_enemigos_eliminados = false;
 
+                            for (k = 0; k < MAX_POWERUPS; k++)
+                            {
+                                powerups[k].activo = false;
+                                powerups[k].x = 0;
+                                powerups[k].y = 0;
+                            }
+
                             for (int clear_i = 0; clear_i < MAX_DISPAROS; clear_i++)
                             {
                                 disparos[clear_i].activo = false;
@@ -281,12 +288,6 @@ int main()
                                 enemigos[k].activo = true;
                             }
 
-                            /*
-                            for (int k = num_enemigos_cargados; k < NUM_ENEMIGOS; k++) {
-                                enemigos[k].activo = false;
-                            }
-                            */
-
                             memcpy(tilemap_global, tilemap, sizeof(tilemap));
                             printf("Nivel %d iniciado con %d enemigos.\n", estado_nivel.nivel_actual, num_enemigos_cargados);
                             printf("Powerups conservados: Radial Nv.%d, Tipo Nave: %d\n", nave.nivel_disparo_radial, nave.tipo);
@@ -314,15 +315,6 @@ int main()
 
                         recargar_nivel = false;
                     }
-
-                    for (k = 0; k < MAX_POWERUPS; k++)
-                    {
-                        powerups[k].activo = false; // Reiniciar powerups
-                        powerups[k].x = 0;
-                        powerups[k].y = 0;
-                    }
-
-                    recargar_nivel = false;
 
                     // Cambiar movilidad si corresponde se puso en 30 para probar
                     if (puntaje >= 30 && nave.tipo == 0)
