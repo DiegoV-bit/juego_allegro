@@ -583,14 +583,14 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                     int tipo_enemigo = enemigos[i].tipo;
 
                     enemigos[i].activo = false;
-                    (*puntaje) += 10; // Incrementa el puntaje por destruir un enemigo
+                    (*puntaje)++; // Incrementa el puntaje por destruir un enemigo
                     nave->kills_para_mejora++;
                     verificar_mejora_disparo_radial(nave, cola_mensajes);
 
                     if (rand() % 100 < POWERUP_PROB)
                     {
-                        crear_powerup_escudo(powerups, max_powerups, pos_enemigo_x, pos_enemigo_y);
-                        printf("Powerup generado tras eliminar enemigo tipo %d en (%.0f, %.0f)\n", tipo_enemigo, pos_enemigo_x, pos_enemigo_y);
+                        crear_powerup_aleatorio(powerups, max_powerups, pos_enemigo_x, pos_enemigo_y);
+                        printf("✅ Powerup aleatorio generado tras eliminar enemigo tipo %d en (%.0f, %.0f)\n", tipo_enemigo, pos_enemigo_x, pos_enemigo_y);
                     }
                     else
                     {
@@ -2141,7 +2141,14 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
             ALLEGRO_COLOR color_powerup = powerups[i].color;
             if (parpadeo < 30)
             {
-                color_powerup = al_map_rgb(150, 255, 255);
+                if (powerups[i].tipo == 0) //Escudo
+                {
+                    color_powerup = al_map_rgb(150, 255, 255);
+                }
+                else if (powerups[i].tipo == 1) // Vida
+                {
+                    color_powerup = al_map_rgb(255, 100, 100);
+                }
             }
             
             if (powerups[i].tipo == 0)
@@ -2174,22 +2181,60 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
                 al_draw_line(cx - 5, cy, cx + 5, cy, color_powerup, 2);
                 al_draw_line(cx, cy - 5, cx, cy + 5, color_powerup, 2);
 
-                for (int j = 0; j < 6; j++)
+                for (j = 0; j < 6; j++)
                 {
                     al_draw_filled_circle(hex_x[j], hex_y[j], 1.5f, color_powerup);
                 }
                 
                 if (parpadeo < 15) // Solo 1/4 del tiempo
                 {
-                    al_draw_text(al_create_builtin_font(), al_map_rgb(200, 255, 255), 
-                                cx, cy + 20, ALLEGRO_ALIGN_CENTER, "ESCUDO");
+                    al_draw_text(al_create_builtin_font(), al_map_rgb(200, 255, 255), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "ESCUDO");
+                }
+            }
+            else if (powerups[i].tipo == 1) // Vida
+            {
+                float cx = powerups[i].x + 15;
+                float cy = powerups[i].y + 15;
+
+                al_draw_filled_circle(cx, cy, 16, al_map_rgba(0, 255, 255, 50));
+
+                al_draw_filled_circle(cx, cy, 12, al_map_rgba(0, 255, 255, 80));
+                al_draw_circle(cx, cy, 12, color_powerup, 2);
+
+                float hex_x[6];
+                float hex_y[6];
+
+                for (int j = 0; j < 6; j++)
+                {
+                    hex_x[j] = cx + cos(j * ALLEGRO_PI / 3) * 7;
+                    hex_y[j] = cy + sin(j * ALLEGRO_PI / 3) * 7;
+                }
+
+                for (int j = 0; j < 6; j++)
+                {
+                    al_draw_line(hex_x[j], hex_y[j], hex_x[(j+1)%6], hex_y[(j+1)%6], color_powerup, 2);
+                }
+                
+                // Cruz central
+                al_draw_line(cx - 5, cy, cx + 5, cy, color_powerup, 2);
+                al_draw_line(cx, cy - 5, cx, cy + 5, color_powerup, 2);
+                
+                // Pequeños círculos en las esquinas del hexágono
+                for (int j = 0; j < 6; j++)
+                {
+                    al_draw_filled_circle(hex_x[j], hex_y[j], 1.5f, color_powerup);
+                }
+
+                if (parpadeo < 15)
+                {
+                    al_draw_text(al_create_builtin_font(), al_map_rgb(255, 150, 150), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "VIDA");
                 }
             }
         }
     }
 
     static int debug_contador = 0;
-    if (++debug_contador % 60 == 0) // Cada segundo
+    if (++debug_contador % 120 == 0) // Cada segundo
     {
         printf("Powerups activos en pantalla: %d/%d\n", powerups_activos, max_powerups);
     }
@@ -2204,8 +2249,10 @@ bool detectar_colision_powerup(Nave nave, Powerup powerup)
 
 void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
 {
-    if (powerup->tipo == 0) { // Escudo
-        if (nave->escudo.activo) {
+    if (powerup->tipo == 0) // escudo
+    {
+        if (nave->escudo.activo)
+        {
             // Si ya tiene escudo, renovar con máxima resistencia
             nave->escudo.hits_restantes = 3;
             nave->escudo.hits_max = 3;
@@ -2215,11 +2262,49 @@ void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
             agregar_mensaje_cola(cola_mensajes, "¡Escudo Renovado!", 2.0, al_map_rgb(0, 255, 255), true);
             agregar_mensaje_cola(cola_mensajes, "Resistencia restaurada a 3 hits", 2.0, al_map_rgb(255, 255, 255), true);
             printf("Escudo renovado - Resistencia restaurada a 3 hits\n");
-        } else {
+        }
+        else
+        {
             activar_escudo(&nave->escudo, 3);
             agregar_mensaje_cola(cola_mensajes, "¡Escudo Activado!", 2.0, al_map_rgb(0, 255, 255), true);
             agregar_mensaje_cola(cola_mensajes, "Resistencia: 3 impactos", 2.0, al_map_rgb(255, 255, 255), true);
             printf("Escudo activado - Resistencia: 3 hits\n");
+        }
+    }
+    else if (powerup->tipo == 1)
+    {
+        int vida_anterior = nave->vida;
+        int vida_a_restaurar = 30;
+
+        nave->vida += vida_a_restaurar;
+        if (nave->vida > 100)
+        {
+            nave->vida = 100;
+        }
+
+        int vida_restaurada = nave->vida - vida_anterior;
+
+        if (vida_restaurada > 0)
+        {
+            agregar_mensaje_cola(cola_mensajes, "Vida Restaurada", 2.0, al_map_rgb(255, 0, 0), true);
+
+            char mensaje_detalle[100];
+            if (nave->vida == 100)
+            {
+                agregar_mensaje_cola(cola_mensajes, "Vida al maximo", 2.0, al_map_rgb(0, 255, 0), true);
+            }
+            else
+            {
+                sprintf(mensaje_detalle, "Vida restaurada: +%d", vida_restaurada);
+                agregar_mensaje_cola(cola_mensajes, mensaje_detalle, 2.0, al_map_rgb(255, 255, 255), true);
+            }
+            
+            printf("Vida restaurada: +%d HP (Vida total: %d/100)\n", vida_restaurada, nave->vida);
+        }
+        else
+        {
+            agregar_mensaje_cola(cola_mensajes, "Vida al maximo", 1.5, al_map_rgb(255, 255, 0), true);
+            printf("La vida ya esta al maximo (100/100)\n");
         }
     }
     
@@ -2652,4 +2737,60 @@ bool nave_atravesando_escudo(float x, float y, float ancho, float largo, Tile ti
     }
     
     return false;
+}
+
+
+void crear_powerup_vida(Powerup powerups[], int max_powerups, float x, float y)
+{
+    int i;
+
+    for (i = 0; i < max_powerups; i++)
+    {
+        if (!powerups[i].activo)
+        {
+            powerups[i].x = x;
+            powerups[i].y = y;
+            powerups[i].tipo = 1; // Tipo de powerup de vida
+            powerups[i].activo = true;
+            powerups[i].tiempo_aparicion = al_get_time();
+            powerups[i].duracion_vida = 20.0;
+            powerups[i].color = al_map_rgb(255, 0, 0); // Rojo para vida
+            printf("Powerup de vida creado en (%.0f, %.0f)\n", x, y);
+            break;
+
+            printf("POWERUP DE VIDA CREADO EXITOSAMENTE:\n");
+            printf("   - Slot: %d\n", i);
+            printf("   - Posición: (%.1f, %.1f)\n", x, y);
+            printf("   - Tipo: VIDA\n");
+            printf("   - Color: ROJO\n");
+            printf("   - Duración: %.1f segundos\n", powerups[i].duracion_vida);
+            
+            return;
+        }
+    }
+
+    printf("ERROR: No hay slots disponibles para powerup de vida\n");
+}
+
+
+void crear_powerup_aleatorio(Powerup powerups[], int max_powerups, float x, float y)
+{
+    int probabilidad = rand() % 100;
+    
+    if (probabilidad < POWERUP_ESCUDO_PROB)
+    {
+        crear_powerup_escudo(powerups, max_powerups, x, y);
+        printf("Powerup aleatorio: ESCUDO (probabilidad: %d%%)\n", probabilidad);
+    } 
+    else if (probabilidad < POWERUP_ESCUDO_PROB + POWERUP_VIDA_PROB)
+    {
+        crear_powerup_vida(powerups, max_powerups, x, y);
+        printf("Powerup aleatorio: VIDA (probabilidad: %d%%)\n", probabilidad);
+    } 
+    else
+    {
+        // Por ahora, crear escudo como fallback
+        crear_powerup_escudo(powerups, max_powerups, x, y);
+        printf("Powerup aleatorio: ESCUDO (fallback, probabilidad: %d%%)\n", probabilidad);
+    }
 }

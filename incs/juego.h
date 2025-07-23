@@ -78,6 +78,10 @@
 #define MAX_POWERUPS 10
 #define POWERUP_PROB 25
 
+#define POWERUP_ESCUDO_PROB 40
+#define POWERUP_VIDA_PROB 30
+#define POWERUP_OTROS_PROB 25
+
 #define MAX_COLA_MENSAJES 5
 
 extern ALLEGRO_BITMAP *imagen_fondo_global;
@@ -354,4 +358,6 @@ void dibujar_cola_mensajes(ColaMensajes cola, ALLEGRO_FONT* fuente);
 void mostrar_mensaje_centrado(Mensaje* mensaje, const char* texto, double duracion, ALLEGRO_COLOR color);
 void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Disparo disparos[], int num_disparos, Disparo disparos_enemigos[], int num_disparos_enemigos, Asteroide asteroides[], int num_asteroides, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 void limpiar_memoria_juego(Disparo disparos[], int num_disparos, Disparo disparos_enemigos[], int num_disparos_enemigos, Powerup powerups[], int max_powerups, Enemigo enemigos[], int num_enemigos, ColaMensajes* cola_mensajes);
+void crear_powerup_vida(Powerup powerups[], int max_powerups, float x, float y);
+void crear_powerup_aleatorio(Powerup powerups[], int max_powerups, float x, float y);
 #endif
