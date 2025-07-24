@@ -80,7 +80,7 @@ void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_venta
  *
  * @param asteroide Puntero al asteroide a actualizar.
  */
-void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave* nave)
+void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave* nave, Powerup powerups[], int max_powerups)
 {
     // Verifica colisión con la nave
     float centro_nave_x = nave->x + nave->ancho / 2;
@@ -98,16 +98,43 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
 
     int fila;
     int col;
+    int i;
 
     asteroide->y += asteroide->velocidad;
 
     if (detectar_colision_circular(centro_nave_x, centro_nave_y, radio_nave, centro_asteroide_x, centro_asteroide_y, radio_asteroide))
     {
-        // Asteroide impacta la nave: desaparece
+        if (escudo_recibir_dano(&nave->escudo))
+        {
+            printf("El escudo absorbió el daño del asteroide\n");
+        }
+        else
+        {
+            nave->vida -= 10;
+            printf("La nave recibió 10 de daño, Vida restante: %d\n", nave->vida);
+        }
+
+        // Asteroide desaparece tras impactar
         asteroide->y = -asteroide->alto;
         asteroide->x = rand() % (800 - (int)asteroide->ancho);
-        nave->vida -= 10;
         return;
+    }
+
+    for (i = 0; i < max_powerups; i++)
+    {
+        if (powerups[i].activo)
+        {
+            if (detectar_colision_generica(asteroide->x, asteroide->y, asteroide->ancho, asteroide->alto, powerups[i].x, powerups[i].y, 30, 30))
+            {
+                powerups[i].activo = false;
+                asteroide->y = -asteroide->alto;
+                asteroide->x = rand() % (800 - (int)asteroide->ancho);
+
+                const char *tipo_powerup = (powerups[i].tipo == 0) ? "ESCUDO" : (powerups[i].tipo == 1) ? "VIDA" : "DESCONOCIDO";
+                printf("¡Asteroide destruyó powerup de %s en (%.0f, %.0f)!\n", tipo_powerup, powerups[i].x, powerups[i].y);
+                return;
+            }
+        }
     }
 
     // Verifica TODAS las celdas que ocupa el asteroide
@@ -135,9 +162,16 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
                 }
                 else if (tile->tipo == 2 && tile->vida > 0)
                 {
+                    tile->vida--;
+                    printf("Asteroide dañó escudo en (%d, %d). Vida restante: %d\n", col, fila, tile->vida);
+                    
+                    if (tile->vida <= 0)
+                    {
+                        printf("Escudo del mapa destruido por asteroide en (%d, %d)\n", col, fila);
+                    }
+
                     asteroide->y = -asteroide->alto;
                     asteroide->x = rand() % (800 - (int)asteroide->ancho);
-                    printf("Asteroide rebotó en escudo (sin dañarlo)\n");
                     return;
                 }
             }
@@ -330,21 +364,6 @@ void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double t
             nave->x = nueva_x;
             nave->y = nueva_y;
         }
-    }
-
-    for (i = 0; i < NUM_ASTEROIDES; i++)
-    {
-        if (detectar_colision(nave, asteroides[i]))
-        {
-            printf("Colisión detectada con el asteroide %d\n", i);
-            nave->vida -= 5;
-            nave->tiempo_invulnerable = tiempo_actual + 10;
-            if (nave->vida <= 0)
-            {
-                printf("Nave destruida\n");
-                // implementar codigo para finalizar el juego
-            }
-        }        
     }
 }
 
@@ -543,8 +562,8 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
     {
         for (i = 0; i < num_asteroides; i++)
         {
-            actualizar_asteroide(&asteroides[i], tilemap, nave);
-        
+            actualizar_asteroide(&asteroides[i], tilemap, nave, powerups, max_powerups);
+            
             for (j = 0; j < num_disparos; j++)
             {
                 if (disparos[j].activo && detectar_colision_disparo(asteroides[i], disparos[j]))
@@ -604,10 +623,14 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
         // Nave vs enemigos (USA LA NUEVA FUNCIÓN)
         if (detectar_colision_nave_enemigo(*nave, enemigos[i]))
         {
-            if (!escudo_recibir_dano(&nave->escudo))
+            if (escudo_recibir_dano(&nave->escudo))
+            {
+                printf("El escudo absorbió el daño del enemigo\n");
+            }
+            else
             {
                 nave->vida -= 20;
-                printf("La nave recibio 20 de daño, Vida restante: %d\n", nave->vida);
+                printf("La nave recibió 20 de daño directo, Vida restante: %d\n", nave->vida);
             }
             enemigos[i].activo = false;
         }
@@ -636,6 +659,10 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                 
                 nave->vida -= dano;
                 printf("Nave recibio %d de daño por disparo enemigo. vida restante: %d\n", dano, nave->vida);
+           }
+           else
+           {
+                printf("El escudo absorbio el dano del disparo enemigo\n");
            }
         }
     }
@@ -1647,8 +1674,8 @@ void init_mensaje(Mensaje *mensaje)
 
 void mostrar_mensaje(Mensaje *mensaje, const char *texto, float x, float y, double duracion, ALLEGRO_COLOR color)
 {
-    strncpy(mensaje->texto, texto, sizeof(mensaje->texto) - 1);
-    mensaje->texto[sizeof(mensaje->texto) - 1] = '\0';
+    snprintf(mensaje->texto, sizeof(mensaje->texto), "%s", texto);
+
     mensaje->x = x;
     mensaje->y = y;
     mensaje->tiempo_inicio = al_get_time();
@@ -2348,7 +2375,7 @@ void actualizar_escudo(Escudo *escudo, double tiempo_actual)
     } 
     else 
     {
-        escudo->intensidad = 1.0f;
+        escudo->intensidad = 0.0f;
     }
 }
 
@@ -2379,18 +2406,21 @@ bool escudo_activo(Nave nave)
 
 bool escudo_recibir_dano(Escudo* escudo)
 {
-    if (!escudo->activo || escudo->hits_restantes <= 0) {
+    if (!escudo->activo || escudo->hits_restantes <= 0) 
+    {
+        printf("Escudo no disponible para absorver dano\n");
         return false;
     }
     
     escudo->hits_restantes--;
     printf("Escudo recibió daño. Hits restantes: %d\n", escudo->hits_restantes);
     
-    if (escudo->hits_restantes <= 0) {
+    if (escudo->hits_restantes <= 0)
+    {
         escudo->activo = false;
         printf("Escudo destruido!\n");
     }
-    
+
     return true;
 }
 
@@ -2450,9 +2480,7 @@ void agregar_mensaje_cola(ColaMensajes *cola, const char *texto, double duracion
         return;
     }
 
-    size_t max_len = sizeof(cola->mensajes[cola->fin].texto) - 1;
-    strncpy(cola->mensajes[cola->fin].texto, texto, max_len);
-    cola->mensajes[cola->fin].texto[max_len] = '\0';
+    snprintf(cola->mensajes[cola->fin].texto, sizeof(cola->mensajes[cola->fin].texto), "%s", texto);
 
     cola->mensajes[cola->fin].duracion = duracion;
     cola->mensajes[cola->fin].color = color;
@@ -2519,8 +2547,8 @@ void dibujar_cola_mensajes(ColaMensajes cola, ALLEGRO_FONT* fuente)
 
 void mostrar_mensaje_centrado(Mensaje* mensaje, const char* texto, double duracion, ALLEGRO_COLOR color)
 {
-    strncpy(mensaje->texto, texto, sizeof(mensaje->texto) - 1);
-    mensaje->texto[sizeof(mensaje->texto) - 1] = '\0';
+    snprintf(mensaje->texto, sizeof(mensaje->texto), "%s", texto);
+
     mensaje->x = 400; // Centro de la pantalla (800/2)
     mensaje->y = 200; // Posición vertical centrada
     mensaje->tiempo_inicio = al_get_time();
