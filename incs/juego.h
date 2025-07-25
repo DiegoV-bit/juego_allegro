@@ -280,7 +280,7 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
 bool detectar_colision(Nave* nave, Asteroide asteroide);
 void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo disparos[], int num_disparos);
 void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int nivel_actual);
-void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double tiempo_actual);
+void actualizar_nave(Nave* nave, bool teclas[]);
 void dibujar_barra_vida(Nave nave);
 void init_disparos(Disparo disparos[], int num_disparos);
 void actualizar_disparos(Disparo disparos[], int num_disparos);
@@ -360,4 +360,6 @@ void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Dis
 void limpiar_memoria_juego(Disparo disparos[], int num_disparos, Disparo disparos_enemigos[], int num_disparos_enemigos, Powerup powerups[], int max_powerups, Enemigo enemigos[], int num_enemigos, ColaMensajes* cola_mensajes);
 void crear_powerup_vida(Powerup powerups[], int max_powerups, float x, float y);
 void crear_powerup_aleatorio(Powerup powerups[], int max_powerups, float x, float y);
+float obtener_radio_nave(Nave nave);
+void obtener_centro_nave(Nave nave, float* centro_x, float* centro_y);
 #endif

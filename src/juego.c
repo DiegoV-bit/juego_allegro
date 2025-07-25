@@ -23,6 +23,7 @@
 Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave)
 {
     int i;
+
     // Inicializa la nave con los parámetros dados
     Nave nave;
     nave.x = x;
@@ -56,6 +57,7 @@ Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiem
  * @param asteroides Arreglo de asteroides a inicializar.
  * @param num_asteroides Numero de asteroides en el arreglo.
  * @param ancho_ventana Anchura de los asteroides.
+ * @param imagen_asteroide Sprite de los asteroides.
  */ 
 void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana, ALLEGRO_BITMAP* imagen_asteroide)
 {
@@ -79,13 +81,14 @@ void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_venta
  * se reinicia su posición en la parte superior.
  *
  * @param asteroide Puntero al asteroide a actualizar.
+ * @param tilemap Mapa de tiles del juego, usado para detectar colisiones.
  */
 void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave* nave, Powerup powerups[], int max_powerups)
 {
     // Verifica colisión con la nave
-    float centro_nave_x = nave->x + nave->ancho / 2;
-    float centro_nave_y = nave->y + nave->largo / 2;
-    float radio_nave = nave->ancho / 2.0f;
+    float centro_nave_x, centro_nave_y;
+    obtener_centro_nave(*nave, &centro_nave_x, &centro_nave_y);
+    float radio_nave = obtener_radio_nave(*nave);
     float centro_asteroide_x = asteroide->x + asteroide->ancho / 2;
     float centro_asteroide_y = asteroide->y + asteroide->alto / 2;
     float radio_asteroide = asteroide->ancho / 2.0f;
@@ -199,6 +202,7 @@ bool detectar_colision(Nave* nave, Asteroide asteroide)
 {
     float centro_nave_x = nave->x + nave->ancho / 2;
     float centro_nave_y = nave->y + nave->largo / 2;
+    obtener_centro_nave(*nave, &centro_nave_x, &centro_nave_y);
     float radio_nave = nave->ancho / 2.0f;
 
     float centro_asteroide_x = asteroide.x + asteroide.ancho / 2;
@@ -317,9 +321,8 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int ni
  * @param asteroides Arreglo de asteroides.
  * @param tiempo_actual Tiempo actual en segundos.
  */
-void actualizar_nave(Nave* nave, bool teclas[], Asteroide asteroides[], double tiempo_actual)
+void actualizar_nave(Nave* nave, bool teclas[])
 {
-    int i;
     float nueva_x = nave->x;
     float nueva_y = nave->y;
 
@@ -511,7 +514,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
         return;
     }
 
-    actualizar_nave(nave, teclas, asteroides, tiempo_actual);
+    actualizar_nave(nave, teclas);
     actualizar_disparos(disparos, num_disparos);
     actualizar_enemigos(enemigos, num_enemigos, disparos_enemigos, num_disparos_enemigos, tiempo_actual, *nave);
     actualizar_disparos_enemigos(disparos_enemigos, num_disparos_enemigos);
@@ -609,7 +612,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                     if (rand() % 100 < POWERUP_PROB)
                     {
                         crear_powerup_aleatorio(powerups, max_powerups, pos_enemigo_x, pos_enemigo_y);
-                        printf("✅ Powerup aleatorio generado tras eliminar enemigo tipo %d en (%.0f, %.0f)\n", tipo_enemigo, pos_enemigo_x, pos_enemigo_y);
+                        printf("Powerup aleatorio generado tras eliminar enemigo tipo %d en (%.0f, %.0f)\n", tipo_enemigo, pos_enemigo_x, pos_enemigo_y);
                     }
                     else
                     {
@@ -2429,6 +2432,10 @@ bool verificar_colision_nave_muro(float x, float y, float ancho, float largo)
 {
     // Obtener el tilemap global (necesitaremos pasarlo como parámetro)
     extern Tile tilemap_global[MAPA_FILAS][MAPA_COLUMNAS];
+
+    float centro_x = x + ancho / 2;
+    float centro_y = y + largo / 2;
+    float radio = (ancho * 0.7f) / 2.0f;
     
     // Calcular qué tiles ocupa la nave
     int col_izquierda = (int)(x / TILE_ANCHO);
@@ -2447,12 +2454,14 @@ bool verificar_colision_nave_muro(float x, float y, float ancho, float largo)
                 // Verificar colisión con muros indestructibles (tipo 3), escudos (tipo 2) o asteroides fijos (tipo 1)
                 if (tilemap_global[fila][col].tipo == 3 || tilemap_global[fila][col].tipo == 1)
                 {
-                    printf("¡Colisión detectada con tile tipo %d en (%d, %d)!\n", tilemap_global[fila][col].tipo, col, fila);
-                    return true; // Hay colisión
-                }
-                else if (tilemap_global[fila][col].tipo == 2 && tilemap_global[fila][col].vida > 0)
-                {
-                    printf("Nave atravesando escudo en (%d, %d) - Sin colisión\n", col, fila);
+                    float tile_centro_x = col * TILE_ANCHO + TILE_ANCHO / 2;
+                    float tile_centro_y = fila * TILE_ALTO + TILE_ALTO / 2;
+                    float tile_radio = TILE_ANCHO / 2.0f; // Radio del tile
+                    
+                    if (detectar_colision_circular(centro_x, centro_y, radio, tile_centro_x, tile_centro_y, tile_radio))
+                    {
+                        return true; // Hay colisión
+                    }
                 }
             }
         }
@@ -2576,19 +2585,25 @@ void mostrar_mensaje_centrado(Mensaje* mensaje, const char* texto, double duraci
 void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Disparo disparos[], int num_disparos, Disparo disparos_enemigos[], int num_disparos_enemigos, Asteroide asteroides[], int num_asteroides, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {
     static ALLEGRO_FONT* fuente_debug = NULL;
+    float centro_nave_x = nave.x + nave.ancho / 2;
+    float centro_nave_y = nave.y + nave.largo / 2;
+    obtener_centro_nave(nave, &centro_nave_x, &centro_nave_y);
+    float radio_nave = obtener_radio_nave(nave);
+
     if (!fuente_debug) 
     {
         fuente_debug = al_create_builtin_font();
     }
 
-    // Hitbox de la nave - Verde
-    al_draw_rectangle(nave.x, nave.y, nave.x + nave.ancho, nave.y + nave.largo, al_map_rgb(0, 255, 0), 2);
-    
-    // Centro de la nave - punto verde
-    float centro_nave_x = nave.x + nave.ancho / 2;
-    float centro_nave_y = nave.y + nave.largo / 2;
+    // Hitbox de la nave
+    al_draw_circle(centro_nave_x, centro_nave_y, radio_nave, al_map_rgb(0, 255, 0), 2);
+    // Centro de la nave
     al_draw_filled_circle(centro_nave_x, centro_nave_y, 3, al_map_rgb(0, 255, 0));
     
+    char radio_texto[30];
+    sprintf(radio_texto, "R:%.1f", radio_nave);
+    al_draw_text(fuente_debug, al_map_rgb(0, 255, 0), centro_nave_x + radio_nave + 5, centro_nave_y - 10, ALLEGRO_ALIGN_LEFT, radio_texto);
+
     // Hitbox del escudo si está activo - Cian
     if (nave.escudo.activo)
     {
@@ -2821,4 +2836,17 @@ void crear_powerup_aleatorio(Powerup powerups[], int max_powerups, float x, floa
         crear_powerup_escudo(powerups, max_powerups, x, y);
         printf("Powerup aleatorio: ESCUDO (fallback, probabilidad: %d%%)\n", probabilidad);
     }
+}
+
+
+float obtener_radio_nave(Nave nave)
+{
+    return (nave.ancho * 0.7f) / 2.0f;
+}
+
+
+void obtener_centro_nave(Nave nave, float* centro_x, float* centro_y)
+{
+    *centro_x = nave.x + nave.ancho / 2;
+    *centro_y = nave.y + nave.largo / 2;
 }
