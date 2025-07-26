@@ -80,13 +80,81 @@
 
 #define POWERUP_ESCUDO_PROB 40
 #define POWERUP_VIDA_PROB 30
-#define POWERUP_OTROS_PROB 25
+#define POWERUP_LASER_PROB 25
+#define POWERUP_EXPLOSIVO_PROB 20
+#define POWERUP_MISIL_PROB 15
 
 #define MAX_COLA_MENSAJES 5
 
 extern ALLEGRO_BITMAP *imagen_fondo_global;
 
+typedef enum
+{
+    Arma_normal = 0,
+    Arma_laser = 1,
+    Arma_explosiva = 2,
+    Arma_misil = 3
+} TipoArma;
+
 /*Estructuras usadas en el juego*/
+typedef struct
+{
+    TipoArma tipo;
+    int nivel;
+    int kills_mejora;
+    int kills_necesarias;
+    bool desbloqueado;
+    double ultimo_uso;
+    char nombre[30];
+    char descripcion[100];
+} SistemaArma;
+
+typedef struct
+{
+    float x;
+    float y;
+    float ancho;
+    float alto;
+    float angulo;
+    bool activo;
+    double tiempo_inicio;
+    double duracion_max;
+    int poder;
+    ALLEGRO_COLOR color;
+} DisparoLaser;
+
+typedef struct
+{
+    float x;
+    float y;
+    float vx;
+    float vy;
+    float ancho;
+    float alto;
+    bool activo;
+    double tiempo_vida;
+    int radio_explosion;
+    int dano_directo;
+    int dano_area;
+    bool exploto;
+} DisparoExplosivo;
+
+typedef struct
+{
+    float x;
+    float y;
+    float vx;
+    float vy;
+    float ancho;
+    float alto;
+    float vel_max;
+    float fuerza_giro;
+    int enemigo_objetivo;
+    bool activo;
+    bool tiene_objetivo;
+    double tiempo_vida;
+    int dano;
+} MisilTeledirigido;
 
 typedef struct
 {
@@ -151,6 +219,9 @@ typedef struct
     int nivel_disparo_radial;
     int kills_para_mejora;
     Escudo escudo;
+    SistemaArma armas[4];
+    TipoArma arma_actual;
+    int arma_seleccionada;
 } Nave;
 
 /**
@@ -362,4 +433,24 @@ void crear_powerup_vida(Powerup powerups[], int max_powerups, float x, float y);
 void crear_powerup_aleatorio(Powerup powerups[], int max_powerups, float x, float y);
 float obtener_radio_nave(Nave nave);
 void obtener_centro_nave(Nave nave, float* centro_x, float* centro_y);
+void init_sistema_armas(Nave* nave);
+void cambiar_arma(Nave *nave, TipoArma nueva_arma);
+void actualizar_progreso_arma(Nave* nave, TipoArma tipo_arma);
+void verificar_mejora_arma(Nave* nave, TipoArma tipo_arma, ColaMensajes* cola_mensajes);
+void dibujar_info_armas(Nave nave, ALLEGRO_FONT* fuente);
+void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave);
+void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int* puntaje);
+void dibujar_lasers(DisparoLaser lasers[], int max_lasers);
+void crear_powerup_aleatorio(Powerup powerups[], int max_powerups, float x, float y);
+void crear_powerup_laser(Powerup powerups[], int max_powerups, float x, float y);
+void disparar_segun_arma(Nave nave, Disparo disparos[], int num_disparos, DisparoLaser lasers[], int max_lasers, DisparoExplosivo explosivos[], int max_explosivos, MisilTeledirigido misiles[], int max_misiles, Enemigo enemigos[], int num_enemigos);
+void crear_powerup_explosivo(Powerup powerups[], int max_powerups, float x, float y);
+void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave nave);
+void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, Enemigo enemigos[], int num_enemigos, int* puntaje);
+void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos);
+void crear_powerup_misil(Powerup powerups[], int max_powerups, float x, float y);
+void disparar_misil(MisilTeledirigido misiles[], int max_misiles, Nave nave, Enemigo enemigos[], int num_enemigos);
+void actualizar_misiles(MisilTeledirigido misiles[], int max_misiles, Enemigo enemigos[], int num_enemigos, int* puntaje);
+void dibujar_misiles(MisilTeledirigido misiles[], int max_misiles);
+
 #endif

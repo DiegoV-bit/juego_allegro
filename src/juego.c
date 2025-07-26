@@ -82,6 +82,9 @@ void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_venta
  *
  * @param asteroide Puntero al asteroide a actualizar.
  * @param tilemap Mapa de tiles del juego, usado para detectar colisiones.
+ * @param nave Puntero a la nave, usado para detectar colisiones.
+ * @param powerups Arreglo de powerups, usado para detectar colisiones.
+ * @param max_powerups Tamaño del arreglo de powerups.
  */
 void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave* nave, Powerup powerups[], int max_powerups)
 {
@@ -250,18 +253,51 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo di
     {
         switch (evento.keyboard.keycode)
         {
-        case ALLEGRO_KEY_UP:
-            teclas[0] = false;
-            break;
-        case ALLEGRO_KEY_DOWN:
-            teclas[1] = false;
-            break;
-        case ALLEGRO_KEY_LEFT:
-            teclas[2] = false;
-            break;
-        case ALLEGRO_KEY_RIGHT:
-            teclas[3] = false;
-            break;
+            case ALLEGRO_KEY_UP:
+                teclas[0] = false;
+                break;
+            case ALLEGRO_KEY_DOWN:
+                teclas[1] = false;
+                break;
+            case ALLEGRO_KEY_LEFT:
+                teclas[2] = false;
+                break;
+            case ALLEGRO_KEY_RIGHT:
+                teclas[3] = false;
+                break;
+            case ALLEGRO_KEY_SPACE:
+                disparar_radial(disparos, num_disparos, *nave);
+                break;
+            case ALLEGRO_KEY_1:
+                cambiar_arma(nave, Arma_normal);
+                break;
+            case ALLEGRO_KEY_2:
+                cambiar_arma(nave, Arma_laser);
+                break;
+            case ALLEGRO_KEY_3:
+                cambiar_arma(nave, Arma_explosiva);
+                break;
+            case ALLEGRO_KEY_4:
+                cambiar_arma(nave, Arma_misil);
+                break;
+        }
+    }
+    else if (evento.type == ALLEGRO_EVENT_KEY_UP)
+    {
+        switch(evento.keyboard.keycode)
+        {
+            case ALLEGRO_KEY_UP:
+                teclas[0] = false;
+                break;
+            case ALLEGRO_KEY_DOWN:
+                teclas[1] = false;
+                break;
+            case ALLEGRO_KEY_LEFT:
+                teclas[2] = false;
+                break;
+            case ALLEGRO_KEY_RIGHT:
+                teclas[3] = false;
+                break;
         }
     }
 }
@@ -2171,39 +2207,44 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
             ALLEGRO_COLOR color_powerup = powerups[i].color;
             if (parpadeo < 30)
             {
-                if (powerups[i].tipo == 0) //Escudo
-                {
-                    color_powerup = al_map_rgb(150, 255, 255);
-                }
-                else if (powerups[i].tipo == 1) // Vida
-                {
-                    color_powerup = al_map_rgb(255, 100, 100);
+                switch(powerups[i].tipo) {
+                    case 0: // Escudo
+                        color_powerup = al_map_rgb(150, 255, 255);
+                        break;
+                    case 1: // Vida
+                        color_powerup = al_map_rgb(255, 100, 100);
+                        break;
+                    case 2: // Láser
+                        color_powerup = al_map_rgb(255, 150, 150);
+                        break;
+                    case 3: // Explosivo
+                        color_powerup = al_map_rgb(255, 200, 100);
+                        break;
+                    case 4: // Misil
+                        color_powerup = al_map_rgb(100, 255, 150);
+                        break;
                 }
             }
+
+            float cx = powerups[i].x + 15;
+            float cy = powerups[i].y + 15;
             
             if (powerups[i].tipo == 0)
             {
-                float cx = powerups[i].x + 15;
-                float cy = powerups[i].y + 15;
-
-                // Círculo exterior (halo)
-                al_draw_filled_circle(cx, cy, 16, al_map_rgba(0, 255, 255, 50)); // Halo suave
-                
-                // Círculo principal
+                // ... código de dibujo del escudo ...
+                al_draw_filled_circle(cx, cy, 16, al_map_rgba(0, 255, 255, 50));
                 al_draw_filled_circle(cx, cy, 12, al_map_rgba(0, 255, 255, 80)); 
-                al_draw_circle(cx, cy, 12, color_powerup, 2); // Borde del círculo principal
+                al_draw_circle(cx, cy, 12, color_powerup, 2);
 
                 float hex_x[6];
                 float hex_y[6];
-                int j;
-
-                for (j = 0; j < 6; j++)
+                for (int j = 0; j < 6; j++)
                 {
                     hex_x[j] = cx + cos(j * ALLEGRO_PI / 3) * 8;
                     hex_y[j] = cy + sin(j * ALLEGRO_PI / 3) * 8;
                 }
                 
-                for (j = 0; j < 6; j++)
+                for (int j = 0; j < 6; j++)
                 {
                     al_draw_line(hex_x[j], hex_y[j], hex_x[(j + 1) % 6], hex_y[(j + 1) % 6], color_powerup, 2);
                 }
@@ -2211,60 +2252,89 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
                 al_draw_line(cx - 5, cy, cx + 5, cy, color_powerup, 2);
                 al_draw_line(cx, cy - 5, cx, cy + 5, color_powerup, 2);
 
-                for (j = 0; j < 6; j++)
+                for (int j = 0; j < 6; j++)
                 {
                     al_draw_filled_circle(hex_x[j], hex_y[j], 1.5f, color_powerup);
                 }
                 
-                if (parpadeo < 15) // Solo 1/4 del tiempo
+                if (parpadeo < 15)
                 {
                     al_draw_text(al_create_builtin_font(), al_map_rgb(200, 255, 255), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "ESCUDO");
                 }
             }
             else if (powerups[i].tipo == 1) // Vida
             {
-                float cx = powerups[i].x + 15;
-                float cy = powerups[i].y + 15;
-
-                al_draw_filled_circle(cx, cy, 16, al_map_rgba(0, 255, 255, 50));
-
-                al_draw_filled_circle(cx, cy, 12, al_map_rgba(0, 255, 255, 80));
+                // ... código similar para vida ...
+                al_draw_filled_circle(cx, cy, 16, al_map_rgba(255, 0, 0, 50));
+                al_draw_filled_circle(cx, cy, 12, al_map_rgba(255, 0, 0, 80));
                 al_draw_circle(cx, cy, 12, color_powerup, 2);
-
-                float hex_x[6];
-                float hex_y[6];
-
-                for (int j = 0; j < 6; j++)
-                {
-                    hex_x[j] = cx + cos(j * ALLEGRO_PI / 3) * 7;
-                    hex_y[j] = cy + sin(j * ALLEGRO_PI / 3) * 7;
-                }
-
-                for (int j = 0; j < 6; j++)
-                {
-                    al_draw_line(hex_x[j], hex_y[j], hex_x[(j+1)%6], hex_y[(j+1)%6], color_powerup, 2);
-                }
                 
-                // Cruz central
                 al_draw_line(cx - 5, cy, cx + 5, cy, color_powerup, 2);
                 al_draw_line(cx, cy - 5, cx, cy + 5, color_powerup, 2);
                 
-                // Pequeños círculos en las esquinas del hexágono
-                for (int j = 0; j < 6; j++)
-                {
-                    al_draw_filled_circle(hex_x[j], hex_y[j], 1.5f, color_powerup);
-                }
-
                 if (parpadeo < 15)
                 {
                     al_draw_text(al_create_builtin_font(), al_map_rgb(255, 150, 150), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "VIDA");
+                }
+            }
+            else if (powerups[i].tipo == 2) // Láser
+            {
+                al_draw_filled_circle(cx, cy, 16, al_map_rgba(255, 0, 0, 50));
+                al_draw_filled_circle(cx, cy, 12, al_map_rgba(255, 0, 0, 80));
+                al_draw_circle(cx, cy, 12, color_powerup, 2);
+                
+                al_draw_line(cx - 8, cy, cx + 8, cy, color_powerup, 3);
+                al_draw_line(cx - 6, cy - 3, cx + 6, cy - 3, color_powerup, 2);
+                al_draw_line(cx - 6, cy + 3, cx + 6, cy + 3, color_powerup, 2);
+                
+                if (parpadeo < 15)
+                {
+                    al_draw_text(al_create_builtin_font(), al_map_rgb(255, 200, 200), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "LÁSER");
+                }
+            }
+            else if (powerups[i].tipo == 3) // Explosivo
+            {
+                al_draw_filled_circle(cx, cy, 16, al_map_rgba(255, 100, 0, 50));
+                al_draw_filled_circle(cx, cy, 12, al_map_rgba(255, 100, 0, 80));
+                al_draw_circle(cx, cy, 12, color_powerup, 2);
+                
+                for (int j = 0; j < 8; j++)
+                {
+                    float angulo = j * ALLEGRO_PI / 4;
+                    float x1 = cx + cos(angulo) * 4;
+                    float y1 = cy + sin(angulo) * 4;
+                    float x2 = cx + cos(angulo) * 8;
+                    float y2 = cy + sin(angulo) * 8;
+                    al_draw_line(x1, y1, x2, y2, color_powerup, 2);
+                }
+                
+                if (parpadeo < 15)
+                {
+                    al_draw_text(al_create_builtin_font(), al_map_rgb(255, 200, 100), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "BOOM");
+                }
+            }
+            else if (powerups[i].tipo == 4) // Misil
+            {
+                al_draw_filled_circle(cx, cy, 16, al_map_rgba(0, 255, 100, 50));
+                al_draw_filled_circle(cx, cy, 12, al_map_rgba(0, 255, 100, 80));
+                al_draw_circle(cx, cy, 12, color_powerup, 2);
+                
+                al_draw_line(cx - 6, cy, cx + 6, cy, color_powerup, 3);
+                al_draw_line(cx + 6, cy, cx + 3, cy - 3, color_powerup, 2);
+                al_draw_line(cx + 6, cy, cx + 3, cy + 3, color_powerup, 2);
+                al_draw_line(cx - 6, cy - 2, cx - 9, cy - 4, color_powerup, 1);
+                al_draw_line(cx - 6, cy + 2, cx - 9, cy + 4, color_powerup, 1);
+                
+                if (parpadeo < 15)
+                {
+                    al_draw_text(al_create_builtin_font(), al_map_rgb(200, 255, 200), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "MISIL");
                 }
             }
         }
     }
 
     static int debug_contador = 0;
-    if (++debug_contador % 120 == 0) // Cada segundo
+    if (++debug_contador % 120 == 0)
     {
         printf("Powerups activos en pantalla: %d/%d\n", powerups_activos, max_powerups);
     }
@@ -2336,6 +2406,24 @@ void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
             agregar_mensaje_cola(cola_mensajes, "Vida al maximo", 1.5, al_map_rgb(255, 255, 0), true);
             printf("La vida ya esta al maximo (100/100)\n");
         }
+    }
+    else if (powerup->tipo == 2) { // Láser
+        nave->armas[Arma_laser].desbloqueado = true;
+        cambiar_arma(nave, Arma_laser);
+        agregar_mensaje_cola(cola_mensajes, "¡Láser Desbloqueado!", 2.0, al_map_rgb(255, 0, 0), true);
+        agregar_mensaje_cola(cola_mensajes, "Presiona 2 para usar", 2.0, al_map_rgb(255, 255, 255), true);
+    }
+    else if (powerup->tipo == 3) { // Explosivo
+        nave->armas[Arma_explosiva].desbloqueado = true;
+        cambiar_arma(nave, Arma_explosiva);
+        agregar_mensaje_cola(cola_mensajes, "¡Cañón Explosivo Desbloqueado!", 2.0, al_map_rgb(255, 100, 0), true);
+        agregar_mensaje_cola(cola_mensajes, "Presiona 3 para usar", 2.0, al_map_rgb(255, 255, 255), true);
+    }
+    else if (powerup->tipo == 4) { // Misil
+        nave->armas[Arma_misil].desbloqueado = true;
+        cambiar_arma(nave, Arma_misil);
+        agregar_mensaje_cola(cola_mensajes, "¡Misiles Teledirigidos Desbloqueados!", 2.0, al_map_rgb(0, 255, 100), true);
+        agregar_mensaje_cola(cola_mensajes, "Presiona 4 para usar", 2.0, al_map_rgb(255, 255, 255), true);
     }
     
     powerup->activo = false;
@@ -2829,7 +2917,22 @@ void crear_powerup_aleatorio(Powerup powerups[], int max_powerups, float x, floa
     {
         crear_powerup_vida(powerups, max_powerups, x, y);
         printf("Powerup aleatorio: VIDA (probabilidad: %d%%)\n", probabilidad);
-    } 
+    }
+    else if (probabilidad < POWERUP_ESCUDO_PROB + POWERUP_VIDA_PROB + POWERUP_LASER_PROB)
+    {
+        crear_powerup_laser(powerups, max_powerups, x, y);
+        printf("Powerup aleatorio: LÁSER\n");
+    }
+    else if (probabilidad < POWERUP_ESCUDO_PROB + POWERUP_VIDA_PROB + POWERUP_LASER_PROB + POWERUP_EXPLOSIVO_PROB)
+    {
+        crear_powerup_explosivo(powerups, max_powerups, x, y);
+        printf("Powerup aleatorio: EXPLOSIVO\n");
+    }
+    else if (probabilidad < POWERUP_ESCUDO_PROB + POWERUP_VIDA_PROB + POWERUP_LASER_PROB + POWERUP_EXPLOSIVO_PROB + POWERUP_MISIL_PROB)
+    {
+        crear_powerup_misil(powerups, max_powerups, x, y);
+        printf("Powerup aleatorio: MISIL\n");
+    }
     else
     {
         // Por ahora, crear escudo como fallback
@@ -2849,4 +2952,695 @@ void obtener_centro_nave(Nave nave, float* centro_x, float* centro_y)
 {
     *centro_x = nave.x + nave.ancho / 2;
     *centro_y = nave.y + nave.largo / 2;
+}
+
+
+void init_sistema_armas(Nave *nave)
+{
+    nave->armas[0] = (SistemaArma){Arma_normal, 1, 0, 0, true, 0.0, "Cañon normal", "Disparo en linea recta"};
+
+    nave->armas[1] = (SistemaArma){Arma_laser, 1, 0, 10, false, 0.0, "Láser Continuo", "Rayo de energía sostenido"};
+    nave->armas[2] = (SistemaArma){Arma_explosiva, 1, 0, 15, false, 0.0, "Cañón Explosivo", "Proyectiles con daño en área"};
+    nave->armas[3] = (SistemaArma){Arma_misil, 1, 0, 20, false, 0.0, "Misiles Teledirigidos", "Misiles que persiguen enemigos"};
+
+    nave->arma_actual = Arma_normal;
+    nave->arma_seleccionada = 0;
+
+    printf("Sistema de armas inicializado\n");
+}
+
+
+void cambiar_arma(Nave *nave, TipoArma nueva_arma)
+{
+    if (nueva_arma < 0 || nueva_arma > 3)
+    {
+        return;
+    }
+    
+    if (nave->armas[nueva_arma].desbloqueado)
+    {
+        nave->arma_actual = nueva_arma;
+        nave->arma_seleccionada = nueva_arma;
+        printf("Arma cambiada a: %s\n", nave->armas[nueva_arma].nombre);
+    }
+    else
+    {
+        printf("Arma %s no desbloqueada aún.\n", nave->armas[nueva_arma].nombre);   
+    }
+}
+
+
+void actualizar_progreso_arma(Nave *nave, TipoArma tipo_arma)
+{
+    if (tipo_arma < 0 || tipo_arma > 3)
+    {
+        return;
+    }
+    
+    SistemaArma *arma = &nave->armas[tipo_arma];
+    arma->kills_mejora++;
+
+    printf("Progreso arma %s: %d/%d kills\n", arma->nombre, arma->kills_mejora, arma->kills_necesarias);
+}
+
+
+void verificar_mejora_arma(Nave *nave, TipoArma tipo_arma, ColaMensajes *cola_mensajes)
+{
+    if (tipo_arma < 0 || tipo_arma > 3) return;
+    
+    SistemaArma* arma = &nave->armas[tipo_arma];
+    
+    // Verificar si puede subir de nivel
+    if (arma->kills_mejora >= arma->kills_necesarias && arma->nivel < 3)
+    {
+        arma->nivel++;
+        arma->kills_mejora = 0;
+        
+        // Aumentar requisitos para siguiente nivel
+        switch (arma->nivel) 
+        {
+            case 2: 
+                arma->kills_necesarias = arma->kills_necesarias * 2; 
+                break;
+            case 3: 
+                arma->kills_necesarias = arma->kills_necesarias * 3; 
+                break;
+        }
+
+        // Mostrar mensaje de mejora
+        char mensaje[100];
+        snprintf(mensaje, sizeof(mensaje), "¡%s mejorada a Nivel %d!", arma->nombre, arma->nivel);
+        agregar_mensaje_cola(cola_mensajes, mensaje, 3.0, al_map_rgb(255, 215, 0), true);
+        
+        // Mensaje de descripción de mejora
+        char desc_mejora[100];
+        switch (tipo_arma) 
+        {
+            case Arma_laser:
+                snprintf(desc_mejora, sizeof(desc_mejora), "Duración +50%%, Daño +25%%");
+                break;
+            case Arma_explosiva:
+                snprintf(desc_mejora, sizeof(desc_mejora), "Radio explosión +30%%, Daño +40%%");
+                break;
+            case Arma_misil:
+                snprintf(desc_mejora, sizeof(desc_mejora), "Velocidad +50%%, Mejor seguimiento");
+                break;
+            default:
+                snprintf(desc_mejora, sizeof(desc_mejora), "Mejora aplicada");
+                break;
+        }
+
+        agregar_mensaje_cola(cola_mensajes, desc_mejora, 2.5, al_map_rgb(255, 255, 255), true);
+        printf("¡Arma %s mejorada a nivel %d!\n", arma->nombre, arma->nivel);
+    }
+}
+
+
+void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
+{
+    char texto_arma[100];
+    SistemaArma arma_actual = nave.armas[nave.arma_seleccionada];
+
+    snprintf(texto_arma, sizeof(texto_arma), "Arma: %s Lv.%d", arma_actual.nombre, arma_actual.nivel);
+    al_draw_text(fuente, al_map_rgb(255, 215, 0), 10, 140, ALLEGRO_ALIGN_LEFT, texto_arma);
+
+    if (arma_actual.nivel < 3 && arma_actual.kills_necesarias > 0)
+    {
+        char progreso[50];
+        snprintf(progreso, sizeof(progreso), "Progreso: %d/%d kills", arma_actual.kills_mejora, arma_actual.kills_necesarias);
+        al_draw_text(fuente, al_map_rgb(255, 255, 255), 10, 160, ALLEGRO_ALIGN_LEFT, progreso);
+    }
+    else if (arma_actual.nivel == 3)
+    {
+        al_draw_text(fuente, al_map_rgb(0, 255, 0), 10, 160, ALLEGRO_ALIGN_LEFT, "¡Arma al máximo nivel!");
+    }
+    
+    int y_offset = 180;
+    for (int i = 0; i < 4; i++) {
+        if (nave.armas[i].desbloqueado)
+        {
+            ALLEGRO_COLOR color = (i == nave.arma_seleccionada) ? al_map_rgb(255, 255, 0) : al_map_rgb(150, 150, 150);
+            
+            char tecla[20];
+            snprintf(tecla, sizeof(tecla), "%d: %s", i+1, nave.armas[i].nombre);
+            al_draw_text(fuente, color, 10, y_offset + (i * 15), ALLEGRO_ALIGN_LEFT, tecla);
+        }
+    }
+}
+
+
+void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
+{
+    double tiempo_actual = al_get_time();
+    SistemaArma arma_laser = nave.armas[Arma_laser];
+
+    if (tiempo_actual - arma_laser.ultimo_uso < 0.1)
+    {
+        return;
+    }
+    
+    for (int i = 0; i < max_lasers; i++)
+    {
+        if (!lasers[i].activo)
+        {
+            lasers[i].x = nave.x + nave.ancho / 2;
+            lasers[i].y = nave.y;
+            lasers[i].ancho = 8 * arma_laser.nivel;
+            lasers[i].alto = nave.y;
+            lasers[i].angulo = nave.angulo;
+            lasers[i].activo = true;
+            lasers[i].tiempo_inicio = tiempo_actual;
+            
+            lasers[i].duracion_max = 1.0 + (arma_laser.nivel * 0.5);
+            lasers[i].poder = 2 + arma_laser.nivel;
+
+            switch(arma_laser.nivel)
+            {
+                case 1:
+                    lasers[i].color = al_map_rgba(255, 0, 0, 150); 
+                    break;
+                case 2: 
+                    lasers[i].color = al_map_rgba(255, 100, 0, 180); 
+                    break;
+                case 3: 
+                    lasers[i].color = al_map_rgba(255, 255, 0, 220); 
+                    break;
+            }
+
+            printf("Láser disparado - Nivel %d, Poder %d, Duración %.1fs\n", arma_laser.nivel, lasers[i].poder, lasers[i].duracion_max);
+            break;
+        }   
+    }
+}
+
+
+void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int *puntaje)
+{
+    double tiempo_actual = al_get_time();
+    
+    for (int i = 0; i < max_lasers; i++)
+    {
+        if (lasers[i].activo)
+        {
+            // Verificar si el láser debe desaparecer
+            if (tiempo_actual - lasers[i].tiempo_inicio >= lasers[i].duracion_max)
+            {
+                lasers[i].activo = false;
+                continue;
+            }
+        }
+
+        for (int j = 0; j < num_enemigos; j++)
+        {
+            if (enemigos[j].activo)
+            {
+                if (((enemigos[j].x >= lasers[i].x - lasers[i].ancho/2) && (enemigos[j].x <= lasers[i].x + lasers[i].ancho/2)) && (enemigos[j].y <= lasers[i].y))
+                {
+                    // Aplicar daño continuo
+                    enemigos[j].vida -= lasers[i].poder;
+                    printf("Láser dañando enemigo %d: vida restante %d\n", j, enemigos[j].vida);
+                        
+                    if (enemigos[j].vida <= 0)
+                    {
+                        enemigos[j].activo = false;
+                        (*puntaje)++;
+                        printf("Enemigo eliminado por láser\n");
+                    }
+                }
+            }   
+        }
+    }
+}
+
+
+void dibujar_lasers(DisparoLaser lasers[], int max_lasers)
+{
+    for (int i = 0; i < max_lasers; i++)
+    {
+        if (lasers[i].activo)
+        {
+            // Dibujar rayo principal
+            al_draw_filled_rectangle(lasers[i].x - lasers[i].ancho/2, 0, lasers[i].x + lasers[i].ancho/2, lasers[i].y, lasers[i].color);
+
+            // Dibujar borde del láser
+            al_draw_rectangle(lasers[i].x - lasers[i].ancho/2, 0, lasers[i].x + lasers[i].ancho/2, lasers[i].y, al_map_rgb(255, 255, 255), 1);
+            
+            // Efecto de destello en el origen
+            al_draw_filled_circle(lasers[i].x, lasers[i].y, lasers[i].ancho/2 + 3, al_map_rgba(255, 255, 255, 100));
+        }
+    }
+}
+
+
+ /**
+ * @brief Crea un powerup de láser.
+ */
+void crear_powerup_laser(Powerup powerups[], int max_powerups, float x, float y)
+{
+    for (int i = 0; i < max_powerups; i++)
+    {
+        if (!powerups[i].activo)
+        {
+            powerups[i].x = x;
+            powerups[i].y = y;
+            powerups[i].tipo = 2;
+            powerups[i].activo = true;
+            powerups[i].tiempo_aparicion = al_get_time();
+            powerups[i].duracion_vida = 20.0;
+            powerups[i].color = al_map_rgb(255, 0, 0);
+
+            printf("POWERUP DE LÁSER CREADO en (%.1f, %.1f)\n", x, y);
+            return;
+        }
+    }
+}
+
+
+/**
+ * @brief Dispara según el arma actual seleccionada.
+ */
+void disparar_segun_arma(Nave nave, Disparo disparos[], int num_disparos, DisparoLaser lasers[], int max_lasers, DisparoExplosivo explosivos[], int max_explosivos, MisilTeledirigido misiles[], int max_misiles, Enemigo enemigos[], int num_enemigos)
+{
+    switch (nave.arma_actual) {
+        case Arma_normal:
+            if (nave.nivel_disparo_radial > 0) {
+                disparar_radial(disparos, num_disparos, nave);
+            } else {
+                disparar(disparos, num_disparos, nave);
+            }
+            break;
+        case Arma_laser:
+            disparar_laser(lasers, max_lasers, nave);
+            break;
+        case Arma_explosiva:
+            disparar_explosivo(explosivos, max_explosivos, nave);
+            break;
+        case Arma_misil:
+            disparar_misil(misiles, max_misiles, nave, enemigos, num_enemigos);
+            break;
+        default:
+            disparar(disparos, num_disparos, nave);
+            break;
+    }
+}
+
+
+void crear_powerup_explosivo(Powerup powerups[], int max_powerups, float x, float y)
+{
+    for (int i = 0; i < max_powerups; i++)
+    {
+        if (!powerups[i].activo)
+        {
+            powerups[i].x = x;
+            powerups[i].y = y;
+            powerups[i].tipo = 3; // Tipo de powerup explosivo
+            powerups[i].activo = true;
+            powerups[i].tiempo_aparicion = al_get_time();
+            powerups[i].duracion_vida = 20.0;
+            powerups[i].color = al_map_rgb(255, 165, 0); // Naranja para explosivo
+
+            printf("POWERUP EXPLOSIVO CREADO en (%.1f, %.1f)\n", x, y);
+            return;
+        }
+    }
+}
+
+
+void crear_powerup_misil(Powerup powerups[], int max_powerups, float x, float y)
+{
+    for (int i = 0; i < max_powerups; i++)
+    {
+        if (!powerups[i].activo)
+        {
+            powerups[i].x = x;
+            powerups[i].y = y;
+            powerups[i].tipo = 4; // Tipo misil
+            powerups[i].activo = true;
+            powerups[i].tiempo_aparicion = al_get_time();
+            powerups[i].duracion_vida = 20.0;
+            powerups[i].color = al_map_rgb(0, 255, 100); // Verde
+            
+            printf("POWERUP MISIL CREADO en (%.1f, %.1f)\n", x, y);
+            return;
+        }
+    }
+}
+
+
+void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave nave)
+{
+    double tiempo_actual = al_get_time();
+    SistemaArma arma_explosiva = nave.armas[Arma_explosiva];
+    
+    // Cooldown entre disparos
+    if (tiempo_actual - arma_explosiva.ultimo_uso < 0.5) return;
+    
+    for (int i = 0; i < max_explosivos; i++)
+    {
+        if (!explosivos[i].activo)
+        {
+            // Calcular posición de disparo
+            float centro_x = nave.x + nave.ancho / 2.0f;
+            float centro_y = nave.y + nave.largo / 2.0f;
+            float punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
+            float punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
+            
+            explosivos[i].x = punta_x;
+            explosivos[i].y = punta_y;
+            explosivos[i].vx = cos(nave.angulo - ALLEGRO_PI/2) * 8.0f;
+            explosivos[i].vy = sin(nave.angulo - ALLEGRO_PI/2) * 8.0f;
+            explosivos[i].ancho = 8;
+            explosivos[i].alto = 12;
+            explosivos[i].activo = true;
+            explosivos[i].tiempo_vida = 0;
+            explosivos[i].exploto = false;
+            
+            // Propiedades según nivel
+            explosivos[i].radio_explosion = 40 + (arma_explosiva.nivel * 15);
+            explosivos[i].dano_directo = 3 + arma_explosiva.nivel;
+            explosivos[i].dano_area = 2 + arma_explosiva.nivel;
+            
+            printf("Explosivo disparado - Nivel %d, Radio %dpx, Daño %d\n", arma_explosiva.nivel, explosivos[i].radio_explosion, explosivos[i].dano_directo);
+            break;
+        }
+    }
+}
+
+
+void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, Enemigo enemigos[], int num_enemigos, int* puntaje)
+{
+    double tiempo_actual = al_get_time();
+    
+    for (int i = 0; i < max_explosivos; i++)
+    {
+        if (explosivos[i].activo && !explosivos[i].exploto)
+        {
+            // Mover proyectil
+            explosivos[i].x += explosivos[i].vx;
+            explosivos[i].y += explosivos[i].vy;
+            explosivos[i].tiempo_vida += 0.016; // ~60 FPS
+            
+            bool debe_explotar = false;
+            
+            // Verificar colisión con enemigos
+            for (int j = 0; j < num_enemigos; j++)
+            {
+                if (enemigos[j].activo)
+                {
+                    if (detectar_colision_generica(explosivos[i].x, explosivos[i].y, explosivos[i].ancho, explosivos[i].alto,
+                                                 enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
+                    {
+                        debe_explotar = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Explotar si sale de pantalla o después de cierto tiempo
+            if (explosivos[i].x < 0 || explosivos[i].x > 800 || explosivos[i].y < 0 || explosivos[i].y > 600 || 
+                explosivos[i].tiempo_vida > 3.0 || debe_explotar)
+            {
+                // EXPLOSIÓN
+                explosivos[i].exploto = true;
+                
+                // Aplicar daño en área
+                for (int j = 0; j < num_enemigos; j++)
+                {
+                    if (enemigos[j].activo)
+                    {
+                        float dx = (enemigos[j].x + enemigos[j].ancho/2) - explosivos[i].x;
+                        float dy = (enemigos[j].y + enemigos[j].alto/2) - explosivos[i].y;
+                        float distancia = sqrt(dx*dx + dy*dy);
+                        
+                        if (distancia <= explosivos[i].radio_explosion)
+                        {
+                            int dano = (distancia < 20) ? explosivos[i].dano_directo : explosivos[i].dano_area;
+                            enemigos[j].vida -= dano;
+                            
+                            printf("💥 Explosión dañó enemigo %d: -%d HP (dist: %.0f)\n", j, dano, distancia);
+                            
+                            if (enemigos[j].vida <= 0)
+                            {
+                                enemigos[j].activo = false;
+                                (*puntaje)++;
+                                printf("💀 Enemigo eliminado por explosión\n");
+                            }
+                        }
+                    }
+                }
+                
+                // La explosión durará un momento para efecto visual
+                explosivos[i].tiempo_vida = 0;
+            }
+        }
+        else if (explosivos[i].exploto)
+        {
+            // Controlar duración del efecto de explosión
+            explosivos[i].tiempo_vida += 0.016;
+            if (explosivos[i].tiempo_vida > 0.3) // 0.3 segundos de efecto
+            {
+                explosivos[i].activo = false;
+            }
+        }
+    }
+}
+
+
+void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
+{
+    for (int i = 0; i < max_explosivos; i++)
+    {
+        if (explosivos[i].activo)
+        {
+            if (!explosivos[i].exploto)
+            {
+                // Dibujar proyectil
+                al_draw_filled_rectangle(explosivos[i].x - explosivos[i].ancho/2, explosivos[i].y - explosivos[i].alto/2,
+                                       explosivos[i].x + explosivos[i].ancho/2, explosivos[i].y + explosivos[i].alto/2,
+                                       al_map_rgb(255, 100, 0));
+                
+                // Efecto de estela
+                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, 3, al_map_rgba(255, 200, 0, 100));
+            }
+            else
+            {
+                // Dibujar explosión
+                float progreso = explosivos[i].tiempo_vida / 0.3f;
+                float radio_actual = explosivos[i].radio_explosion * progreso;
+                int alpha = (int)(255 * (1.0f - progreso));
+                
+                // Círculo exterior (onda expansiva)
+                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual, 
+                                    al_map_rgba(255, 100, 0, alpha/3));
+                
+                // Círculo interior (núcleo)
+                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual * 0.6f, 
+                                    al_map_rgba(255, 200, 0, alpha/2));
+                
+                // Centro brillante
+                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual * 0.3f, 
+                                    al_map_rgba(255, 255, 200, alpha));
+            }
+        }
+    }
+}
+
+
+void disparar_misil(MisilTeledirigido misiles[], int max_misiles, Nave nave, Enemigo enemigos[], int num_enemigos)
+{
+    double tiempo_actual = al_get_time();
+    SistemaArma arma_misil = nave.armas[Arma_misil];
+    
+    // Cooldown entre disparos
+    if (tiempo_actual - arma_misil.ultimo_uso < 1.0) return;
+    
+    // Buscar enemigo más cercano
+    int enemigo_objetivo = -1;
+    float distancia_minima = 1000000;
+    
+    for (int j = 0; j < num_enemigos; j++)
+    {
+        if (enemigos[j].activo)
+        {
+            float dx = enemigos[j].x - nave.x;
+            float dy = enemigos[j].y - nave.y;
+            float distancia = sqrt(dx*dx + dy*dy);
+            
+            if (distancia < distancia_minima)
+            {
+                distancia_minima = distancia;
+                enemigo_objetivo = j;
+            }
+        }
+    }
+    
+    for (int i = 0; i < max_misiles; i++)
+    {
+        if (!misiles[i].activo)
+        {
+            // Calcular posición de disparo
+            float centro_x = nave.x + nave.ancho / 2.0f;
+            float centro_y = nave.y + nave.largo / 2.0f;
+            float punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
+            float punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
+            
+            misiles[i].x = punta_x;
+            misiles[i].y = punta_y;
+            misiles[i].vx = cos(nave.angulo - ALLEGRO_PI/2) * 3.0f;
+            misiles[i].vy = sin(nave.angulo - ALLEGRO_PI/2) * 3.0f;
+            misiles[i].ancho = 6;
+            misiles[i].alto = 10;
+            misiles[i].activo = true;
+            misiles[i].tiempo_vida = 0;
+            misiles[i].enemigo_objetivo = enemigo_objetivo;
+            misiles[i].tiene_objetivo = (enemigo_objetivo != -1);
+            
+            // Propiedades según nivel
+            misiles[i].vel_max = 4.0f + (arma_misil.nivel * 1.0f);
+            misiles[i].fuerza_giro = 0.1f + (arma_misil.nivel * 0.05f);
+            misiles[i].dano = 4 + arma_misil.nivel;
+
+            printf("Misil disparado - Nivel %d, Objetivo: %d, Vel: %.1f\n", arma_misil.nivel, enemigo_objetivo, misiles[i].vel_max);
+            break;
+        }
+    }
+}
+
+
+void actualizar_misiles(MisilTeledirigido misiles[], int max_misiles, Enemigo enemigos[], int num_enemigos, int* puntaje)
+{
+    for (int i = 0; i < max_misiles; i++)
+    {
+        if (misiles[i].activo)
+        {
+            misiles[i].tiempo_vida += 0.016;
+            
+            // Si tiene objetivo válido, dirigirse hacia él
+            if (misiles[i].tiene_objetivo && misiles[i].enemigo_objetivo != -1 && 
+                misiles[i].enemigo_objetivo < num_enemigos && enemigos[misiles[i].enemigo_objetivo].activo)
+            {
+                Enemigo* objetivo = &enemigos[misiles[i].enemigo_objetivo];
+                
+                // Calcular dirección hacia el objetivo
+                float dx = (objetivo->x + objetivo->ancho/2) - misiles[i].x;
+                float dy = (objetivo->y + objetivo->alto/2) - misiles[i].y;
+                float distancia = sqrt(dx*dx + dy*dy);
+                
+                if (distancia > 5.0f)
+                {
+                    // Normalizar y aplicar seguimiento
+                    float dir_x = dx / distancia;
+                    float dir_y = dy / distancia;
+                    
+                    // Interpolar suavemente hacia la nueva dirección
+                    misiles[i].vx += dir_x * misiles[i].fuerza_giro;
+                    misiles[i].vy += dir_y * misiles[i].fuerza_giro;
+                    
+                    // Limitar velocidad máxima
+                    float vel_actual = sqrt(misiles[i].vx*misiles[i].vx + misiles[i].vy*misiles[i].vy);
+                    if (vel_actual > misiles[i].vel_max)
+                    {
+                        misiles[i].vx = (misiles[i].vx / vel_actual) * misiles[i].vel_max;
+                        misiles[i].vy = (misiles[i].vy / vel_actual) * misiles[i].vel_max;
+                    }
+                }
+            }
+            else
+            {
+                // Sin objetivo válido, buscar nuevo objetivo
+                misiles[i].tiene_objetivo = false;
+                float distancia_minima = 300; // Rango de búsqueda
+                
+                for (int j = 0; j < num_enemigos; j++)
+                {
+                    if (enemigos[j].activo)
+                    {
+                        float dx = enemigos[j].x - misiles[i].x;
+                        float dy = enemigos[j].y - misiles[i].y;
+                        float distancia = sqrt(dx*dx + dy*dy);
+                        
+                        if (distancia < distancia_minima)
+                        {
+                            distancia_minima = distancia;
+                            misiles[i].enemigo_objetivo = j;
+                            misiles[i].tiene_objetivo = true;
+                        }
+                    }
+                }
+            }
+            
+            // Mover misil
+            misiles[i].x += misiles[i].vx;
+            misiles[i].y += misiles[i].vy;
+            
+            // Verificar colisiones con enemigos
+            for (int j = 0; j < num_enemigos; j++)
+            {
+                if (enemigos[j].activo)
+                {
+                    if (detectar_colision_generica(misiles[i].x, misiles[i].y, misiles[i].ancho, misiles[i].alto,
+                                                 enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
+                    {
+                        // Impacto
+                        enemigos[j].vida -= misiles[i].dano;
+                        printf("🎯 Misil impactó enemigo %d: -%d HP\n", j, misiles[i].dano);
+                        
+                        if (enemigos[j].vida <= 0)
+                        {
+                            enemigos[j].activo = false;
+                            (*puntaje)++;
+                            printf("💀 Enemigo eliminado por misil\n");
+                        }
+                        
+                        misiles[i].activo = false;
+                        break;
+                    }
+                }
+            }
+            
+            // Desactivar si sale de pantalla o tiempo excedido
+            if (misiles[i].x < -10 || misiles[i].x > 810 || misiles[i].y < -10 || misiles[i].y > 610 || 
+                misiles[i].tiempo_vida > 8.0)
+            {
+                misiles[i].activo = false;
+            }
+        }
+    }
+}
+
+
+void dibujar_misiles(MisilTeledirigido misiles[], int max_misiles)
+{
+    for (int i = 0; i < max_misiles; i++)
+    {
+        if (misiles[i].activo)
+        {
+            // Calcular ángulo de rotación del misil
+            float angulo = atan2(misiles[i].vy, misiles[i].vx);
+            
+            // Dibujar cuerpo del misil
+            al_draw_filled_rectangle(misiles[i].x - misiles[i].ancho/2, misiles[i].y - misiles[i].alto/2,
+                                   misiles[i].x + misiles[i].ancho/2, misiles[i].y + misiles[i].alto/2,
+                                   al_map_rgb(0, 200, 100));
+            
+            // Dibujar punta del misil
+            float punta_x = misiles[i].x + cos(angulo) * (misiles[i].alto/2 + 3);
+            float punta_y = misiles[i].y + sin(angulo) * (misiles[i].alto/2 + 3);
+            al_draw_filled_circle(punta_x, punta_y, 2, al_map_rgb(255, 255, 0));
+            
+            // Efecto de estela
+            float cola_x = misiles[i].x - cos(angulo) * (misiles[i].alto/2 + 5);
+            float cola_y = misiles[i].y - sin(angulo) * (misiles[i].alto/2 + 5);
+            al_draw_filled_circle(cola_x, cola_y, 3, al_map_rgba(255, 100, 0, 150));
+            
+            // Línea de seguimiento (si tiene objetivo)
+            if (misiles[i].tiene_objetivo && misiles[i].enemigo_objetivo != -1)
+            {
+                // Podemos dibujar una línea tenue hacia el objetivo para debug
+                // (comentar en producción)
+                // al_draw_line(misiles[i].x, misiles[i].y, objetivo_x, objetivo_y, 
+                //              al_map_rgba(0, 255, 0, 50), 1);
+            }
+        }
+    }
 }

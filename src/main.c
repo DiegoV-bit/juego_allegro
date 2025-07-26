@@ -21,6 +21,9 @@ int main()
     float nave_x_inicial;
     float nave_y_inicial;
     bool debug_mode = false;
+    DisparoLaser lasers[5];
+    DisparoExplosivo explosivos[8];
+    MisilTeledirigido misil[6];
 
     // Inicializar Allegro y sus addons
     ALLEGRO_DISPLAY *ventana = NULL;
@@ -138,6 +141,24 @@ int main()
             // Inicializar nave
             Nave nave = init_nave(nave_x_inicial, nave_y_inicial, 50, 50, 100, 0.1, imagen_nave);
 
+            // Inicializar el sistema de armas
+            init_sistema_armas(&nave);
+
+            for (int i = 0; i < 5; i++)
+            {
+                lasers[i].activo = false;
+            }
+
+            for (int i = 0; i < 8; i++)
+            {
+                explosivos[i].activo = false;
+            }
+
+            for (int i = 0; i < 6; i++)
+            {
+                misil[i].activo = false;
+            }
+
             // Inicializar disparos
             Disparo disparos[MAX_DISPAROS];
             init_disparos(disparos, MAX_DISPAROS);
@@ -191,7 +212,14 @@ int main()
                 {
                     if (!estado_nivel.mostrar_transicion)
                     {
-                        manejar_eventos(evento, &nave, teclas, disparos, MAX_DISPAROS);
+                        if (evento.type == ALLEGRO_EVENT_KEY_DOWN && evento.keyboard.keycode == ALLEGRO_KEY_SPACE)
+                        {
+                            disparar_segun_arma(nave, disparos, MAX_DISPAROS, lasers, 5, explosivos, 8, misil, 6, enemigos, num_enemigos_cargados);
+                        }
+                        else
+                        {
+                            manejar_eventos(evento, &nave, teclas, disparos, MAX_DISPAROS);
+                        }
 
                         if (evento.type == ALLEGRO_EVENT_KEY_DOWN && evento.keyboard.keycode == ALLEGRO_KEY_F1)
                         {
@@ -239,10 +267,33 @@ int main()
                                 disparos_enemigos[clear_i].activo = false;
                             }
 
+                            for (int clear_i = 0; clear_i < 5; clear_i++)
+                            {
+                                lasers[clear_i].activo = false;
+                            }
+
+                            for (int clear_i = 0; clear_i < 8; clear_i++)
+                            {
+                                explosivos[clear_i].activo = false;
+                            }
+
+                            for (int clear_i = 0; clear_i < 6; clear_i++)
+                            {
+                                misil[clear_i].activo = false;
+                            }
+
                             // Guardar el estado de la nave antes de reinicializarla
                             int nivel_disparo_radial_guardado = nave.nivel_disparo_radial;
                             int kills_para_mejora_guardado = nave.kills_para_mejora;
                             int tipo_nave_guardado = nave.tipo;
+
+                            SistemaArma armas_guardadas[4];
+                            for (int i = 0; i < 4; i++) {
+                                armas_guardadas[i] = nave.armas[i];
+                            }
+                            
+                            TipoArma arma_actual_guardada = nave.arma_actual;
+                            int arma_seleccionada_guardada = nave.arma_seleccionada;
 
                             nave.escudo.activo = false;
 
@@ -253,6 +304,13 @@ int main()
                             nave.nivel_disparo_radial = nivel_disparo_radial_guardado;
                             nave.kills_para_mejora = kills_para_mejora_guardado;
                             nave.tipo = tipo_nave_guardado;
+
+                            for (int i = 0; i < 4; i++) {
+                                nave.armas[i] = armas_guardadas[i];
+                            }
+                            
+                            nave.arma_actual = arma_actual_guardada;
+                            nave.arma_seleccionada = arma_seleccionada_guardada;
 
                             memset(teclas, false, sizeof(teclas)); // Reiniciar teclas
 
@@ -343,6 +401,10 @@ int main()
                         agregar_mensaje_cola(&cola_mensajes, "Usa las flechas para rotar y avanzar", 3.0, al_map_rgb(255, 255, 255), true); // Centrado
                     }
 
+                    actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje);
+                    actualizar_explosivos(explosivos, 8, enemigos, num_enemigos_cargados, &puntaje);
+                    actualizar_misiles(misil, 6, enemigos, num_enemigos_cargados, &puntaje);
+
                     actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &cola_mensajes, &estado_nivel, tiempo_cache, powerups, MAX_POWERUPS);
                     
                     al_clear_to_color(al_map_rgb(0, 0, 0));
@@ -360,6 +422,10 @@ int main()
                         dibujar_tilemap(tilemap, imagen_asteroide);
                         dibujar_escudo(nave);
                         dibujar_disparos(disparos, 10);
+
+                        dibujar_lasers(lasers, 5);
+                        dibujar_explosivos(explosivos, 8);
+                        dibujar_misiles(misil, 6);
                         
                         dibujar_enemigos(enemigos, num_enemigos_cargados);
                         dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
@@ -374,6 +440,8 @@ int main()
                         dibujar_puntaje(puntaje, fuente);
                         dibujar_barra_vida(nave);
                         dibujar_nivel_powerup(nave, fuente);
+
+                        dibujar_info_armas(nave, fuente);
 
                         dibujar_cola_mensajes(cola_mensajes, fuente);
                         
