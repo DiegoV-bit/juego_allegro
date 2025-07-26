@@ -245,46 +245,25 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo di
             teclas[3] = true;
             break;
         case ALLEGRO_KEY_SPACE:
-            disparar_radial(disparos, num_disparos, *nave);
+            // disparar_radial(disparos, num_disparos, *nave);
+            break;
+        case ALLEGRO_KEY_1:
+            cambiar_arma(nave, Arma_normal);
+            break;
+        case ALLEGRO_KEY_2:
+            cambiar_arma(nave, Arma_laser);
+            break;
+        case ALLEGRO_KEY_3:
+            cambiar_arma(nave, Arma_explosiva);
+            break;
+        case ALLEGRO_KEY_4:
+            cambiar_arma(nave, Arma_misil);
             break;
         }
     }
     else if (evento.type == ALLEGRO_EVENT_KEY_UP)
     {
         switch (evento.keyboard.keycode)
-        {
-            case ALLEGRO_KEY_UP:
-                teclas[0] = false;
-                break;
-            case ALLEGRO_KEY_DOWN:
-                teclas[1] = false;
-                break;
-            case ALLEGRO_KEY_LEFT:
-                teclas[2] = false;
-                break;
-            case ALLEGRO_KEY_RIGHT:
-                teclas[3] = false;
-                break;
-            case ALLEGRO_KEY_SPACE:
-                disparar_radial(disparos, num_disparos, *nave);
-                break;
-            case ALLEGRO_KEY_1:
-                cambiar_arma(nave, Arma_normal);
-                break;
-            case ALLEGRO_KEY_2:
-                cambiar_arma(nave, Arma_laser);
-                break;
-            case ALLEGRO_KEY_3:
-                cambiar_arma(nave, Arma_explosiva);
-                break;
-            case ALLEGRO_KEY_4:
-                cambiar_arma(nave, Arma_misil);
-                break;
-        }
-    }
-    else if (evento.type == ALLEGRO_EVENT_KEY_UP)
-    {
-        switch(evento.keyboard.keycode)
         {
             case ALLEGRO_KEY_UP:
                 teclas[0] = false;
@@ -3221,11 +3200,15 @@ void crear_powerup_laser(Powerup powerups[], int max_powerups, float x, float y)
  */
 void disparar_segun_arma(Nave nave, Disparo disparos[], int num_disparos, DisparoLaser lasers[], int max_lasers, DisparoExplosivo explosivos[], int max_explosivos, MisilTeledirigido misiles[], int max_misiles, Enemigo enemigos[], int num_enemigos)
 {
-    switch (nave.arma_actual) {
+    switch (nave.arma_actual)
+    {
         case Arma_normal:
-            if (nave.nivel_disparo_radial > 0) {
+            if (nave.nivel_disparo_radial > 0)
+            {
                 disparar_radial(disparos, num_disparos, nave);
-            } else {
+            }
+            else
+            {
                 disparar(disparos, num_disparos, nave);
             }
             break;
@@ -3329,7 +3312,7 @@ void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave 
 
 void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, Enemigo enemigos[], int num_enemigos, int* puntaje)
 {
-    double tiempo_actual = al_get_time();
+    //double tiempo_actual = al_get_time();
     
     for (int i = 0; i < max_explosivos; i++)
     {
@@ -3415,9 +3398,7 @@ void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
             if (!explosivos[i].exploto)
             {
                 // Dibujar proyectil
-                al_draw_filled_rectangle(explosivos[i].x - explosivos[i].ancho/2, explosivos[i].y - explosivos[i].alto/2,
-                                       explosivos[i].x + explosivos[i].ancho/2, explosivos[i].y + explosivos[i].alto/2,
-                                       al_map_rgb(255, 100, 0));
+                al_draw_filled_rectangle(explosivos[i].x - explosivos[i].ancho/2, explosivos[i].y - explosivos[i].alto/2, explosivos[i].x + explosivos[i].ancho/2, explosivos[i].y + explosivos[i].alto/2, al_map_rgb(255, 100, 0));
                 
                 // Efecto de estela
                 al_draw_filled_circle(explosivos[i].x, explosivos[i].y, 3, al_map_rgba(255, 200, 0, 100));
@@ -3430,16 +3411,13 @@ void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
                 int alpha = (int)(255 * (1.0f - progreso));
                 
                 // Círculo exterior (onda expansiva)
-                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual, 
-                                    al_map_rgba(255, 100, 0, alpha/3));
+                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual, al_map_rgba(255, 100, 0, alpha/3));
                 
                 // Círculo interior (núcleo)
-                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual * 0.6f, 
-                                    al_map_rgba(255, 200, 0, alpha/2));
+                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual * 0.6f, al_map_rgba(255, 200, 0, alpha/2));
                 
                 // Centro brillante
-                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual * 0.3f, 
-                                    al_map_rgba(255, 255, 200, alpha));
+                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual * 0.3f, al_map_rgba(255, 255, 200, alpha));
             }
         }
     }
@@ -3516,8 +3494,7 @@ void actualizar_misiles(MisilTeledirigido misiles[], int max_misiles, Enemigo en
             misiles[i].tiempo_vida += 0.016;
             
             // Si tiene objetivo válido, dirigirse hacia él
-            if (misiles[i].tiene_objetivo && misiles[i].enemigo_objetivo != -1 && 
-                misiles[i].enemigo_objetivo < num_enemigos && enemigos[misiles[i].enemigo_objetivo].activo)
+            if (misiles[i].tiene_objetivo && misiles[i].enemigo_objetivo != -1 && misiles[i].enemigo_objetivo < num_enemigos && enemigos[misiles[i].enemigo_objetivo].activo)
             {
                 Enemigo* objetivo = &enemigos[misiles[i].enemigo_objetivo];
                 
@@ -3619,10 +3596,8 @@ void dibujar_misiles(MisilTeledirigido misiles[], int max_misiles)
             float angulo = atan2(misiles[i].vy, misiles[i].vx);
             
             // Dibujar cuerpo del misil
-            al_draw_filled_rectangle(misiles[i].x - misiles[i].ancho/2, misiles[i].y - misiles[i].alto/2,
-                                   misiles[i].x + misiles[i].ancho/2, misiles[i].y + misiles[i].alto/2,
-                                   al_map_rgb(0, 200, 100));
-            
+            al_draw_filled_rectangle(misiles[i].x - misiles[i].ancho/2, misiles[i].y - misiles[i].alto/2, misiles[i].x + misiles[i].ancho/2, misiles[i].y + misiles[i].alto/2, al_map_rgb(0, 200, 100));
+
             // Dibujar punta del misil
             float punta_x = misiles[i].x + cos(angulo) * (misiles[i].alto/2 + 3);
             float punta_y = misiles[i].y + sin(angulo) * (misiles[i].alto/2 + 3);
