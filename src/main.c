@@ -214,18 +214,57 @@ int main()
                     {
                         if (evento.type == ALLEGRO_EVENT_KEY_DOWN && evento.keyboard.keycode == ALLEGRO_KEY_SPACE)
                         {
-                            disparar_segun_arma(nave, disparos, MAX_DISPAROS, lasers, 5, explosivos, 8, misil, 6, enemigos, num_enemigos_cargados);
+                            if (nave.arma_actual == Arma_laser)
+                            {
+                                bool laser_activo = false;
+                                for (i = 0; i < 5; i++)
+                                {
+                                    if (!lasers[i].activo)
+                                    {
+                                        laser_activo = true;
+                                        break;
+                                    }
+                                }
+
+                                if (!laser_activo)
+                                {
+                                    disparar_laser(lasers, 5, nave);
+                                    printf("Laser activado al presionar espacio\n");
+                                }
+                            }
+                            else
+                            {
+                                disparar_segun_arma(nave, disparos, MAX_DISPAROS, lasers, 5, explosivos, 8, misil, 6, enemigos, num_enemigos_cargados);
+                            }
                         }
                         else
                         {
-                            manejar_eventos(evento, &nave, teclas, disparos, MAX_DISPAROS);
+                            manejar_eventos(evento, &nave, teclas);
                         }
-
-                        if (evento.type == ALLEGRO_EVENT_KEY_DOWN && evento.keyboard.keycode == ALLEGRO_KEY_F1)
+                    }
+                    else if (evento.type == ALLEGRO_EVENT_KEY_UP && evento.keyboard.keycode == ALLEGRO_KEY_SPACE)
+                    {
+                        if (nave.arma_actual == Arma_laser)
                         {
-                            debug_mode = !debug_mode;
-                            printf("Modo debug %s\n", debug_mode ? "ACTIVADO" : "DESACTIVADO");
+                            for (i = 0; i < 5; i++)
+                            {
+                                if (lasers[i].activo)
+                                {
+                                    lasers[i].activo = false;
+                                    printf("Laser desactivado al soltar espacio\n");
+                                }
+                            }
                         }
+                    }
+                    else if (evento.keyboard.keycode != ALLEGRO_KEY_SPACE)
+                    {
+                        manejar_eventos(evento, &nave, teclas);
+                    }
+
+                    if (evento.type == ALLEGRO_EVENT_KEY_DOWN && evento.keyboard.keycode == ALLEGRO_KEY_F1)
+                    {
+                        debug_mode = !debug_mode;
+                        printf("Modo debug %s\n", debug_mode ? "ACTIVADO" : "DESACTIVADO");
                     }
                 }
 
@@ -401,7 +440,7 @@ int main()
                         agregar_mensaje_cola(&cola_mensajes, "Usa las flechas para rotar y avanzar", 3.0, al_map_rgb(255, 255, 255), true); // Centrado
                     }
 
-                    actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje);
+                    actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje, nave);
                     actualizar_explosivos(explosivos, 8, enemigos, num_enemigos_cargados, &puntaje);
                     actualizar_misiles(misil, 6, enemigos, num_enemigos_cargados, &puntaje);
 

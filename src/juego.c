@@ -226,7 +226,7 @@ bool detectar_colision(Nave* nave, Asteroide asteroide)
    * @param disparos Arreglo de disparos.
    * @param num_disparos Número de disparos en el arreglo.
    */
-void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo disparos[], int num_disparos)
+void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[])
 {
     if (evento.type == ALLEGRO_EVENT_KEY_DOWN)
     {
@@ -235,27 +235,35 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo di
         case ALLEGRO_KEY_UP:
             teclas[0] = true;
             break;
+
         case ALLEGRO_KEY_DOWN:
             teclas[1] = true;
             break;
+
         case ALLEGRO_KEY_LEFT:
             teclas[2] = true;
             break;
+
         case ALLEGRO_KEY_RIGHT:
             teclas[3] = true;
             break;
+
         case ALLEGRO_KEY_SPACE:
             // disparar_radial(disparos, num_disparos, *nave);
             break;
+
         case ALLEGRO_KEY_1:
             cambiar_arma(nave, Arma_normal);
             break;
+
         case ALLEGRO_KEY_2:
             cambiar_arma(nave, Arma_laser);
             break;
+
         case ALLEGRO_KEY_3:
             cambiar_arma(nave, Arma_explosiva);
             break;
+            
         case ALLEGRO_KEY_4:
             cambiar_arma(nave, Arma_misil);
             break;
@@ -277,6 +285,8 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo di
             case ALLEGRO_KEY_RIGHT:
                 teclas[3] = false;
                 break;
+            case ALLEGRO_KEY_SPACE:
+            break;
         }
     }
 }
@@ -344,8 +354,17 @@ void actualizar_nave(Nave* nave, bool teclas[])
     if(nave->tipo == 0)
     {
         // Movilidad tipo Space Invaders: solo izquierda/derecha
-        if (teclas[2]) nueva_x -= 5; // Izquierda
-        if (teclas[3]) nueva_x += 5; // Derecha
+        if (teclas[2])
+        {
+            nueva_x -= 5; // Izquierda
+            printf("Izquierda\n");
+        } 
+
+        if (teclas[3])
+        {
+            nueva_x += 5; // Derecha
+            printf("Derecha\n");
+        }
 
         // Limitar el movimiento de la nave dentro de la ventana
         if (nueva_x < 0) nueva_x = 0;
@@ -362,13 +381,22 @@ void actualizar_nave(Nave* nave, bool teclas[])
     else
     {
         // Rotación de la nave
-        if(teclas[2]) nave->angulo -= 0.07f; // Izquierda
-        if(teclas[3]) nave->angulo += 0.07f; // Derecha
+        if(teclas[2]) 
+        {
+            nave->angulo -= 0.07f; // Izquierda
+            printf("Rotar a la izquierda\n");
+        }
+        if(teclas[3]) 
+        {
+            nave->angulo += 0.07f; // Derecha
+            printf("Rotar a la derecha\n");
+        }
 
         if (teclas[0]) // Arriba (avanzar)
         {
             nueva_x += cos(nave->angulo - ALLEGRO_PI/2) * 5;
             nueva_y += sin(nave->angulo - ALLEGRO_PI/2) * 5;
+            printf("Avanzando\n");
         }
 
         // Limitar el movimiento de la nave dentro de la ventana
@@ -3072,26 +3100,36 @@ void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
 {
     double tiempo_actual = al_get_time();
     SistemaArma arma_laser = nave.armas[Arma_laser];
-
-    if (tiempo_actual - arma_laser.ultimo_uso < 0.1)
-    {
-        return;
-    }
+    int i;
+    float centro_x;
+    float centro_y;
+    float punta_x;
+    float punta_y;
     
-    for (int i = 0; i < max_lasers; i++)
+    for (i = 0; i < max_lasers; i++)
     {
+
         if (!lasers[i].activo)
         {
-            lasers[i].x = nave.x + nave.ancho / 2;
-            lasers[i].y = nave.y;
-            lasers[i].ancho = 8 * arma_laser.nivel;
+            centro_x = nave.x + nave.ancho / 2.0f;
+            centro_y = nave.y + nave.largo / 2.0f;
+            punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
+            punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
+
+            lasers[i].x_nave = punta_x;
+            lasers[i].y_nave = punta_y;
+            lasers[i].x = punta_x;
+            lasers[i].y = punta_y;
+            lasers[i].ancho = 6 + (arma_laser.nivel * 2);
             lasers[i].alto = nave.y;
-            lasers[i].angulo = nave.angulo;
+            lasers[i].angulo = nave.angulo - ALLEGRO_PI / 2;
+            lasers[i].alcance = 600;
             lasers[i].activo = true;
             lasers[i].tiempo_inicio = tiempo_actual;
+            lasers[i].ultimo_dano = 0.0;
             
-            lasers[i].duracion_max = 1.0 + (arma_laser.nivel * 0.5);
-            lasers[i].poder = 2 + arma_laser.nivel;
+            lasers[i].duracion_max = 0;
+            lasers[i].poder = 1 + arma_laser.nivel;
 
             switch(arma_laser.nivel)
             {
@@ -3113,40 +3151,81 @@ void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
 }
 
 
-void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int *puntaje)
+/**
+ * @brief 
+ * 
+ * 
+ * 
+ * @param lasers 
+ * @param max_lasers 
+ * @param enemigos 
+ * @param num_enemigos 
+ * @param puntaje 
+ * @param nave 
+ */
+void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int *puntaje, Nave nave)
 {
     double tiempo_actual = al_get_time();
-    
-    for (int i = 0; i < max_lasers; i++)
+    int i;
+    int j;
+    float centro_x;
+    float centro_y;
+    const double intervalo_dano = 0.3;
+    bool realiza_dano;
+    bool dano_aplicado = false;
+
+    for (i = 0; i < max_lasers; i++)
     {
         if (lasers[i].activo)
         {
+            centro_x = nave.x + nave.ancho / 2.0f;
+            centro_y = nave.y + nave.largo / 2.0f;
+            lasers[i].x_nave = centro_x + cos(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
+            lasers[i].y_nave = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
+            lasers[i].angulo = nave.angulo - ALLEGRO_PI / 2;
+
             // Verificar si el láser debe desaparecer
-            if (tiempo_actual - lasers[i].tiempo_inicio >= lasers[i].duracion_max)
+            if (lasers[i].duracion_max > 0 && tiempo_actual - lasers[i].tiempo_inicio >= lasers[i].duracion_max)
             {
                 lasers[i].activo = false;
+                printf("Láser %d desactivado por tiempo expirado\n", i);
                 continue;
             }
-        }
 
-        for (int j = 0; j < num_enemigos; j++)
-        {
-            if (enemigos[j].activo)
+            realiza_dano = (tiempo_actual - lasers[i].tiempo_inicio >= intervalo_dano);
+
+            if (realiza_dano)
             {
-                if (((enemigos[j].x >= lasers[i].x - lasers[i].ancho/2) && (enemigos[j].x <= lasers[i].x + lasers[i].ancho/2)) && (enemigos[j].y <= lasers[i].y))
+                //float final_x = lasers[i].x_nave + cos(lasers[i].angulo) * lasers[i].alcance;
+                //float final_y = lasers[i].y_nave + sin(lasers[i].angulo) * lasers[i].alcance;
+
+                for (j = 0; j < num_enemigos; j++)
                 {
-                    // Aplicar daño continuo
-                    enemigos[j].vida -= lasers[i].poder;
-                    printf("Láser dañando enemigo %d: vida restante %d\n", j, enemigos[j].vida);
-                        
-                    if (enemigos[j].vida <= 0)
+                    if (enemigos[j].activo)
                     {
-                        enemigos[j].activo = false;
-                        (*puntaje)++;
-                        printf("Enemigo eliminado por láser\n");
+                        if (laser_intersecta_enemigo(lasers[i], enemigos[j]))
+                        {
+                            enemigos[j].vida -= lasers[i].poder;
+                            dano_aplicado = true;
+
+                            printf("Láser %d dañando enemigo %d: vida restante %d\n", i, j, enemigos[j].vida);
+
+                            if (enemigos[j].vida <= 0)
+                            {
+                                enemigos[j].activo = false;
+                                (*puntaje)++;
+                                printf("Enemigo %d eliminado por láser\n", j);
+                            }
+                        }
                     }
                 }
-            }   
+
+                if (dano_aplicado)
+                {
+                    lasers[i].ultimo_dano = tiempo_actual;
+                    dano_aplicado = false;
+                }
+            }
         }
     }
 }
@@ -3154,18 +3233,34 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
 
 void dibujar_lasers(DisparoLaser lasers[], int max_lasers)
 {
-    for (int i = 0; i < max_lasers; i++)
+    int i;
+    int p;
+    float final_x;
+    float final_y;
+    float offset_x;
+    float offset_y;
+    ALLEGRO_COLOR color_centro;
+
+    for (i = 0; i < max_lasers; i++)
     {
         if (lasers[i].activo)
         {
-            // Dibujar rayo principal
-            al_draw_filled_rectangle(lasers[i].x - lasers[i].ancho/2, 0, lasers[i].x + lasers[i].ancho/2, lasers[i].y, lasers[i].color);
+            final_x = lasers[i].x_nave + cos(lasers[i].angulo) * lasers[i].alcance;
+            final_y = lasers[i].y_nave + sin(lasers[i].angulo) * lasers[i].alcance;
 
-            // Dibujar borde del láser
-            al_draw_rectangle(lasers[i].x - lasers[i].ancho/2, 0, lasers[i].x + lasers[i].ancho/2, lasers[i].y, al_map_rgb(255, 255, 255), 1);
+            al_draw_line(lasers[i].x_nave, lasers[i].y_nave, final_x, final_y, lasers[i].color, lasers[i].ancho);
+
+            color_centro = al_map_rgba(255, 255, 255, 200);
+            al_draw_line(lasers[i].x_nave, lasers[i].y_nave, final_x, final_y, color_centro, lasers[i].ancho / 3);
             
-            // Efecto de destello en el origen
-            al_draw_filled_circle(lasers[i].x, lasers[i].y, lasers[i].ancho/2 + 3, al_map_rgba(255, 255, 255, 100));
+            al_draw_filled_circle(lasers[i].x_nave, lasers[i].y_nave, lasers[i].ancho/2 + 3, al_map_rgba(255, 255, 255, 100));
+
+            for (p = 0; p < 5; p++)
+            {
+                offset_x = (rand() % 20 - 10) * 0.5f;
+                offset_y = (rand() % 20 - 10) * 0.5f;
+                al_draw_filled_circle(final_x + offset_x, final_y + offset_y, 1, al_map_rgba(255, 100, 0, 150));
+            }
         }
     }
 }
@@ -3618,4 +3713,73 @@ void dibujar_misiles(MisilTeledirigido misiles[], int max_misiles)
             }
         }
     }
+}
+
+
+bool punto_en_linea_laser(float x1, float y1, float x2, float y2, float px, float py, float tolerancia)
+{
+    float A = y2 - y1;
+    float B = x1 - x2;
+    float C = x2 * y1 - x1 * y2;
+    float punto_1;
+    float punto_2;
+
+    float distancia = fabs(A * px + B * py + C) / sqrt(A * A + B * B);
+    
+    if (distancia > tolerancia)
+    {
+        return false;
+    }
+    
+    punto_1 = (px - x1) * (x2 - x1) + (py - y1) * (y2 - y1);
+    punto_2 = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+
+    return (punto_1 >= 0 && punto_1 <= punto_2);
+}
+
+
+bool laser_intersecta_enemigo(DisparoLaser laser, Enemigo enemigo)
+{
+    float final_x = laser.x_nave + cos(laser.angulo) * laser.alcance;
+    float final_y = laser.y_nave + sin(laser.angulo) * laser.alcance;
+    float margen = 5.0f;
+    float enemigo_x1 = enemigo.x - margen;
+    float enemigo_y1 = enemigo.y - margen;
+    float enemigo_x2 = enemigo.x + enemigo.ancho + margen;
+    float enemigo_y2 = enemigo.y + enemigo.alto + margen;
+
+    return linea_intersecta_rectangulo(laser.x_nave, laser.y_nave, final_x, final_y, enemigo_x1, enemigo_y1, enemigo_x2, enemigo_y2);
+}
+
+
+/**
+ * @brief Verifica si una línea intersecta con un rectángulo.
+ */
+bool linea_intersecta_rectangulo(float x1, float y1, float x2, float y2, float rect_x1, float rect_y1, float rect_x2, float rect_y2)
+{
+    // Verificar si algún punto de la línea está dentro del rectángulo
+    if ((x1 >= rect_x1 && x1 <= rect_x2 && y1 >= rect_y1 && y1 <= rect_y2) ||
+        (x2 >= rect_x1 && x2 <= rect_x2 && y2 >= rect_y1 && y2 <= rect_y2)) {
+        return true;
+    }
+    
+    // Verificar intersección con cada lado del rectángulo
+    return (linea_intersecta_linea(x1, y1, x2, y2, rect_x1, rect_y1, rect_x2, rect_y1) || // Top
+            linea_intersecta_linea(x1, y1, x2, y2, rect_x2, rect_y1, rect_x2, rect_y2) || // Right
+            linea_intersecta_linea(x1, y1, x2, y2, rect_x2, rect_y2, rect_x1, rect_y2) || // Bottom
+            linea_intersecta_linea(x1, y1, x2, y2, rect_x1, rect_y2, rect_x1, rect_y1));  // Left
+}
+
+/**
+ * @brief Verifica si dos líneas se intersectan.
+ */
+bool linea_intersecta_linea(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
+{
+    float denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    if (fabs(denom) < 0.0001f) return false; // Líneas paralelas
+    
+    float t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+    float u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+    
+    return (t >= 0 && t <= 1 && u >= 0 && u <= 1);
 }

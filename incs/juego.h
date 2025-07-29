@@ -113,13 +113,17 @@ typedef struct
 {
     float x;
     float y;
+    float x_nave;
+    float y_nave;
     float ancho;
     float alto;
     float angulo;
     bool activo;
     double tiempo_inicio;
     double duracion_max;
+    double ultimo_dano;
     int poder;
+    float alcance;
     ALLEGRO_COLOR color;
 } DisparoLaser;
 
@@ -349,7 +353,7 @@ Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiem
 void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana, ALLEGRO_BITMAP* imagen_asteroide);
 void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave* nave, Powerup powerups[], int max_powerups);
 bool detectar_colision(Nave* nave, Asteroide asteroide);
-void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[], Disparo disparos[], int num_disparos);
+void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[]);
 void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int nivel_actual);
 void actualizar_nave(Nave* nave, bool teclas[]);
 void dibujar_barra_vida(Nave nave);
@@ -439,7 +443,7 @@ void actualizar_progreso_arma(Nave* nave, TipoArma tipo_arma);
 void verificar_mejora_arma(Nave* nave, TipoArma tipo_arma, ColaMensajes* cola_mensajes);
 void dibujar_info_armas(Nave nave, ALLEGRO_FONT* fuente);
 void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave);
-void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int* puntaje);
+void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int* puntaje, Nave nave);
 void dibujar_lasers(DisparoLaser lasers[], int max_lasers);
 void crear_powerup_aleatorio(Powerup powerups[], int max_powerups, float x, float y);
 void crear_powerup_laser(Powerup powerups[], int max_powerups, float x, float y);
@@ -452,5 +456,9 @@ void crear_powerup_misil(Powerup powerups[], int max_powerups, float x, float y)
 void disparar_misil(MisilTeledirigido misiles[], int max_misiles, Nave nave, Enemigo enemigos[], int num_enemigos);
 void actualizar_misiles(MisilTeledirigido misiles[], int max_misiles, Enemigo enemigos[], int num_enemigos, int* puntaje);
 void dibujar_misiles(MisilTeledirigido misiles[], int max_misiles);
+bool punto_en_linea_laser(float x1, float y1, float x2, float y2, float px, float py, float tolerancia);
+bool laser_intersecta_enemigo(DisparoLaser laser, Enemigo enemigo);
+bool linea_intersecta_rectangulo(float x1, float y1, float x2, float y2, float rect_x1, float rect_y1, float rect_x2, float rect_y2);
+bool linea_intersecta_linea(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
 
 #endif
