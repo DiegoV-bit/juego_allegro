@@ -460,5 +460,6 @@ bool punto_en_linea_laser(float x1, float y1, float x2, float y2, float px, floa
 bool laser_intersecta_enemigo(DisparoLaser laser, Enemigo enemigo);
 bool linea_intersecta_rectangulo(float x1, float y1, float x2, float y2, float rect_x1, float rect_y1, float rect_x2, float rect_y2);
 bool linea_intersecta_linea(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
-
+float verificar_colision_laser_tilemap(DisparoLaser laser, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
+bool laser_intersecta_enemigo_limitado(DisparoLaser laser, Enemigo enemigo, float alcance_real);
 #endif

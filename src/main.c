@@ -219,7 +219,7 @@ int main()
                                 bool laser_activo = false;
                                 for (i = 0; i < 5; i++)
                                 {
-                                    if (!lasers[i].activo)
+                                    if (lasers[i].activo)
                                     {
                                         laser_activo = true;
                                         break;
@@ -237,30 +237,37 @@ int main()
                                 disparar_segun_arma(nave, disparos, MAX_DISPAROS, lasers, 5, explosivos, 8, misil, 6, enemigos, num_enemigos_cargados);
                             }
                         }
-                        else
+                        
+                        // Se manejan los eventos de teclado que no tengan que ver con la tecla espacio
+                        if (evento.keyboard.keycode != ALLEGRO_KEY_SPACE)
                         {
                             manejar_eventos(evento, &nave, teclas);
                         }
                     }
-                    else if (evento.type == ALLEGRO_EVENT_KEY_UP && evento.keyboard.keycode == ALLEGRO_KEY_SPACE)
+                    
+                    if (evento.type == ALLEGRO_EVENT_KEY_UP && evento.keyboard.keycode == ALLEGRO_KEY_SPACE)
                     {
                         if (nave.arma_actual == Arma_laser)
                         {
+                            bool laser_desactivado = false;
                             for (i = 0; i < 5; i++)
                             {
                                 if (lasers[i].activo)
                                 {
                                     lasers[i].activo = false;
+                                    laser_desactivado = true;
                                     printf("Laser desactivado al soltar espacio\n");
                                 }
                             }
+
+                            if (!laser_desactivado)
+                            {
+                                printf("No hay laseres en pantalla\n");
+                            }
                         }
                     }
-                    else if (evento.keyboard.keycode != ALLEGRO_KEY_SPACE)
-                    {
-                        manejar_eventos(evento, &nave, teclas);
-                    }
 
+                    // Manejo de eventos de debug
                     if (evento.type == ALLEGRO_EVENT_KEY_DOWN && evento.keyboard.keycode == ALLEGRO_KEY_F1)
                     {
                         debug_mode = !debug_mode;

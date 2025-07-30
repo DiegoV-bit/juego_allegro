@@ -3145,9 +3145,11 @@ void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
             }
 
             printf("Láser disparado - Nivel %d, Poder %d, Duración %.1fs\n", arma_laser.nivel, lasers[i].poder, lasers[i].duracion_max);
-            break;
+            return;
         }   
     }
+
+    printf("No hay espacio para más láseres activos.\n");
 }
 
 
@@ -3173,6 +3175,9 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
     const double intervalo_dano = 0.3;
     bool realiza_dano;
     bool dano_aplicado = false;
+    extern Tile tilemap_global[MAPA_FILAS][MAPA_COLUMNAS];
+    float alcance_real;
+    float distancia_enemigo;
 
     for (i = 0; i < max_lasers; i++)
     {
@@ -3184,26 +3189,35 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
             lasers[i].y_nave = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
             lasers[i].angulo = nave.angulo - ALLEGRO_PI / 2;
 
+            alcance_real = verificar_colision_laser_tilemap(lasers[i], tilemap_global);
+
             // Verificar si el láser debe desaparecer
-            if (lasers[i].duracion_max > 0 && tiempo_actual - lasers[i].tiempo_inicio >= lasers[i].duracion_max)
-            {
-                lasers[i].activo = false;
-                printf("Láser %d desactivado por tiempo expirado\n", i);
-                continue;
-            }
+            //static int contador_debug = 0;
+            //if (++contador_debug % 60 == 0) 
+            //{
+                //printf("Actualizando láser %d: Activo: %d, Tiempo inicio: %.2f, Duración: %.2f\n", i, lasers[i].activo, lasers[i].tiempo_inicio, lasers[i].duracion_max);
+            //}
+
+            //if (lasers[i].duracion_max > 0 && tiempo_actual - lasers[i].tiempo_inicio >= lasers[i].duracion_max)
+            //{
+                //lasers[i].activo = false;
+                //printf("Láser %d desactivado por tiempo expirado\n", i);
+                //continue;
+            //}
 
             realiza_dano = (tiempo_actual - lasers[i].tiempo_inicio >= intervalo_dano);
 
             if (realiza_dano)
             {
-                //float final_x = lasers[i].x_nave + cos(lasers[i].angulo) * lasers[i].alcance;
-                //float final_y = lasers[i].y_nave + sin(lasers[i].angulo) * lasers[i].alcance;
+                //bool aplicar_dano = false;
 
                 for (j = 0; j < num_enemigos; j++)
                 {
                     if (enemigos[j].activo)
                     {
-                        if (laser_intersecta_enemigo(lasers[i], enemigos[j]))
+                        distancia_enemigo = sqrt(pow(enemigos[j].x + enemigos[j].ancho/2 - lasers[i].x_nave, 2) + pow(enemigos[j].y + enemigos[j].alto/2 - lasers[i].y_nave, 2));
+
+                        if (distancia_enemigo <= alcance_real && laser_intersecta_enemigo_limitado(lasers[i], enemigos[j], alcance_real))
                         {
                             enemigos[j].vida -= lasers[i].poder;
                             dano_aplicado = true;
@@ -3223,7 +3237,6 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
                 if (dano_aplicado)
                 {
                     lasers[i].ultimo_dano = tiempo_actual;
-                    dano_aplicado = false;
                 }
             }
         }
@@ -3231,6 +3244,12 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
 }
 
 
+/**
+ * @brief 
+ * 
+ * @param lasers 
+ * @param max_lasers 
+ */
 void dibujar_lasers(DisparoLaser lasers[], int max_lasers)
 {
     int i;
@@ -3240,26 +3259,35 @@ void dibujar_lasers(DisparoLaser lasers[], int max_lasers)
     float offset_x;
     float offset_y;
     ALLEGRO_COLOR color_centro;
+    float alcance_real;
+    extern Tile tilemap_global[MAPA_FILAS][MAPA_COLUMNAS];
 
     for (i = 0; i < max_lasers; i++)
     {
         if (lasers[i].activo)
         {
-            final_x = lasers[i].x_nave + cos(lasers[i].angulo) * lasers[i].alcance;
-            final_y = lasers[i].y_nave + sin(lasers[i].angulo) * lasers[i].alcance;
+            alcance_real = verificar_colision_laser_tilemap(lasers[i], tilemap_global);
+            final_x = lasers[i].x_nave + cos(lasers[i].angulo) * alcance_real;
+            final_y = lasers[i].y_nave + sin(lasers[i].angulo) * alcance_real;
 
+            // Linea del laser con un alcance limitado
             al_draw_line(lasers[i].x_nave, lasers[i].y_nave, final_x, final_y, lasers[i].color, lasers[i].ancho);
 
+            // Linea mas delgada en el centro del laser
             color_centro = al_map_rgba(255, 255, 255, 200);
             al_draw_line(lasers[i].x_nave, lasers[i].y_nave, final_x, final_y, color_centro, lasers[i].ancho / 3);
             
+            // Efecto de destello en el origen del laser
             al_draw_filled_circle(lasers[i].x_nave, lasers[i].y_nave, lasers[i].ancho/2 + 3, al_map_rgba(255, 255, 255, 100));
 
-            for (p = 0; p < 5; p++)
+            if (alcance_real < lasers[i].alcance)
             {
-                offset_x = (rand() % 20 - 10) * 0.5f;
-                offset_y = (rand() % 20 - 10) * 0.5f;
-                al_draw_filled_circle(final_x + offset_x, final_y + offset_y, 1, al_map_rgba(255, 100, 0, 150));
+                for (p = 0; p < 5; p++)
+                {
+                    offset_x = (rand() % 20 - 10) * 0.5f;
+                    offset_y = (rand() % 20 - 10) * 0.5f;
+                    al_draw_filled_circle(final_x + offset_x, final_y + offset_y, 1, al_map_rgba(255, 100, 0, 150));
+                }
             }
         }
     }
@@ -3323,6 +3351,14 @@ void disparar_segun_arma(Nave nave, Disparo disparos[], int num_disparos, Dispar
 }
 
 
+/**
+ * @brief 
+ * 
+ * @param powerups 
+ * @param max_powerups 
+ * @param x 
+ * @param y 
+ */
 void crear_powerup_explosivo(Powerup powerups[], int max_powerups, float x, float y)
 {
     for (int i = 0; i < max_powerups; i++)
@@ -3344,6 +3380,14 @@ void crear_powerup_explosivo(Powerup powerups[], int max_powerups, float x, floa
 }
 
 
+/**
+ * @brief 
+ * 
+ * @param powerups 
+ * @param max_powerups 
+ * @param x 
+ * @param y 
+ */
 void crear_powerup_misil(Powerup powerups[], int max_powerups, float x, float y)
 {
     for (int i = 0; i < max_powerups; i++)
@@ -3365,6 +3409,13 @@ void crear_powerup_misil(Powerup powerups[], int max_powerups, float x, float y)
 }
 
 
+/**
+ * @brief 
+ * 
+ * @param explosivos 
+ * @param max_explosivos 
+ * @param nave 
+ */
 void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave nave)
 {
     double tiempo_actual = al_get_time();
@@ -3405,6 +3456,15 @@ void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave 
 }
 
 
+/**
+ * @brief 
+ * 
+ * @param explosivos 
+ * @param max_explosivos 
+ * @param enemigos 
+ * @param num_enemigos 
+ * @param puntaje 
+ */
 void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, Enemigo enemigos[], int num_enemigos, int* puntaje)
 {
     //double tiempo_actual = al_get_time();
@@ -3425,8 +3485,7 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
             {
                 if (enemigos[j].activo)
                 {
-                    if (detectar_colision_generica(explosivos[i].x, explosivos[i].y, explosivos[i].ancho, explosivos[i].alto,
-                                                 enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
+                    if (detectar_colision_generica(explosivos[i].x, explosivos[i].y, explosivos[i].ancho, explosivos[i].alto, enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
                     {
                         debe_explotar = true;
                         break;
@@ -3455,13 +3514,13 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
                             int dano = (distancia < 20) ? explosivos[i].dano_directo : explosivos[i].dano_area;
                             enemigos[j].vida -= dano;
                             
-                            printf("💥 Explosión dañó enemigo %d: -%d HP (dist: %.0f)\n", j, dano, distancia);
+                            printf("Explosión dañó enemigo %d: -%d HP (dist: %.0f)\n", j, dano, distancia);
                             
                             if (enemigos[j].vida <= 0)
                             {
                                 enemigos[j].activo = false;
                                 (*puntaje)++;
-                                printf("💀 Enemigo eliminado por explosión\n");
+                                printf("Enemigo eliminado por explosión\n");
                             }
                         }
                     }
@@ -3486,7 +3545,9 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
 
 void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
 {
-    for (int i = 0; i < max_explosivos; i++)
+    int i;
+
+    for (i = 0; i < max_explosivos; i++)
     {
         if (explosivos[i].activo)
         {
@@ -3582,7 +3643,10 @@ void disparar_misil(MisilTeledirigido misiles[], int max_misiles, Nave nave, Ene
 
 void actualizar_misiles(MisilTeledirigido misiles[], int max_misiles, Enemigo enemigos[], int num_enemigos, int* puntaje)
 {
-    for (int i = 0; i < max_misiles; i++)
+    int i;
+    int j;
+
+    for (i = 0; i < max_misiles; i++)
     {
         if (misiles[i].activo)
         {
@@ -3646,22 +3710,21 @@ void actualizar_misiles(MisilTeledirigido misiles[], int max_misiles, Enemigo en
             misiles[i].y += misiles[i].vy;
             
             // Verificar colisiones con enemigos
-            for (int j = 0; j < num_enemigos; j++)
+            for (j = 0; j < num_enemigos; j++)
             {
                 if (enemigos[j].activo)
                 {
-                    if (detectar_colision_generica(misiles[i].x, misiles[i].y, misiles[i].ancho, misiles[i].alto,
-                                                 enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
+                    if (detectar_colision_generica(misiles[i].x, misiles[i].y, misiles[i].ancho, misiles[i].alto, enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
                     {
                         // Impacto
                         enemigos[j].vida -= misiles[i].dano;
-                        printf("🎯 Misil impactó enemigo %d: -%d HP\n", j, misiles[i].dano);
+                        printf("Misil impactó enemigo %d: -%d HP\n", j, misiles[i].dano);
                         
                         if (enemigos[j].vida <= 0)
                         {
                             enemigos[j].activo = false;
                             (*puntaje)++;
-                            printf("💀 Enemigo eliminado por misil\n");
+                            printf("Enemigo eliminado por misil\n");
                         }
                         
                         misiles[i].activo = false;
@@ -3681,6 +3744,12 @@ void actualizar_misiles(MisilTeledirigido misiles[], int max_misiles, Enemigo en
 }
 
 
+/**
+ * @brief 
+ * 
+ * @param misiles 
+ * @param max_misiles 
+ */
 void dibujar_misiles(MisilTeledirigido misiles[], int max_misiles)
 {
     for (int i = 0; i < max_misiles; i++)
@@ -3702,20 +3771,24 @@ void dibujar_misiles(MisilTeledirigido misiles[], int max_misiles)
             float cola_x = misiles[i].x - cos(angulo) * (misiles[i].alto/2 + 5);
             float cola_y = misiles[i].y - sin(angulo) * (misiles[i].alto/2 + 5);
             al_draw_filled_circle(cola_x, cola_y, 3, al_map_rgba(255, 100, 0, 150));
-            
-            // Línea de seguimiento (si tiene objetivo)
-            if (misiles[i].tiene_objetivo && misiles[i].enemigo_objetivo != -1)
-            {
-                // Podemos dibujar una línea tenue hacia el objetivo para debug
-                // (comentar en producción)
-                // al_draw_line(misiles[i].x, misiles[i].y, objetivo_x, objetivo_y, 
-                //              al_map_rgba(0, 255, 0, 50), 1);
-            }
         }
     }
 }
 
 
+/**
+ * @brief 
+ * 
+ * @param x1 
+ * @param y1 
+ * @param x2 
+ * @param y2 
+ * @param px 
+ * @param py 
+ * @param tolerancia 
+ * @return true 
+ * @return false 
+ */
 bool punto_en_linea_laser(float x1, float y1, float x2, float y2, float px, float py, float tolerancia)
 {
     float A = y2 - y1;
@@ -3738,6 +3811,14 @@ bool punto_en_linea_laser(float x1, float y1, float x2, float y2, float px, floa
 }
 
 
+/**
+ * @brief Verifica la interseccion del laser con un enemigo
+ * 
+ * @param laser 
+ * @param enemigo 
+ * @return true 
+ * @return false 
+ */
 bool laser_intersecta_enemigo(DisparoLaser laser, Enemigo enemigo)
 {
     float final_x = laser.x_nave + cos(laser.angulo) * laser.alcance;
@@ -3782,4 +3863,74 @@ bool linea_intersecta_linea(float x1, float y1, float x2, float y2, float x3, fl
     float u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
     
     return (t >= 0 && t <= 1 && u >= 0 && u <= 1);
+}
+
+
+float verificar_colision_laser_tilemap(DisparoLaser laser, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
+{
+    float paso = 5.0f;
+    float distancia_actual = 0.0f;
+    float x_actual;
+    float y_actual;
+    int fila;
+    int col;
+
+    while (distancia_actual < laser.alcance)
+    {
+        x_actual = laser.x_nave + cos(laser.angulo) * distancia_actual;
+        y_actual = laser.y_nave + sin(laser.angulo) * distancia_actual;
+
+        if (x_actual < 0 || x_actual >= 800 || y_actual < 0 || y_actual >= 600)
+        {
+            return distancia_actual;
+        }
+        
+        col = (int)(x_actual / TILE_ANCHO);
+        fila = (int)(y_actual / TILE_ALTO);
+
+        if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
+        {
+            if (tilemap[fila][col].tipo == 1 || tilemap[fila][col].tipo == 3)
+            {
+                printf("Laser bloqueado por un tile solido\n");
+                return distancia_actual;
+            }
+            
+            if (tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0)
+            {
+                tilemap[fila][col].vida -= 1;
+                printf("Laser esta dañando un escudo\n");
+
+                if (tilemap[fila][col].vida <= 0)
+                {
+                    tilemap[fila][col].tipo = 0; // Destruir el escudo
+                    printf("Escudo destruido en (%d, %d)\n", fila, col);
+                }
+                
+                return distancia_actual;
+            }
+        }
+
+        distancia_actual += paso;
+    }
+
+    return laser.alcance;
+}
+
+
+/**
+ * @brief Verifica si el láser intersecta con un enemigo dentro del alcance limitado.
+ */
+bool laser_intersecta_enemigo_limitado(DisparoLaser laser, Enemigo enemigo, float alcance_real)
+{
+    float final_x = laser.x_nave + cos(laser.angulo) * alcance_real;
+    float final_y = laser.y_nave + sin(laser.angulo) * alcance_real;
+    
+    float margen = 5.0f;
+    float enemigo_x1 = enemigo.x - margen;
+    float enemigo_y1 = enemigo.y - margen;
+    float enemigo_x2 = enemigo.x + enemigo.ancho + margen;
+    float enemigo_y2 = enemigo.y + enemigo.alto + margen;
+
+    return linea_intersecta_rectangulo(laser.x_nave, laser.y_nave, final_x, final_y, enemigo_x1, enemigo_y1, enemigo_x2, enemigo_y2);
 }
