@@ -1,9 +1,6 @@
 #include "ventana.h"
 #include "juego.h"
 
-Tile tilemap_global[MAPA_FILAS][MAPA_COLUMNAS];
-ALLEGRO_BITMAP *imagen_fondo_global = NULL;
-
 /**
  * @file main.c 
  *
@@ -40,21 +37,14 @@ int main()
     Enemigo enemigos_mapa[NUM_ENEMIGOS];
     int num_enemigos_cargados = 0;
 
+    int contador_parpadeo_powerups = 0;
+    int contador_debug_powerups = 0;
+    int contador_debug_lasers = 0;
+    //int contador_debug_cola = 0;
+
     if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo) != 0)
     {
         return -1;
-    }
-
-    imagen_fondo_global = fondo_juego;
-
-    if (imagen_fondo_global) 
-    {
-        printf("Imagen de fondo asignada correctamente.\n");
-        printf("Dimensiones: %dx%d\n", al_get_bitmap_width(imagen_fondo_global), al_get_bitmap_height(imagen_fondo_global));
-    } 
-    else
-    {
-        printf("ERROR: imagen_fondo_global es NULL\n");
     }
 
     /*Inicializar los botones del menu*/
@@ -124,8 +114,6 @@ int main()
         {
             // Recargo el nivel 1 desde cero
             cargar_tilemap("Nivel1.txt", tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_enemigo, &nave_x_inicial, &nave_y_inicial);
-
-            memcpy(tilemap_global, tilemap, sizeof(tilemap));
 
             // Inicializar estado del juego
             EstadoJuego estado_nivel;
@@ -405,15 +393,12 @@ int main()
                                 enemigos[k].activo = true;
                             }
 
-                            memcpy(tilemap_global, tilemap, sizeof(tilemap));
                             printf("Nivel %d iniciado con %d enemigos.\n", estado_nivel.nivel_actual, num_enemigos_cargados);
                             printf("Powerups conservados: Radial Nv.%d, Tipo Nave: %d\n", nave.nivel_disparo_radial, nave.tipo);
 
                             // LIMPIAR DISPAROS
                             init_disparos(disparos, MAX_DISPAROS);
                             init_disparos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
-
-                            memcpy(tilemap_global, tilemap, sizeof(tilemap));
                         
                             printf("Nivel %d iniciado con %d enemigos.\n", estado_nivel.nivel_actual, num_enemigos_cargados);
                             printf("Powerups conservados: Radial Nv.%d, Tipo Nave: %d\n", nave.nivel_disparo_radial, nave.tipo);
@@ -447,7 +432,7 @@ int main()
                         agregar_mensaje_cola(&cola_mensajes, "Usa las flechas para rotar y avanzar", 3.0, al_map_rgb(255, 255, 255), true); // Centrado
                     }
 
-                    actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje, nave);
+                    actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje, nave, tilemap, &contador_debug_lasers);
                     actualizar_explosivos(explosivos, 8, enemigos, num_enemigos_cargados, &puntaje);
                     actualizar_misiles(misil, 6, enemigos, num_enemigos_cargados, &puntaje);
 
@@ -464,18 +449,18 @@ int main()
                     else
                     {
                         // Dibujar el juego normal
-                        dibujar_juego(nave, asteroides, 10, estado_nivel.nivel_actual);
+                        dibujar_juego(nave, asteroides, 10, estado_nivel.nivel_actual, fondo_juego);
                         dibujar_tilemap(tilemap, imagen_asteroide);
                         dibujar_escudo(nave);
                         dibujar_disparos(disparos, 10);
 
-                        dibujar_lasers(lasers, 5);
+                        dibujar_lasers(lasers, 5, tilemap);
                         dibujar_explosivos(explosivos, 8);
                         dibujar_misiles(misil, 6);
                         
                         dibujar_enemigos(enemigos, num_enemigos_cargados);
                         dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
-                        dibujar_powerups(powerups, MAX_POWERUPS);
+                        dibujar_powerups(powerups, MAX_POWERUPS, &contador_parpadeo_powerups, &contador_debug_powerups);
 
                         if (debug_mode)
                         {

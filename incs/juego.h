@@ -86,8 +86,6 @@
 
 #define MAX_COLA_MENSAJES 5
 
-extern ALLEGRO_BITMAP *imagen_fondo_global;
-
 typedef enum
 {
     Arma_normal = 0,
@@ -347,6 +345,12 @@ typedef struct
     bool procesando;
 } ColaMensajes;
 
+typedef struct
+{
+    Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS];
+    ALLEGRO_BITMAP *imagen_juego;
+} ContextoJuego;
+
 
 /*Funciones*/
 Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave);
@@ -354,8 +358,8 @@ void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_venta
 void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave* nave, Powerup powerups[], int max_powerups);
 bool detectar_colision(Nave* nave, Asteroide asteroide);
 void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[]);
-void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int nivel_actual);
-void actualizar_nave(Nave* nave, bool teclas[]);
+void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int nivel_actual, ALLEGRO_BITMAP *imagen_fondo);
+void actualizar_nave(Nave* nave, bool teclas[], Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 void dibujar_barra_vida(Nave nave);
 void init_disparos(Disparo disparos[], int num_disparos);
 void actualizar_disparos(Disparo disparos[], int num_disparos);
@@ -406,7 +410,7 @@ bool detectar_colision_disparo_enemigo_escudo(Disparo disparo, float tile_x, flo
 void init_powerup(Powerup* powerup);
 void crear_powerup_escudo(Powerup powerups[], int max_powerups, float x, float y);
 void actualizar_powerups(Powerup powerups[], int max_powerups, double tiempo_actual);
-void dibujar_powerups(Powerup powerups[], int max_powerups);
+void dibujar_powerups(Powerup powerups[], int max_powerups, int *contador_parpadeo, int *contador_debug);
 bool detectar_colision_powerup(Nave nave, Powerup powerup);
 void recoger_powerup(Nave* nave, Powerup* powerup, ColaMensajes *cola_mensajes);
 void init_escudo(Escudo* escudo);
@@ -416,7 +420,7 @@ bool escudo_activo(Nave nave);
 void init_powerup(Powerup* powerup);
 void crear_powerup_escudo(Powerup powerups[], int max_powerups, float x, float y);
 void actualizar_powerups(Powerup powerups[], int max_powerups, double tiempo_actual);
-void dibujar_powerups(Powerup powerups[], int max_powerups);
+void dibujar_powerups(Powerup powerups[], int max_powerups, int *contador_parpadeo, int *contador_debug);
 bool detectar_colision_powerup(Nave nave, Powerup powerup);
 void recoger_powerup(Nave* nave, Powerup* powerup, ColaMensajes *cola_mensajes);
 void init_escudo(Escudo* escudo);
@@ -425,7 +429,7 @@ void actualizar_escudo(Escudo* escudo, double tiempo_actual);
 void dibujar_escudo(Nave nave);
 bool escudo_activo(Nave nave);
 bool escudo_recibir_dano(Escudo* escudo);
-bool verificar_colision_nave_muro(float x, float y, float ancho, float largo);
+bool verificar_colision_nave_muro(float x, float y, float ancho, float largo, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 void init_cola_mensajes(ColaMensajes* cola);
 void agregar_mensaje_cola(ColaMensajes* cola, const char* texto, double duracion, ALLEGRO_COLOR color, bool centrado);
 void actualizar_cola_mensajes(ColaMensajes* cola, double tiempo_actual);
@@ -443,8 +447,8 @@ void actualizar_progreso_arma(Nave* nave, TipoArma tipo_arma);
 void verificar_mejora_arma(Nave* nave, TipoArma tipo_arma, ColaMensajes* cola_mensajes);
 void dibujar_info_armas(Nave nave, ALLEGRO_FONT* fuente);
 void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave);
-void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int* puntaje, Nave nave);
-void dibujar_lasers(DisparoLaser lasers[], int max_lasers);
+void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int* puntaje, Nave nave, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], int *contador_debug);
+void dibujar_lasers(DisparoLaser lasers[], int max_lasers, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 void crear_powerup_aleatorio(Powerup powerups[], int max_powerups, float x, float y);
 void crear_powerup_laser(Powerup powerups[], int max_powerups, float x, float y);
 void disparar_segun_arma(Nave nave, Disparo disparos[], int num_disparos, DisparoLaser lasers[], int max_lasers, DisparoExplosivo explosivos[], int max_explosivos, MisilTeledirigido misiles[], int max_misiles, Enemigo enemigos[], int num_enemigos);

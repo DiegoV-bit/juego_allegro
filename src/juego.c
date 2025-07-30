@@ -302,18 +302,17 @@ void manejar_eventos(ALLEGRO_EVENT evento, Nave* nave, bool teclas[])
  * @param num_asteroides Número de asteroides en el arreglo.
  * @param imagen_fondo Imagen de fondo del juego.
  */
-void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int nivel_actual)
+void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int nivel_actual, ALLEGRO_BITMAP *imagen_fondo)
 {
-    extern ALLEGRO_BITMAP *imagen_fondo_global;
     float cx = al_get_bitmap_width(nave.imagen) / 2.0f;
     float cy = al_get_bitmap_height(nave.imagen) / 2.0f;
     float escala_x = nave.ancho / al_get_bitmap_width(nave.imagen);
     float escala_y = nave.largo / al_get_bitmap_height(nave.imagen);
     int i;
 
-    if (imagen_fondo_global)
+    if (imagen_fondo)
     {
-        al_draw_scaled_bitmap(imagen_fondo_global, 0, 0, al_get_bitmap_width(imagen_fondo_global), al_get_bitmap_height(imagen_fondo_global), 0, 0, 800, 600, 0);
+        al_draw_scaled_bitmap(imagen_fondo, 0, 0, al_get_bitmap_width(imagen_fondo), al_get_bitmap_height(imagen_fondo), 0, 0, 800, 600, 0);
     }
     else
     {
@@ -346,7 +345,7 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int ni
  * @param asteroides Arreglo de asteroides.
  * @param tiempo_actual Tiempo actual en segundos.
  */
-void actualizar_nave(Nave* nave, bool teclas[])
+void actualizar_nave(Nave* nave, bool teclas[], Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {
     float nueva_x = nave->x;
     float nueva_y = nave->y;
@@ -370,7 +369,7 @@ void actualizar_nave(Nave* nave, bool teclas[])
         if (nueva_x < 0) nueva_x = 0;
         if (nueva_x > 800 - nave->ancho) nueva_x = 800 - nave->ancho;
 
-        if (!verificar_colision_nave_muro(nueva_x, nave->y, nave->ancho, nave->largo))
+        if (!verificar_colision_nave_muro(nueva_x, nave->y, nave->ancho, nave->largo, tilemap))
         {
             nave->x = nueva_x;
         }
@@ -405,7 +404,7 @@ void actualizar_nave(Nave* nave, bool teclas[])
         if (nueva_y < 0) nueva_y = 0;
         if (nueva_y > 600 - nave->largo) nueva_y = 600 - nave->largo;
 
-        if (!verificar_colision_nave_muro(nueva_x, nueva_y, nave->ancho, nave->largo))
+        if (!verificar_colision_nave_muro(nueva_x, nueva_y, nave->ancho, nave->largo, tilemap))
         {
             nave->x = nueva_x;
             nave->y = nueva_y;
@@ -557,7 +556,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
         return;
     }
 
-    actualizar_nave(nave, teclas);
+    actualizar_nave(nave, teclas, tilemap);
     actualizar_disparos(disparos, num_disparos);
     actualizar_enemigos(enemigos, num_enemigos, disparos_enemigos, num_disparos_enemigos, tiempo_actual, *nave);
     actualizar_disparos_enemigos(disparos_enemigos, num_disparos_enemigos);
@@ -1874,11 +1873,11 @@ void mostrar_pantalla_transicion(int nivel_completado, int siguiente_nivel, ALLE
     char texto_progreso[100];
     
     if (siguiente_nivel <= 3) {
-        sprintf(texto_titulo, "¡NIVEL %d COMPLETADO!", nivel_completado);
+        sprintf(texto_titulo, "NIVEL %d COMPLETADO!", nivel_completado);
         sprintf(texto_subtitulo, "Preparando Nivel %d...", siguiente_nivel);
     } else {
-        sprintf(texto_titulo, "¡FELICIDADES!");
-        sprintf(texto_subtitulo, "¡Has completado todos los niveles!");
+        sprintf(texto_titulo, "FELICIDADES!");
+        sprintf(texto_subtitulo, "Has completado todos los niveles!");
     }
     
     sprintf(texto_progreso, "%.0f%%", progreso * 100);
@@ -2197,10 +2196,27 @@ void actualizar_powerups(Powerup powerups[], int max_powerups, double tiempo_act
 }
 
 
-void dibujar_powerups(Powerup powerups[], int max_powerups)
+void dibujar_powerups(Powerup powerups[], int max_powerups, int *contador_parpadeo, int *contador_debug)
 {
     int i;
-    int powerups_activos = 0;
+    int powerups_activos;
+
+    *contador_parpadeo = (*contador_parpadeo + 1) % 60; // Incrementar contador de parpadeo
+
+    if (++(*contador_debug) % 120 == 0)
+    {
+        powerups_activos = 0;
+
+        for (i = 0; i < max_powerups; i++)
+        {
+            if (powerups[i].activo)
+            {
+                powerups_activos++;
+            }
+        }
+        
+    }
+    
 
     for (i = 0; i < max_powerups; i++)
     {
@@ -2208,11 +2224,8 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
         {
             powerups_activos++;
 
-            static int parpadeo = 0;
-            parpadeo = (parpadeo + 1) % 60;
-
             ALLEGRO_COLOR color_powerup = powerups[i].color;
-            if (parpadeo < 30)
+            if (*contador_parpadeo < 30)
             {
                 switch(powerups[i].tipo) {
                     case 0: // Escudo
@@ -2264,7 +2277,7 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
                     al_draw_filled_circle(hex_x[j], hex_y[j], 1.5f, color_powerup);
                 }
                 
-                if (parpadeo < 15)
+                if (*contador_parpadeo < 15)
                 {
                     al_draw_text(al_create_builtin_font(), al_map_rgb(200, 255, 255), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "ESCUDO");
                 }
@@ -2279,7 +2292,7 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
                 al_draw_line(cx - 5, cy, cx + 5, cy, color_powerup, 2);
                 al_draw_line(cx, cy - 5, cx, cy + 5, color_powerup, 2);
                 
-                if (parpadeo < 15)
+                if (*contador_parpadeo < 15)
                 {
                     al_draw_text(al_create_builtin_font(), al_map_rgb(255, 150, 150), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "VIDA");
                 }
@@ -2294,7 +2307,7 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
                 al_draw_line(cx - 6, cy - 3, cx + 6, cy - 3, color_powerup, 2);
                 al_draw_line(cx - 6, cy + 3, cx + 6, cy + 3, color_powerup, 2);
                 
-                if (parpadeo < 15)
+                if (*contador_parpadeo < 15)
                 {
                     al_draw_text(al_create_builtin_font(), al_map_rgb(255, 200, 200), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "LÁSER");
                 }
@@ -2315,7 +2328,7 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
                     al_draw_line(x1, y1, x2, y2, color_powerup, 2);
                 }
                 
-                if (parpadeo < 15)
+                if (*contador_parpadeo < 15)
                 {
                     al_draw_text(al_create_builtin_font(), al_map_rgb(255, 200, 100), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "BOOM");
                 }
@@ -2332,18 +2345,12 @@ void dibujar_powerups(Powerup powerups[], int max_powerups)
                 al_draw_line(cx - 6, cy - 2, cx - 9, cy - 4, color_powerup, 1);
                 al_draw_line(cx - 6, cy + 2, cx - 9, cy + 4, color_powerup, 1);
                 
-                if (parpadeo < 15)
+                if (*contador_parpadeo < 15)
                 {
                     al_draw_text(al_create_builtin_font(), al_map_rgb(200, 255, 200), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "MISIL");
                 }
             }
         }
-    }
-
-    static int debug_contador = 0;
-    if (++debug_contador % 120 == 0)
-    {
-        printf("Powerups activos en pantalla: %d/%d\n", powerups_activos, max_powerups);
     }
 }
 
@@ -2523,10 +2530,10 @@ bool escudo_recibir_dano(Escudo* escudo)
 }
 
 
-bool verificar_colision_nave_muro(float x, float y, float ancho, float largo)
+bool verificar_colision_nave_muro(float x, float y, float ancho, float largo, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {
-    // Obtener el tilemap global (necesitaremos pasarlo como parámetro)
-    extern Tile tilemap_global[MAPA_FILAS][MAPA_COLUMNAS];
+    int fila;
+    int col;
 
     float centro_x = x + ancho / 2;
     float centro_y = y + largo / 2;
@@ -2539,15 +2546,15 @@ bool verificar_colision_nave_muro(float x, float y, float ancho, float largo)
     int fila_inferior = (int)((y + largo - 1) / TILE_ALTO);
 
     // Verificar todos los tiles que ocuparía la nave
-    for (int fila = fila_superior; fila <= fila_inferior; fila++)
+    for (fila = fila_superior; fila <= fila_inferior; fila++)
     {
-        for (int col = col_izquierda; col <= col_derecha; col++)
+        for (col = col_izquierda; col <= col_derecha; col++)
         {
             // Verificar si el tile está dentro del mapa
             if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
             {
                 // Verificar colisión con muros indestructibles (tipo 3), escudos (tipo 2) o asteroides fijos (tipo 1)
-                if (tilemap_global[fila][col].tipo == 3 || tilemap_global[fila][col].tipo == 1)
+                if (tilemap[fila][col].tipo == 3 || tilemap[fila][col].tipo == 1)
                 {
                     float tile_centro_x = col * TILE_ANCHO + TILE_ANCHO / 2;
                     float tile_centro_y = fila * TILE_ALTO + TILE_ALTO / 2;
@@ -3165,7 +3172,7 @@ void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
  * @param puntaje 
  * @param nave 
  */
-void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int *puntaje, Nave nave)
+void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int *puntaje, Nave nave, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], int *contador_debug)
 {
     double tiempo_actual = al_get_time();
     int i;
@@ -3175,9 +3182,13 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
     const double intervalo_dano = 0.3;
     bool realiza_dano;
     bool dano_aplicado = false;
-    extern Tile tilemap_global[MAPA_FILAS][MAPA_COLUMNAS];
     float alcance_real;
     float distancia_enemigo;
+
+    if (++(*contador_debug) % 60 == 0)
+    {
+        printf("Laser activo\n");
+    }
 
     for (i = 0; i < max_lasers; i++)
     {
@@ -3189,21 +3200,7 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
             lasers[i].y_nave = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
             lasers[i].angulo = nave.angulo - ALLEGRO_PI / 2;
 
-            alcance_real = verificar_colision_laser_tilemap(lasers[i], tilemap_global);
-
-            // Verificar si el láser debe desaparecer
-            //static int contador_debug = 0;
-            //if (++contador_debug % 60 == 0) 
-            //{
-                //printf("Actualizando láser %d: Activo: %d, Tiempo inicio: %.2f, Duración: %.2f\n", i, lasers[i].activo, lasers[i].tiempo_inicio, lasers[i].duracion_max);
-            //}
-
-            //if (lasers[i].duracion_max > 0 && tiempo_actual - lasers[i].tiempo_inicio >= lasers[i].duracion_max)
-            //{
-                //lasers[i].activo = false;
-                //printf("Láser %d desactivado por tiempo expirado\n", i);
-                //continue;
-            //}
+            alcance_real = verificar_colision_laser_tilemap(lasers[i], tilemap);
 
             realiza_dano = (tiempo_actual - lasers[i].tiempo_inicio >= intervalo_dano);
 
@@ -3250,7 +3247,7 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
  * @param lasers 
  * @param max_lasers 
  */
-void dibujar_lasers(DisparoLaser lasers[], int max_lasers)
+void dibujar_lasers(DisparoLaser lasers[], int max_lasers, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {
     int i;
     int p;
@@ -3260,13 +3257,12 @@ void dibujar_lasers(DisparoLaser lasers[], int max_lasers)
     float offset_y;
     ALLEGRO_COLOR color_centro;
     float alcance_real;
-    extern Tile tilemap_global[MAPA_FILAS][MAPA_COLUMNAS];
 
     for (i = 0; i < max_lasers; i++)
     {
         if (lasers[i].activo)
         {
-            alcance_real = verificar_colision_laser_tilemap(lasers[i], tilemap_global);
+            alcance_real = verificar_colision_laser_tilemap(lasers[i], tilemap);
             final_x = lasers[i].x_nave + cos(lasers[i].angulo) * alcance_real;
             final_y = lasers[i].y_nave + sin(lasers[i].angulo) * alcance_real;
 
