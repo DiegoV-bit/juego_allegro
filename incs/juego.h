@@ -454,7 +454,7 @@ void crear_powerup_laser(Powerup powerups[], int max_powerups, float x, float y)
 void disparar_segun_arma(Nave nave, Disparo disparos[], int num_disparos, DisparoLaser lasers[], int max_lasers, DisparoExplosivo explosivos[], int max_explosivos, MisilTeledirigido misiles[], int max_misiles, Enemigo enemigos[], int num_enemigos);
 void crear_powerup_explosivo(Powerup powerups[], int max_powerups, float x, float y);
 void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave nave);
-void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, Enemigo enemigos[], int num_enemigos, int* puntaje);
+void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, Enemigo enemigos[], int num_enemigos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos);
 void crear_powerup_misil(Powerup powerups[], int max_powerups, float x, float y);
 void disparar_misil(MisilTeledirigido misiles[], int max_misiles, Nave nave, Enemigo enemigos[], int num_enemigos);
@@ -466,4 +466,5 @@ bool linea_intersecta_rectangulo(float x1, float y1, float x2, float y2, float r
 bool linea_intersecta_linea(float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
 float verificar_colision_laser_tilemap(DisparoLaser laser, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 bool laser_intersecta_enemigo_limitado(DisparoLaser laser, Enemigo enemigo, float alcance_real);
+bool verificar_linea_vista_explosion(float x1, float y1, float x2, float y2, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 #endif

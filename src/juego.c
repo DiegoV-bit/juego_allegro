@@ -3115,7 +3115,6 @@ void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
     
     for (i = 0; i < max_lasers; i++)
     {
-
         if (!lasers[i].activo)
         {
             centro_x = nave.x + nave.ancho / 2.0f;
@@ -3148,6 +3147,9 @@ void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
                     break;
                 case 3: 
                     lasers[i].color = al_map_rgba(255, 255, 0, 220); 
+                    break;
+                default:
+                    lasers[i].color = al_map_rgba(255, 0, 0, 150); 
                     break;
             }
 
@@ -3184,6 +3186,8 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
     bool dano_aplicado = false;
     float alcance_real;
     float distancia_enemigo;
+    int dano_por_tick;
+    int puntaje_enemigo;
 
     if (++(*contador_debug) % 60 == 0)
     {
@@ -3196,44 +3200,100 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
         {
             centro_x = nave.x + nave.ancho / 2.0f;
             centro_y = nave.y + nave.largo / 2.0f;
+            obtener_centro_nave(nave, &centro_x, &centro_y);
+
             lasers[i].x_nave = centro_x + cos(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
             lasers[i].y_nave = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
             lasers[i].angulo = nave.angulo - ALLEGRO_PI / 2;
 
+            // Verifica el alcance real tomando en cuenta los obstaculos
             alcance_real = verificar_colision_laser_tilemap(lasers[i], tilemap);
 
-            realiza_dano = (tiempo_actual - lasers[i].tiempo_inicio >= intervalo_dano);
-
-            if (realiza_dano)
+            for (j = 0; j < num_enemigos; j++)
             {
-                //bool aplicar_dano = false;
+                double intervalo_dano;
 
-                for (j = 0; j < num_enemigos; j++)
+                if (enemigos[j].activo && laser_intersecta_enemigo_limitado(lasers[i], enemigos[j], alcance_real))
                 {
-                    if (enemigos[j].activo)
+                    switch (enemigos[j].tipo)
                     {
-                        distancia_enemigo = sqrt(pow(enemigos[j].x + enemigos[j].ancho/2 - lasers[i].x_nave, 2) + pow(enemigos[j].y + enemigos[j].alto/2 - lasers[i].y_nave, 2));
+                        case 0:
+                            intervalo_dano = 0.08;
+                            dano_por_tick = 1;
+                            break;
 
-                        if (distancia_enemigo <= alcance_real && laser_intersecta_enemigo_limitado(lasers[i], enemigos[j], alcance_real))
-                        {
-                            enemigos[j].vida -= lasers[i].poder;
-                            dano_aplicado = true;
+                        case 1:
+                            intervalo_dano = 0.1;
+                            dano_por_tick = 1;
+                            break;
 
-                            printf("Láser %d dañando enemigo %d: vida restante %d\n", i, j, enemigos[j].vida);
+                        case 2:
+                            intervalo_dano = 0.09;
+                            dano_por_tick = 2;
+                            break;
 
-                            if (enemigos[j].vida <= 0)
-                            {
-                                enemigos[j].activo = false;
-                                (*puntaje)++;
-                                printf("Enemigo %d eliminado por láser\n", j);
-                            }
-                        }
+                        case 3:
+                            intervalo_dano = 0.12;
+                            dano_por_tick = 2;
+                            break;
+
+                        case 4:
+                            intervalo_dano = 0.08;
+                            dano_por_tick = 1;
+                            break;
+                    
+                        default:
+                            intervalo_dano = 0.1;
+                            dano_por_tick = 1;
+                            break;
                     }
-                }
+                    static double ultimo_dano_enemigo[NUM_ENEMIGOS] = {0};
+                    realiza_dano = (tiempo_actual - lasers[i].tiempo_inicio >= intervalo_dano);
 
-                if (dano_aplicado)
-                {
-                    lasers[i].ultimo_dano = tiempo_actual;
+                    if (realiza_dano)
+                    {
+                        enemigos[j].vida -= dano_por_tick;
+                        lasers[i].ultimo_dano = tiempo_actual;
+
+                        printf("Láser dañó enemigo tipo %d: -%d vida (intervalo: %.2fs)\n", enemigos[j].tipo, dano_por_tick, intervalo_dano);
+
+                        if (enemigos[j].vida <= 0)
+                        {
+                            enemigos[j].activo = false;
+
+                            switch (enemigos[j].tipo)
+                            {
+                                case 0:
+                                    puntaje_enemigo = 10;
+                                    break;
+
+                                case 1:
+                                    puntaje_enemigo = 15;
+                                    break;
+
+                                case 2:
+                                    puntaje_enemigo = 20;
+                                    break;
+
+                                case 3:
+                                    puntaje_enemigo = 30;
+                                    break;
+
+                                case 4:
+                                    puntaje_enemigo = 12;
+                                    break;
+                    
+                                default:
+                                    puntaje_enemigo = 10;
+                                    break;
+                            }
+
+                            *puntaje += puntaje_enemigo;
+                            printf("Enemigo tipo %d eliminado por láser (+%d puntos)\n", enemigos[j].tipo, puntaje_enemigo);
+                        }
+
+                        break;
+                    }
                 }
             }
         }
@@ -3461,76 +3521,122 @@ void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave 
  * @param num_enemigos 
  * @param puntaje 
  */
-void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, Enemigo enemigos[], int num_enemigos, int* puntaje)
+void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, Enemigo enemigos[], int num_enemigos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {
-    //double tiempo_actual = al_get_time();
-    
-    for (int i = 0; i < max_explosivos; i++)
+    int i;
+    int j;
+    int fila;
+    int col;
+    double tiempo_explosion;
+    float distancia;
+
+    for (i = 0; i < max_explosivos; i++)
     {
         if (explosivos[i].activo && !explosivos[i].exploto)
         {
             // Mover proyectil
             explosivos[i].x += explosivos[i].vx;
             explosivos[i].y += explosivos[i].vy;
-            explosivos[i].tiempo_vida += 0.016; // ~60 FPS
-            
-            bool debe_explotar = false;
+            // explosivos[i].tiempo_vida += 0.016; // ~60 FPS
+
+            col = (int)(explosivos[i].x / TILE_ANCHO);
+            fila = (int)(explosivos[i].y / TILE_ALTO);
+
+            if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
+            {
+                // Verificar colisión con tilemap
+                if (tilemap[fila][col].tipo == 1 || tilemap[fila][col].tipo == 3) // Colisión con asteroides o bloques solidos
+                {
+                    printf("¡Proyectil explosivo impactó tile sólido en (%d, %d)!\n", col, fila);
+
+                    if (tilemap[fila][col].tipo == 1)
+                    {
+                        tilemap[fila][col].vida--;
+                        if (tilemap[fila][col].vida <= 0)
+                        {
+                            tilemap[fila][col].tipo = 0;
+                            printf("Asteroide destruido por explosion\n");
+                        }
+                    }
+                    
+                    explosivos[i].exploto = true;
+                    explosivos[i].tiempo_vida = al_get_time();
+                    continue;
+                }
+            }
             
             // Verificar colisión con enemigos
-            for (int j = 0; j < num_enemigos; j++)
+            for (j = 0; j < num_enemigos; j++)
             {
                 if (enemigos[j].activo)
                 {
                     if (detectar_colision_generica(explosivos[i].x, explosivos[i].y, explosivos[i].ancho, explosivos[i].alto, enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
                     {
-                        debe_explotar = true;
-                        break;
+                        enemigos[j].vida -= explosivos[i].dano_directo;
+                        printf("¡Proyectil explosivo impactó enemigo %d! Vida restante: %d\n", j, enemigos[j].vida);
+
+                        if (enemigos[j].vida <= 0)
+                        {
+                            enemigos[j].activo = false;
+                            *puntaje += 15;
+                            printf("Enemigo eliminado por impacto directo explosivo\n");
+                        }
+                        
+                        explosivos[i].exploto = true;
+                        explosivos[i].tiempo_vida = al_get_time();
+                        break; // Solo explota al primer enemigo impactado
                     }
                 }
             }
             
             // Explotar si sale de pantalla o después de cierto tiempo
-            if (explosivos[i].x < 0 || explosivos[i].x > 800 || explosivos[i].y < 0 || explosivos[i].y > 600 || 
-                explosivos[i].tiempo_vida > 3.0 || debe_explotar)
+            if (explosivos[i].x < 0 || explosivos[i].x > 800 || explosivos[i].y < 0 || explosivos[i].y > 600)
             {
                 // EXPLOSIÓN
                 explosivos[i].exploto = true;
-                
-                // Aplicar daño en área
-                for (int j = 0; j < num_enemigos; j++)
-                {
-                    if (enemigos[j].activo)
-                    {
-                        float dx = (enemigos[j].x + enemigos[j].ancho/2) - explosivos[i].x;
-                        float dy = (enemigos[j].y + enemigos[j].alto/2) - explosivos[i].y;
-                        float distancia = sqrt(dx*dx + dy*dy);
-                        
-                        if (distancia <= explosivos[i].radio_explosion)
-                        {
-                            int dano = (distancia < 20) ? explosivos[i].dano_directo : explosivos[i].dano_area;
-                            enemigos[j].vida -= dano;
-                            
-                            printf("Explosión dañó enemigo %d: -%d HP (dist: %.0f)\n", j, dano, distancia);
-                            
-                            if (enemigos[j].vida <= 0)
-                            {
-                                enemigos[j].activo = false;
-                                (*puntaje)++;
-                                printf("Enemigo eliminado por explosión\n");
-                            }
-                        }
-                    }
-                }
-                
-                // La explosión durará un momento para efecto visual
-                explosivos[i].tiempo_vida = 0;
+            }
+
+            if (al_get_time() - explosivos[i].tiempo_vida > 3.0)
+            {
+                explosivos[i].exploto = true;
+                explosivos->tiempo_vida = al_get_time();
             }
         }
         else if (explosivos[i].exploto)
         {
-            // Controlar duración del efecto de explosión
-            explosivos[i].tiempo_vida += 0.016;
-            if (explosivos[i].tiempo_vida > 0.3) // 0.3 segundos de efecto
+            tiempo_explosion = al_get_time() - explosivos[i].tiempo_vida;
+
+            if (tiempo_explosion < 0.5)
+            {
+                for (j = 0; j < num_enemigos; j++)
+                {
+                    if (enemigos[j].activo)
+                    {
+                        distancia = sqrt(pow(enemigos[j].x + enemigos[j].ancho/2 - explosivos[i].x, 2) + pow(enemigos[j].y + enemigos[j].alto/2 - explosivos[i].y, 2));
+
+                        if (distancia <= explosivos[i].radio_explosion)
+                        {
+                            if (verificar_linea_vista_explosion(explosivos[i].x, explosivos[i].y, enemigos[j].x + enemigos[j].ancho/2, enemigos[j].y + enemigos[j].alto/2, tilemap))
+                            {
+                                enemigos[j].vida -= explosivos[i].dano_area;
+                                printf("¡Daño por explosión! Enemigo recibió %d de daño\n", explosivos[i].dano_area);
+                                
+                                if (enemigos[j].vida <= 0)
+                                {
+                                    enemigos[j].activo = false;
+                                    *puntaje += 10;
+                                    printf("Enemigo eliminado por explosión\n");
+                                }
+                            }
+                            else
+                            {
+                                printf("Enemigo protegido de la explosion\n");
+                            }
+                        }
+                    }
+                }
+            }
+            else
             {
                 explosivos[i].activo = false;
             }
@@ -3891,20 +3997,6 @@ float verificar_colision_laser_tilemap(DisparoLaser laser, Tile tilemap[MAPA_FIL
                 printf("Laser bloqueado por un tile solido\n");
                 return distancia_actual;
             }
-            
-            if (tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0)
-            {
-                tilemap[fila][col].vida -= 1;
-                printf("Laser esta dañando un escudo\n");
-
-                if (tilemap[fila][col].vida <= 0)
-                {
-                    tilemap[fila][col].tipo = 0; // Destruir el escudo
-                    printf("Escudo destruido en (%d, %d)\n", fila, col);
-                }
-                
-                return distancia_actual;
-            }
         }
 
         distancia_actual += paso;
@@ -3929,4 +4021,49 @@ bool laser_intersecta_enemigo_limitado(DisparoLaser laser, Enemigo enemigo, floa
     float enemigo_y2 = enemigo.y + enemigo.alto + margen;
 
     return linea_intersecta_rectangulo(laser.x_nave, laser.y_nave, final_x, final_y, enemigo_x1, enemigo_y1, enemigo_x2, enemigo_y2);
+}
+
+
+bool verificar_linea_vista_explosion(float x1, float y1, float x2, float y2, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
+{    
+    float dx = x2 - x1;
+    float dy = y2 - y1;
+    float distancia = sqrt(dx * dx + dy * dy);
+    float paso;
+    float pasos;
+    int i;
+    float t;
+    float x_check;
+    float y_check;
+    int col;
+    int fila;
+    
+    if (distancia == 0)
+    {
+        return true;
+    }
+    
+    paso = 5.0f; // Verificar cada 5 píxeles
+    pasos = (int)(distancia / paso);
+    
+    for (i = 1; i < pasos; i++)
+    {
+        t = (float)i / pasos;
+        x_check = x1 + dx * t;
+        y_check = y1 + dy * t;
+        
+        col = (int)(x_check / TILE_ANCHO);
+        fila = (int)(y_check / TILE_ALTO);
+        
+        if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
+        {
+            // Si hay un tile sólido, bloquea la explosión
+            if (tilemap[fila][col].tipo == 3 || tilemap[fila][col].tipo == 1)
+            {
+                return false;
+            }
+        }
+    }
+    
+    return true; // Línea de vista libre
 }

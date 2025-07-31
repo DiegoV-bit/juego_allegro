@@ -219,6 +219,10 @@ int main()
                                     disparar_laser(lasers, 5, nave);
                                     printf("Laser activado al presionar espacio\n");
                                 }
+                                else
+                                {
+                                    printf("Ya hay un laser activo\n");
+                                }
                             }
                             else
                             {
@@ -237,20 +241,23 @@ int main()
                     {
                         if (nave.arma_actual == Arma_laser)
                         {
-                            bool laser_desactivado = false;
+                            int laser_desactivado = 0;
                             for (i = 0; i < 5; i++)
                             {
                                 if (lasers[i].activo)
                                 {
                                     lasers[i].activo = false;
-                                    laser_desactivado = true;
-                                    printf("Laser desactivado al soltar espacio\n");
+                                    laser_desactivado++;
                                 }
                             }
 
-                            if (!laser_desactivado)
+                            if (laser_desactivado > 0)
                             {
-                                printf("No hay laseres en pantalla\n");
+                                printf("Laser desactivado al soltar la tecla espacio\n");
+                            }
+                            else
+                            {
+                                printf("No hay lasers activos para desactivar\n");
                             }
                         }
                     }
@@ -433,7 +440,7 @@ int main()
                     }
 
                     actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje, nave, tilemap, &contador_debug_lasers);
-                    actualizar_explosivos(explosivos, 8, enemigos, num_enemigos_cargados, &puntaje);
+                    actualizar_explosivos(explosivos, 8, enemigos, num_enemigos_cargados, &puntaje, tilemap);
                     actualizar_misiles(misil, 6, enemigos, num_enemigos_cargados, &puntaje);
 
                     actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &cola_mensajes, &estado_nivel, tiempo_cache, powerups, MAX_POWERUPS);
