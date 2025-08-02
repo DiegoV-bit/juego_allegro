@@ -1223,6 +1223,28 @@ void cargar_tilemap(const char* filename, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS
                     }
                     break;
 
+                case 'B':
+                    if (*num_enemigos < NUM_ENEMIGOS)
+                    {
+                        init_enemigo_tipo(&enemigos[*num_enemigos], col, fila, 5, imagen_enemigo); // Tipo 5 = Jefe Destructor
+                        printf("B: Jefe Destructor en (%d,%d)\n", col, fila);
+                        (*num_enemigos)++;
+                    }
+                    tilemap[fila][col].tipo = 0;
+                    tilemap[fila][col].vida = 0;
+                    break;
+
+                case 'C':
+                    if (*num_enemigos < NUM_ENEMIGOS)
+                    {
+                        init_enemigo_tipo(&enemigos[*num_enemigos], col, fila, 6, imagen_enemigo); // Tipo 6 = Jefe Supremo
+                        printf("C: Jefe Supremo en (%d,%d)\n", col, fila);
+                        (*num_enemigos)++;
+                    }
+                    tilemap[fila][col].tipo = 0;
+                    tilemap[fila][col].vida = 0;
+                    break;
+
                 case '0':
                 default:
                     break;
@@ -4358,5 +4380,658 @@ bool verificar_imagenes_enemigos(ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENE
     }
     
     printf("Todas las imágenes de enemigos están cargadas correctamente\n");
+    return true;
+}
+
+
+/**
+ * @brief Inicializa un jefe según su tipo.
+ * 
+ * @param jefe Puntero al jefe a inicializar.
+ * @param tipo Tipo de jefe (0: Destructor, 1: Supremo).
+ * @param x Posición x inicial.
+ * @param y Posición y inicial.
+ * @param imagen Imagen del jefe.
+ */
+void init_jefe(Jefe *jefe, int tipo, float x, float y, ALLEGRO_BITMAP *imagen)
+{
+    int i;
+
+    jefe->x = x;
+    jefe->y = y;
+    jefe->tipo = tipo;
+    jefe->activo = true;
+    jefe->imagen = imagen;
+
+    for (i = 0; i < MAX_ATAQUES_JEFE; i++)
+    {
+        jefe->ataques[i].activo = false;
+    }
+    
+    jefe->ultimo_ataque = 0.0;
+    jefe->ultima_invocacion = 0.0;
+    jefe->enemigos_invocados = 0;
+    jefe->en_furia = false;
+    jefe->tiempo_furia = 0.0;
+    jefe->fase_ataque = 0;
+    jefe->angulo_laser = 0.0;
+    jefe->tiempo_animacion = 0.0;
+
+    switch(tipo)
+    {
+        case 0:
+            jefe->ancho = 120;
+            jefe->alto = 80;
+            jefe->vida = 150;
+            jefe->vida_max = 150;
+            jefe->intervalo_ataque = 2.5;
+            jefe->max_enemigos_invocacion = 8;
+            jefe->velocidad_movimiento = 1.0f;
+            jefe->ataque_actual = Ataque_rafaga;
+            break;
+
+        case 1:
+            jefe->ancho = 160;
+            jefe->alto = 100;
+            jefe->vida = 250;
+            jefe->vida_max = 250;
+            jefe->intervalo_ataque = 2.0;
+            jefe->max_enemigos_invocacion = 12;
+            jefe->velocidad_movimiento = 1.5f;
+            jefe->ataque_actual = Ataque_laser_giratorio;
+            break;
+    }
+
+        printf("Jefe tipo %d inicializado: Vida %d, Tamaño %.0fx%.0f\n", tipo, jefe->vida, jefe->ancho, jefe->alto);
+}
+
+
+/**
+ * @brief Actualiza el comportamiento del jefe.
+ * 
+ * @param jefe Puntero al jefe a actualizar.
+ * @param nave Nave del jugador (para ataques dirigidos).
+ * @param enemigos Array de enemigos para invocaciones.
+ * @param num_enemigos Puntero al número de enemigos activos.
+ * @param imagenes_enemigos Imágenes de enemigos para invocaciones.
+ * @param tiempo_actual Tiempo actual del juego.
+ */
+void actualizar_jefe(Jefe *jefe, Nave nave, Enemigo enemigos[], int *num_enemigos, ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS], double tiempo_actual)
+{
+    float velocidad;
+    float centro_x;
+    float centro_y;
+    float radio;
+    int i;
+    float dx;
+    float dy;
+    float distancia;
+
+    if (!jefe->activo)
+    {
+        return;
+    }
+    
+    if (!jefe->en_furia && jefe->vida < (jefe->vida_max * 0.3f))
+    {
+        jefe->en_furia = true;
+        jefe->tiempo_furia = tiempo_actual;
+        jefe->velocidad_movimiento *= 0.6f; // Aumentar velocidad en furia
+        printf("¡Jefe entra en FURIA! Velocidad aumentada a %.2f\n", jefe->velocidad_movimiento);
+    }
+    
+    jefe->tiempo_animacion += 0.02;
+    velocidad = jefe->en_furia ? jefe->velocidad_movimiento * 1.5f : jefe->velocidad_movimiento;
+
+    if (jefe->tipo == 0)
+    {
+        jefe->x += sin(jefe->tiempo_animacion) * velocidad;
+        if (jefe->x <= 0)
+        {
+            jefe->x = 0;
+        }
+
+        if (jefe->x >= 800 - jefe->ancho)
+        {
+            jefe->x = 800 - jefe->ancho;
+        }
+    }
+    else
+    {
+        centro_x = 400;
+        centro_y = 150;
+        radio = 80;
+        jefe->x = centro_x + cos(jefe->tiempo_animacion * 0.5f) * radio - jefe->ancho / 2;
+        jefe->y = centro_y + sin(jefe->tiempo_animacion * 0.3f) * 40 - jefe->alto / 2;
+    }
+
+    if (tiempo_actual - jefe->ultimo_ataque >= jefe->intervalo_ataque)
+    {
+        jefe_atacar(jefe, nave, tiempo_actual);
+        jefe->ultimo_ataque = tiempo_actual;
+    }
+    
+    if (tiempo_actual - jefe->ultima_invocacion >= TIEMPO_INVOCACION_ENEMIGOS)
+    {
+        jefe_invocar_enemigos(jefe, enemigos, num_enemigos, imagenes_enemigos);
+        jefe->ultima_invocacion = tiempo_actual;
+    }
+    
+    for (i = 0; i < MAX_ATAQUES_JEFE; i++)
+    {
+        if (jefe->ataques[i].activo)
+        {
+            AtaqueJefe *ataque = &jefe->ataques[i];
+
+            switch (ataque->tipo)
+            {
+                case Ataque_perseguidor:
+                    dx = (nave.x + nave.ancho / 2) - ataque->x;
+                    dy = (nave.y + nave.largo / 2) - ataque->y;
+                    distancia = sqrt(dx * dx + dy * dy);
+
+                    if (distancia > 0)
+                    {
+                        ataque->vx = (dx /distancia) * ataque->velocidad * 0.8f;
+                        ataque->vy = (dy / distancia) * ataque->velocidad * 0.8f;
+                    }
+                
+                    break;
+
+                case Ataque_ondas:
+                    ataque->velocidad += 0.2f;
+                    break;
+            
+                default:
+                    break;
+            }
+
+            ataque->x += ataque->vx;
+            ataque->y += ataque->vy;
+            ataque->angulo = 0.1f;
+
+            if (ataque->x < -50 || ataque->x > 850 || ataque->y < -50 || ataque->y > 650 || (tiempo_actual - ataque->tiempo_vida) > 8.0)
+            {
+                ataque->activo = false;
+            }
+        }
+    }
+}
+
+
+/**
+ * @brief Ejecuta ataques del jefe según su tipo y fase.
+ * 
+ * @param jefe Puntero al jefe atacante.
+ * @param nave Nave del jugador (para ataques dirigidos).
+ * @param tiempo_actual Tiempo actual del juego.
+ */
+void jefe_atacar(Jefe *jefe, Nave nave, double tiempo_actual)
+{
+    int i;
+    int j;
+    int k;
+    float angulo;
+    float angulo_base;
+    float nave_x;
+    float nave_y;
+    float dx;
+    float dy;
+    float distancia;
+    float offset_x;
+    float offset_y;
+
+    if (jefe->tipo == 0)
+    {
+        switch (jefe->fase_ataque % 3)
+        {
+            case 0:
+                for (i = 0; i < 8; i++)
+                {
+                    for (j = 0; j < MAX_ATAQUES_JEFE; j++)
+                    {
+                        if (!jefe->ataques[j].activo)
+                        {
+                            AtaqueJefe *ataque = &jefe->ataques[j];
+
+                            angulo = (ALLEGRO_PI * 2 / 8) * i;
+                            ataque->x = jefe->x + jefe->ancho / 2;
+                            ataque->y = jefe->y + jefe->alto;
+                            ataque->vx = cos(angulo) * 4.0f;
+                            ataque->vy = sin(angulo) * 4.0f + 2.0f;
+                            ataque->tipo = Ataque_rafaga;
+                            ataque->activo = true;
+                            ataque->tiempo_vida = tiempo_actual;
+                            ataque->dano = 15;
+                            ataque->velocidad = 4.0f;
+                            ataque->color = al_map_rgb(255, 100, 100);
+                            break;
+                        }
+                    }
+                }
+                
+                break;
+
+                case 1:
+                    for (i = 0; i < 5; i++)
+                    {
+                        for (j = 0; j < MAX_ATAQUES_JEFE; j++)
+                        {
+                            if (!jefe->ataques[j].activo)
+                            {
+                                AtaqueJefe *ataque = &jefe->ataques[j];
+
+                                ataque->x = jefe->x + (rand() % (int)jefe->ancho);
+                                ataque->y = jefe->y + jefe->alto;
+                                ataque->vx = (rand() % 200 - 100) / 50.0f; // -2 a 2
+                                ataque->vy = 3.0f + (rand() % 100) / 100.0f; // 3 a 4
+                                ataque->tipo = Ataque_lluvia;
+                                ataque->activo = true;
+                                ataque->tiempo_vida = tiempo_actual;
+                                ataque->dano = 12;
+                                ataque->color = al_map_rgb(100, 255, 100);
+                                break;
+                            }
+                        }
+
+                        break;
+                    }
+                
+                case 2:
+                    for (i = 0; i < 3; i++)
+                    {
+                        for (j = 0; j < MAX_ATAQUES_JEFE; j++)
+                        {
+                            if (!jefe->ataques[j].activo)
+                            {
+                                AtaqueJefe* ataque = &jefe->ataques[j];
+                            
+                                ataque->x = jefe->x + jefe->ancho / 2;
+                                ataque->y = jefe->y + jefe->alto;
+                                ataque->vx = 0;
+                                ataque->vy = 1.0f;
+                                ataque->tipo = Ataque_perseguidor;
+                                ataque->activo = true;
+                                ataque->tiempo_vida = tiempo_actual;
+                                ataque->dano = 20;
+                                ataque->velocidad = 3.0f;
+                                ataque->color = al_map_rgb(255, 255, 100);
+                                break;
+                            }
+                        }
+                    }
+
+                    break;
+        }
+    }
+    else
+    {
+        switch (jefe->fase_ataque % 4)
+        {
+        case 0:
+            for (k = 0; k < 3; k++)
+            {
+                for (j = 0; j < MAX_ATAQUES_JEFE; j++)
+                {
+                    if (!jefe->ataques[j].activo)
+                    {
+                        AtaqueJefe *ataque = &jefe->ataques[j];
+
+                        angulo_base = jefe->angulo_laser + (k * ALLEGRO_PI * 2 / 3);
+                        ataque->x = jefe->x + jefe->ancho / 2;
+                        ataque->y = jefe->y + jefe->alto / 2;
+                        ataque->vx = cos(angulo_base) * 5.0f;
+                        ataque->vy = sin(angulo_base) * 5.0f;
+                        ataque->tipo = Ataque_laser_giratorio;
+                        ataque->activo = true;
+                        ataque->tiempo_vida = tiempo_actual;
+                        ataque->dano = 18;
+                        ataque->color = al_map_rgb(100, 100, 255);
+                        break;
+                    }
+                }
+            }
+            
+            jefe->angulo_laser += 0.2f;
+            break;
+        
+        case 1:
+            for (i = 0; i < 12; i++)
+            {
+                for (j = 0; j < MAX_ATAQUES_JEFE; j++)
+                {
+                    if (!jefe->ataques[j].activo)
+                    {
+                        AtaqueJefe *ataque = &jefe->ataques[j];
+
+                        angulo = (ALLEGRO_PI * 2 / 12) * i;
+                        ataque->x = jefe->x + jefe->ancho / 2;
+                        ataque->y = jefe->y + jefe->alto / 2;
+                        ataque->vx = cos(angulo) * 2.0f;
+                        ataque->vy = sin(angulo) * 2.0f;
+                        ataque->tipo = Ataque_ondas;
+                        ataque->activo = true;
+                        ataque->tiempo_vida = tiempo_actual;
+                        ataque->dano = 15;
+                        ataque->velocidad = 2.0f;
+                        ataque->color = al_map_rgb(255, 0, 255);
+                        break;
+                    }
+                }
+            }
+            break;
+
+        case 2:
+            nave_x = nave.x + nave.ancho / 2;
+            nave_y = nave.y + nave.largo / 2;
+
+            for (i = 0; i < 6; i++)
+            {
+                for (j = 0; j < MAX_ATAQUES_JEFE; j++)
+                {
+                    if (!jefe->ataques[j].activo)
+                    {
+                        AtaqueJefe *ataque = &jefe->ataques[j];
+                        dx = nave_x - (jefe->x + jefe->ancho / 2);
+                        dy = nave_y - (jefe->y + jefe->alto / 2);
+                        distancia = sqrt(dx * dx + dy * dy);
+
+                        offset_x = (rand() % 100 - 50) / 10.0f;
+                        offset_y = (rand() % 100 - 50) / 10.0f;
+
+                        ataque->x = jefe->x + jefe->ancho / 2;
+                        ataque->y = jefe->x + jefe->alto;
+
+                        if (distancia > 0)
+                        {
+                            ataque->vx = ((dx / distancia) * 4.0f) + offset_x;
+                            ataque->vy = ((dy / distancia) * 4.0f) + offset_y;
+                        }
+                        
+                        ataque->tipo = Ataque_lluvia;
+                        ataque->activo = true;
+                        ataque->tiempo_vida = tiempo_actual;
+                        ataque->dano = 16;
+                        ataque->color = al_map_rgb(255, 150, 0);
+                        break;
+                    }
+                }
+            }
+    
+            break;
+
+        case 3:
+            for (i = 0; i < 5; i++)
+            {
+                for (j = 0; j < MAX_ATAQUES_JEFE; j++)
+                {
+                    if (!jefe->ataques[j].activo)
+                    {
+                        AtaqueJefe *ataque = &jefe->ataques[j];
+
+                        ataque->x = jefe->x + (rand() % (int)jefe->ancho);
+                        ataque->y = jefe->y + jefe->alto;
+                        ataque->vx = 0;
+                        ataque->vy = 2.0f;
+                        ataque->tipo = Ataque_perseguidor;
+                        ataque->activo = true;
+                        ataque->tiempo_vida = tiempo_actual;
+                        ataque->dano = 22;
+                        ataque->velocidad = 3.5f;
+                        ataque->color = al_map_rgb(255, 0, 100);
+                        break;
+                    }   
+                }
+            }
+            
+            break;
+        }
+    }
+
+    jefe->fase_ataque++;
+
+    if (jefe->en_furia)
+    {
+        printf("Jefe ataca en MODO FURIA - Fase %d\n", jefe->fase_ataque % (jefe->tipo == 0 ? 3 : 4));
+    }   
+}
+
+
+/**
+ * @brief Dibuja el jefe con efectos visuales.
+ * 
+ * @param jefe Jefe a dibujar.
+ */
+void dibujar_jefe(Jefe jefe)
+{
+    if (!jefe.activo) return;
+    
+    // Efecto de furia
+    if (jefe.en_furia)
+    {
+        // Aura roja pulsante
+        float intensidad = 0.5f + 0.3f * sin(jefe.tiempo_animacion * 5);
+        ALLEGRO_COLOR aura = al_map_rgba(255, 0, 0, (int)(intensidad * 100));
+        
+        al_draw_filled_circle(jefe.x + jefe.ancho/2, jefe.y + jefe.alto/2, (jefe.ancho + jefe.alto)/3, aura);
+    }
+    else
+    {
+        // Sprite placeholder según tipo
+        ALLEGRO_COLOR color_jefe = jefe.tipo == 0 ? 
+                                  al_map_rgb(150, 0, 0) :   // Destructor: Rojo oscuro
+                                  al_map_rgb(100, 0, 100);  // Supremo: Púrpura oscuro
+        
+        al_draw_filled_rectangle(jefe.x, jefe.y, 
+                                jefe.x + jefe.ancho, jefe.y + jefe.alto, color_jefe);
+        
+        // Detalles del jefe
+        al_draw_rectangle(jefe.x, jefe.y, 
+                         jefe.x + jefe.ancho, jefe.y + jefe.alto, 
+                         al_map_rgb(255, 255, 255), 3);
+        
+        // Indicador de tipo
+        ALLEGRO_COLOR color_centro = jefe.tipo == 0 ? 
+                                    al_map_rgb(255, 100, 100) : 
+                                    al_map_rgb(200, 100, 200);
+        
+        al_draw_filled_circle(jefe.x + jefe.ancho/2, jefe.y + jefe.alto/2, 
+                             20, color_centro);
+    }
+
+    // Barra de vida del jefe
+    float barra_ancho = jefe.ancho;
+    float barra_alto = 8;
+    float vida_porcentaje = (float)jefe.vida / jefe.vida_max;
+    
+    // Fondo de la barra
+    al_draw_filled_rectangle(jefe.x, jefe.y - 15, 
+                            jefe.x + barra_ancho, jefe.y - 15 + barra_alto, 
+                            al_map_rgb(100, 0, 0));
+    
+    // Vida actual
+    ALLEGRO_COLOR color_vida = vida_porcentaje > 0.5f ? al_map_rgb(0, 255, 0) :
+                              vida_porcentaje > 0.3f ? al_map_rgb(255, 255, 0) :
+                                                        al_map_rgb(255, 0, 0);
+    
+    al_draw_filled_rectangle(jefe.x, jefe.y - 15, 
+                            jefe.x + (barra_ancho * vida_porcentaje), jefe.y - 15 + barra_alto, 
+                            color_vida);
+
+    // Borde de la barra
+    al_draw_rectangle(jefe.x, jefe.y - 15, 
+                     jefe.x + barra_ancho, jefe.y - 15 + barra_alto, 
+                     al_map_rgb(255, 255, 255), 2);
+}
+
+
+/**
+ * @brief Dibuja todos los ataques activos del jefe.
+ * 
+ * @param ataques Array de ataques del jefe.
+ * @param max_ataques Número máximo de ataques.
+ */
+void dibujar_ataques_jefe(AtaqueJefe ataques[], int max_ataques)
+{
+    int i;
+
+    for (i = 0; i < max_ataques; i++)
+    {
+        if (ataques[i].activo)
+        {
+            AtaqueJefe ataque = ataques[i];
+
+            switch (ataque.tipo)
+            {
+                case Ataque_rafaga:
+                    al_draw_filled_circle(ataque.x, ataque.y, 6, ataque.color);
+                    al_draw_circle(ataque.x, ataque.y, 6, al_map_rgb(255, 255, 255), 1);
+                    break;
+
+                case Ataque_laser_giratorio:
+                    // Proyectil tipo láser
+                    al_draw_filled_circle(ataque.x, ataque.y, 8, ataque.color);
+                    al_draw_filled_circle(ataque.x, ataque.y, 4, al_map_rgb(255, 255, 255));
+                    // Estela
+                    al_draw_line(ataque.x, ataque.y, 
+                                ataque.x - ataque.vx * 2, ataque.y - ataque.vy * 2,
+                                ataque.color, 3);
+                    break;
+
+                case Ataque_lluvia:
+                    al_draw_filled_circle(ataque.x, ataque.y, 5, ataque.color);
+                    // Pequeña estela
+                    al_draw_line(ataque.x, ataque.y, 
+                                ataque.x - ataque.vx, ataque.y - ataque.vy,
+                                ataque.color, 2);
+                    break;
+
+                case Ataque_ondas:
+                    // Anillo expansivo
+                    al_draw_circle(ataque.x, ataque.y, 12, ataque.color, 4);
+                    al_draw_circle(ataque.x, ataque.y, 8, ataque.color, 2);
+                    break;
+
+                case Ataque_perseguidor:
+                    // Proyectil con forma de flecha
+                    al_draw_filled_circle(ataque.x, ataque.y, 7, ataque.color);
+                    al_draw_filled_triangle(ataque.x, ataque.y - 7,
+                                           ataque.x - 5, ataque.y + 5,
+                                           ataque.x + 5, ataque.y + 5,
+                                           ataque.color);
+                    al_draw_triangle(ataque.x, ataque.y - 7,
+                                    ataque.x - 5, ataque.y + 5,
+                                    ataque.x + 5, ataque.y + 5,
+                                    al_map_rgb(255, 255, 255), 2);
+                    break;
+            }
+        }
+    }
+}
+
+
+/**
+ * @brief Detecta colisión entre ataque de jefe y nave.
+ * 
+ * @param ataque Ataque del jefe.
+ * @param nave Nave del jugador.
+ * @return true si hay colisión.
+ */
+bool detectar_colision_ataque_jefe_nave(AtaqueJefe ataque, Nave nave)
+{
+    float radio_ataque = 8.0f;
+    float centro_nave_x, centro_nave_y;
+    obtener_centro_nave(nave, &centro_nave_x, &centro_nave_y);
+    float radio_nave = obtener_radio_nave(nave);
+    
+    return detectar_colision_circular(ataque.x, ataque.y, radio_ataque, centro_nave_x, centro_nave_y, radio_nave);
+}
+
+
+/**
+ * @brief Hace que el jefe invoque enemigos.
+ * 
+ * @param jefe Puntero al jefe.
+ * @param enemigos Array de enemigos.
+ * @param num_enemigos Puntero al número de enemigos activos.
+ * @param imagenes_enemigos Imágenes de enemigos.
+ */
+void jefe_invocar_enemigos(Jefe* jefe, Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagenes_enemigos[NUM_TIPOS_ENEMIGOS])
+{
+    int enemigos_a_invocar;
+    int invocados;
+    int i;
+    float pos_x;
+    float pos_y;
+    int tipo_enemigo;
+
+    if (jefe->enemigos_invocados >= jefe->max_enemigos_invocacion)
+    {
+        return;
+    }
+    
+    enemigos_a_invocar = jefe->en_furia ? 4 : 2;
+    invocados = 0;
+
+    for (i = 0; i < NUM_ENEMIGOS && invocados < enemigos_a_invocar; i++)
+    {
+        if (!enemigos[i].activo)
+        {
+            pos_x = 50 + (rand() % 700);
+            pos_y = 30 + (rand() % 100);
+
+            if (jefe->tipo == 0)
+            {
+                tipo_enemigo = rand() % 2; // Normal o Perseguidor
+            }
+            else
+            {
+                tipo_enemigo = 1 + (rand() % 3); // Perseguidor, Francotirador o Tanque
+            }
+
+            init_enemigo_tipo(&enemigos[i], (int)(pos_x / TILE_ANCHO), (int)(pos_y / TILE_ALTO), tipo_enemigo, imagenes_enemigos[tipo_enemigo]);
+
+            asignar_imagen_enemigo(&enemigos[i], imagenes_enemigos);
+
+            enemigos[i].activo = true;
+            invocados++;
+            jefe->enemigos_invocados++;
+
+            if (*num_enemigos < i + 1)
+            {
+                *num_enemigos = i + 1; // Asegurar que el número de enemigos activos se actualice
+            }
+        }
+    }
+
+    printf("Jefe invocó %d enemigos (Total invocados: %d/%d)\n", invocados, jefe->enemigos_invocados, jefe->max_enemigos_invocacion);
+}
+
+
+/**
+ * @brief Aplica daño al jefe.
+ * 
+ * @param jefe Puntero al jefe.
+ * @param dano Cantidad de daño a aplicar.
+ * @param cola_mensajes Cola de mensajes para notificaciones.
+ * @return true si el jefe sigue vivo, false si fue derrotado.
+ */
+bool jefe_recibir_dano(Jefe* jefe, int dano, ColaMensajes* cola_mensajes)
+{
+    jefe->vida -= dano;
+    
+    if (jefe->vida <= 0)
+    {
+        jefe->vida = 0;
+        jefe->activo = false;
+        
+        char mensaje[100];
+        sprintf(mensaje, "¡JEFE %s DERROTADO!", jefe->tipo == 0 ? "DESTRUCTOR" : "SUPREMO");
+        agregar_mensaje_cola(cola_mensajes, mensaje, 4.0, al_map_rgb(255, 255, 0), true);
+        
+        printf("Jefe derrotado!\n");
+        return false;
+    }
+    
     return true;
 }

@@ -41,7 +41,11 @@ int main()
     int contador_parpadeo_powerups = 0;
     int contador_debug_powerups = 0;
     int contador_debug_lasers = 0;
-    //int contador_debug_cola = 0;
+    Jefe jefe_final;
+    Jefe jefe_nivel;
+    bool hay_jefe_activo = false;
+    bool hay_jefe_en_nivel = false;
+    ALLEGRO_BITMAP *imagen_jefe = NULL;
 
     if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo) != 0)
     {
@@ -53,6 +57,19 @@ int main()
         printf("ERROR: No se pudieron cargar las imágenes de enemigos\n");
         return -1;
     }
+
+    imagen_jefe = al_load_bitmap("jefe.png");
+    if (!imagen_jefe)
+    {
+        printf("Advertencia: No se pudo cargar imagen del jefe, usando placeholder\n");
+        // Crear placeholder para jefe
+        imagen_jefe = al_create_bitmap(120, 80);
+        al_set_target_bitmap(imagen_jefe);
+        al_clear_to_color(al_map_rgb(150, 0, 150)); // Púrpura para jefe
+        al_draw_rectangle(0, 0, 119, 79, al_map_rgb(255, 255, 255), 3);
+        al_set_target_backbuffer(al_get_current_display());
+    }
+    
 
     /*Inicializar los botones del menu*/
     Boton botones[3];
@@ -176,6 +193,24 @@ int main()
             // Inicializar el resto como inactivos
             for (i = num_enemigos_cargados; i < NUM_ENEMIGOS; i++) {
                 enemigos[i].activo = false;
+            }
+
+            hay_jefe_activo = false;
+            for (i = 0; i < num_enemigos_cargados; i++)
+            {
+                if (enemigos_mapa[i].tipo == 5 || enemigos_mapa[i].tipo == 6) { // Jefes
+                    int tipo_jefe = enemigos_mapa[i].tipo == 5 ? 0 : 1; // 5=Destructor(0), 6=Supremo(1)
+                    init_jefe(&jefe_nivel, tipo_jefe, enemigos_mapa[i].x, enemigos_mapa[i].y, imagen_jefe);
+                    hay_jefe_en_nivel = true;
+                    printf("🏆 Jefe encontrado en nivel %d: tipo %d\n", estado_nivel.nivel_actual, tipo_jefe);
+                    
+                    // Remover jefe del array de enemigos normales
+                    for (int k = i; k < num_enemigos_cargados - 1; k++) {
+                        enemigos_mapa[k] = enemigos_mapa[k + 1];
+                    }
+                    num_enemigos_cargados--;
+                    break;
+                }
             }
             
             init_disparos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
@@ -409,6 +444,23 @@ int main()
                                 enemigos[k].activo = true;
                             }
 
+                            hay_jefe_en_nivel = false;
+                            for (int k = 0; k < num_enemigos_cargados; k++) {
+                                if (enemigos_mapa[k].tipo == 5 || enemigos_mapa[k].tipo == 6) { // Tipos de jefe
+                                    int tipo_jefe = enemigos_mapa[k].tipo == 5 ? 0 : 1;
+                                    init_jefe(&jefe_nivel, tipo_jefe, enemigos_mapa[k].x, enemigos_mapa[k].y, imagen_jefe);
+                                    hay_jefe_en_nivel = true;
+                                    printf("🏆 Jefe cargado en nivel %d: tipo %d\n", estado_nivel.nivel_actual, tipo_jefe);
+                                    
+                                    // Remover jefe del array de enemigos normales
+                                    for (int j = k; j < num_enemigos_cargados - 1; j++) {
+                                        enemigos_mapa[j] = enemigos_mapa[j + 1];
+                                    }
+                                    num_enemigos_cargados--;
+                                    break;
+                                }
+                            }
+
                             printf("Nivel %d iniciado con %d enemigos.\n", estado_nivel.nivel_actual, num_enemigos_cargados);
                             printf("Powerups conservados: Radial Nv.%d, Tipo Nave: %d\n", nave.nivel_disparo_radial, nave.tipo);
 
@@ -452,7 +504,102 @@ int main()
                     actualizar_explosivos(explosivos, 8, enemigos, num_enemigos_cargados, &puntaje, tilemap);
                     actualizar_misiles(misil, 6, enemigos, num_enemigos_cargados, &puntaje);
 
+                    if (hay_jefe_en_nivel && jefe_nivel.activo) {
+                        actualizar_jefe(&jefe_nivel, nave, enemigos, &num_enemigos_cargados, imagenes_enemigos, tiempo_cache);
+                        
+                        // Verificar colisiones ataques del jefe vs nave
+                        for (int k = 0; k < MAX_ATAQUES_JEFE; k++) {
+                            if (jefe_nivel.ataques[k].activo && detectar_colision_ataque_jefe_nave(jefe_nivel.ataques[k], nave)) {
+                                if (escudo_recibir_dano(&nave.escudo)) {
+                                    printf("Escudo absorbió ataque del jefe\n");
+                                } else {
+                                    nave.vida -= jefe_nivel.ataques[k].dano;
+                                    printf("Jefe causó %d de daño. Vida restante: %d\n", jefe_nivel.ataques[k].dano, nave.vida);
+                                    agregar_mensaje_cola(&cola_mensajes, "¡Ataque del Jefe!", 2.0, al_map_rgb(255, 0, 0), false);
+                                }
+                                jefe_nivel.ataques[k].activo = false;
+                            }
+                        }
+                    }
+
                     actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &cola_mensajes, &estado_nivel, tiempo_cache, powerups, MAX_POWERUPS);
+                    
+                    // ✅ AGREGAR: Verificar colisiones disparos del jugador vs jefe
+                    if (hay_jefe_en_nivel && jefe_nivel.activo) {
+                        // Disparos normales vs jefe
+                        for (int j = 0; j < MAX_DISPAROS; j++) {
+                            if (disparos[j].activo && detectar_colision_generica(
+                                disparos[j].x, disparos[j].y, 5, 10,
+                                jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto)) {
+                                
+                                if (jefe_recibir_dano(&jefe_nivel, 10, &cola_mensajes)) {
+                                    puntaje += 50; // Puntos por golpear al jefe
+                                } else {
+                                    puntaje += 2000; // Gran bonificación por derrotar al jefe
+                                    hay_jefe_en_nivel = false;
+                                    agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
+                                }
+                                disparos[j].activo = false;
+                            }
+                        }
+                        
+                        // Láseres vs jefe
+                        for (int j = 0; j < 5; j++) {
+                            if (lasers[j].activo) {
+                                float alcance_real = verificar_colision_laser_tilemap(lasers[j], tilemap);
+                                if (laser_intersecta_enemigo_limitado(lasers[j], (Enemigo){jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto, 0, 0, 0, true}, alcance_real)) {
+                                    double tiempo_actual = al_get_time();
+                                    if (tiempo_actual - lasers[j].ultimo_dano >= 0.1) { // Daño cada 0.1 segundos
+                                        if (jefe_recibir_dano(&jefe_nivel, lasers[j].poder * 2, &cola_mensajes)) {
+                                            puntaje += 25;
+                                        } else {
+                                            puntaje += 2000;
+                                            hay_jefe_en_nivel = false;
+                                            agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
+                                        }
+                                        lasers[j].ultimo_dano = tiempo_actual;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Explosivos vs jefe
+                        for (int j = 0; j < 8; j++) {
+                            if (explosivos[j].activo && !explosivos[j].exploto) {
+                                if (detectar_colision_generica(
+                                    explosivos[j].x, explosivos[j].y, explosivos[j].ancho, explosivos[j].alto,
+                                    jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto)) {
+                                    
+                                    if (jefe_recibir_dano(&jefe_nivel, explosivos[j].dano_directo * 2, &cola_mensajes)) {
+                                        puntaje += 100;
+                                    } else {
+                                        puntaje += 2000;
+                                        hay_jefe_en_nivel = false;
+                                        agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
+                                    }
+                                    explosivos[j].exploto = true;
+                                    explosivos[j].tiempo_vida = al_get_time();
+                                }
+                            }
+                        }
+                        
+                        // Misiles vs jefe
+                        for (int j = 0; j < 6; j++) {
+                            if (misil[j].activo && detectar_colision_generica(
+                                misil[j].x, misil[j].y, misil[j].ancho, misil[j].alto,
+                                jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto)) {
+                                
+                                if (jefe_recibir_dano(&jefe_nivel, misil[j].dano * 3, &cola_mensajes)) {
+                                    puntaje += 150;
+                                } else {
+                                    puntaje += 2000;
+                                    hay_jefe_en_nivel = false;
+                                    agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
+                                }
+                                misil[j].activo = false;
+                            }
+                        }
+                    }
                     
                     al_clear_to_color(al_map_rgb(0, 0, 0));
                     
@@ -476,6 +623,12 @@ int main()
                         
                         dibujar_enemigos(enemigos, num_enemigos_cargados);
                         dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
+
+                        if (hay_jefe_en_nivel && jefe_nivel.activo) {
+                            dibujar_jefe(jefe_nivel);
+                            dibujar_ataques_jefe(jefe_nivel.ataques, MAX_ATAQUES_JEFE);
+                        }
+
                         dibujar_powerups(powerups, MAX_POWERUPS, &contador_parpadeo_powerups, &contador_debug_powerups);
 
                         if (debug_mode)
@@ -591,6 +744,13 @@ int main()
     }    
 
     liberar_imagenes_enemigos(imagenes_enemigos);
+
+    if (imagen_jefe)
+    {
+        al_destroy_bitmap(imagen_jefe);
+        imagen_jefe = NULL;
+    }
+    
     destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide, imagen_enemigo);
 
     al_uninstall_system(); // Esto evita fugas de memoria y libera recursos evitando el segmentation fault en WSL

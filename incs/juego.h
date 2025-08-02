@@ -129,6 +129,28 @@
  */
 #define NUM_TIPOS_ENEMIGOS 5
 
+/**
+ * @def NUM_TIPOS_JEFES
+ * @brief Numero de tipos de jefes en el juego
+ */
+#define NUM_TIPOS_JEFES 2
+
+/**
+ * @def MAX_ENEMIGOS_JEFE
+ * @brief Número máximo de enemigos que puede invocar un jefe.
+ */
+#define MAX_ATAQUES_JEFE 20
+
+/** 
+ * @def TIEMPO_INVOCACION_ENEMIGOS
+ * @brief Tiempo en segundos entre invocaciones de enemigos. 
+*/
+#define TIEMPO_INVOCACION_ENEMIGOS 15.0
+
+/**
+ * @enum TipoArma
+ * @brief Enumeración que define los tipos de armas disponibles en el juego.
+ */
 typedef enum
 {
     Arma_normal = 0,
@@ -137,7 +159,21 @@ typedef enum
     Arma_misil = 3
 } TipoArma;
 
+typedef enum
+{
+    Ataque_rafaga = 0,
+    Ataque_laser_giratorio,
+    Ataque_lluvia,
+    Ataque_ondas,
+    Ataque_perseguidor
+} TipoAtaqueJefe;
+
 /*Estructuras usadas en el juego*/
+
+/**
+ * @struct SistemaArma
+ * @brief Estructura que representa un sistema de arma en el juego.
+ */
 typedef struct
 {
     TipoArma tipo;
@@ -150,6 +186,11 @@ typedef struct
     char descripcion[100];
 } SistemaArma;
 
+/**
+ * @struct DisparoLaser
+ * @brief Estructura que representa un disparo láser en el juego.
+ * 
+ */
 typedef struct
 {
     float x;
@@ -168,6 +209,11 @@ typedef struct
     ALLEGRO_COLOR color;
 } DisparoLaser;
 
+/**
+ * @struct DisparoExplosivo
+ * @brief Estructura que representa un disparo explosivo en el juego.
+ * 
+ */
 typedef struct
 {
     float x;
@@ -184,6 +230,11 @@ typedef struct
     bool exploto;
 } DisparoExplosivo;
 
+/**
+ * @struct MisilTeledirigido
+ * @brief Estructura que representa un misil teledirigido en el juego.
+ * 
+ */
 typedef struct
 {
     float x;
@@ -201,6 +252,11 @@ typedef struct
     int dano;
 } MisilTeledirigido;
 
+/**
+ * @struct Powerup
+ * @brief Estructura que representa un power-up en el juego.
+ * 
+ */
 typedef struct
 {
     float x;
@@ -212,6 +268,11 @@ typedef struct
     ALLEGRO_COLOR color;
 } Powerup;
 
+/**
+ * @struct Escudo
+ * @brief Estructura que representa un escudo en el juego.
+ * 
+ */
 typedef struct
 {
     bool activo;
@@ -395,6 +456,57 @@ typedef struct
     ALLEGRO_BITMAP *imagen_juego;
 } ContextoJuego;
 
+typedef struct
+{
+    float x;
+    float y;
+    float vx;
+    float vy;
+    float angulo;
+    bool activo;
+    TipoAtaqueJefe tipo;
+    double tiempo_vida;
+    int dano;
+    float velocidad;
+    bool persigue_jugador;
+    ALLEGRO_COLOR color;
+} AtaqueJefe;
+
+typedef struct
+{
+    float x;
+    float y;
+    float ancho;
+    float alto;
+    int vida;
+    int vida_max;
+    int tipo;
+    bool activo;
+
+    // Sistema de ataques de los jefes
+    AtaqueJefe ataques[MAX_ATAQUES_JEFE];
+    double ultimo_ataque;
+    double intervalo_ataque;
+    TipoAtaqueJefe ataque_actual;
+    int fase_ataque;
+
+    // Invocacion de enemigos
+    double ultima_invocacion;
+    int enemigos_invocados;
+    int max_enemigos_invocacion;
+
+    // Estados especiales
+    bool en_furia;
+    double tiempo_furia;
+    float velocidad_movimiento;
+
+    // Animacion y efectos
+    float angulo_laser;
+    double tiempo_animacion;
+
+    ALLEGRO_BITMAP *imagen;
+} Jefe;
+
 
 /*Funciones*/
 Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave);
@@ -514,4 +626,13 @@ bool verificar_linea_vista_explosion(float x1, float y1, float x2, float y2, Til
 bool cargar_imagenes_enemigos(ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS]);
 void asignar_imagen_enemigo(Enemigo *enemigo, ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS]);
 void liberar_imagenes_enemigos(ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS]);
+void init_jefe(Jefe* jefe, int tipo, float x, float y, ALLEGRO_BITMAP* imagen);
+void actualizar_jefe(Jefe* jefe, Nave nave, Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagenes_enemigos[NUM_TIPOS_ENEMIGOS], double tiempo_actual);
+void dibujar_jefe(Jefe jefe);
+void jefe_atacar(Jefe* jefe, Nave nave, double tiempo_actual);
+void actualizar_ataques_jefe(AtaqueJefe ataques[], int max_ataques, Nave* nave, int* puntaje);
+void dibujar_ataques_jefe(AtaqueJefe ataques[], int max_ataques);
+bool detectar_colision_ataque_jefe_nave(AtaqueJefe ataque, Nave nave);
+void jefe_invocar_enemigos(Jefe* jefe, Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagenes_enemigos[NUM_TIPOS_ENEMIGOS]);
+bool jefe_recibir_dano(Jefe* jefe, int dano, ColaMensajes* cola_mensajes);
 #endif
