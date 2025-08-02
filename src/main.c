@@ -43,14 +43,14 @@ int main()
     int contador_debug_lasers = 0;
     //int contador_debug_cola = 0;
 
-    if (!cargar_imagenes_enemigos(imagenes_enemigos))
+    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo) != 0)
     {
-        printf("ERROR: No se pudieron cargar las imágenes de enemigos\n");
         return -1;
     }
 
-    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo) != 0)
+    if (!cargar_imagenes_enemigos(imagenes_enemigos))
     {
+        printf("ERROR: No se pudieron cargar las imágenes de enemigos\n");
         return -1;
     }
 
@@ -405,7 +405,7 @@ int main()
                             for (int k = 0; k < enemigos_a_copiar; k++) 
                             {
                                 enemigos[k] = enemigos_mapa[k];
-                                asignar_imagen_enemigo(&enemigos[k], imagen_enemigo); // Asegurar que usen el sprite correcto
+                                asignar_imagen_enemigo(&enemigos[k], imagenes_enemigos); // Asegurar que usen el sprite correcto
                                 enemigos[k].activo = true;
                             }
 

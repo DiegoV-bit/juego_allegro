@@ -4244,6 +4244,13 @@ bool cargar_imagenes_enemigos(ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIG
 
             // Crear sprite de color como fallback
             imagenes_enemigos[i] = al_create_bitmap(40, 40);
+
+            if (!imagenes_enemigos[i]) 
+            {
+                printf("ERROR: No se pudo crear bitmap placeholder\n");
+                return false;
+            }
+
             al_set_target_bitmap(imagenes_enemigos[i]);
 
             ALLEGRO_COLOR colores[] = {

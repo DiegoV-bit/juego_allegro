@@ -56,6 +56,7 @@ int init_allegro() {
         return -1;
     }
 
+    printf("Allegro inicializado correctamente.\n");
     return 0;
 }
 
