@@ -1300,18 +1300,21 @@ void init_enemigos(Enemigo enemigos[], int num_enemigos, ALLEGRO_BITMAP* imagen_
 
 
 /**
- * @brief Actualiza la posición y comportamiento de todos los enemigos.
+ * @brief Actualiza la posición y comportamiento de todos los enemigos según su tipo.
  * 
- * Los enemigos normales (tipo 0) se mueven horizontalmente rebotando en los bordes
- * y disparan hacia la nave. Los enemigos perseguidos (tipo 1) siguen a la nave
- * cuando está dentro de su rango de visión.
+ * Esta función maneja el comportamiento específico de cada tipo de enemigo:
+ * - Tipo 0 (Normal): Movimiento horizontal rebotando en bordes
+ * - Tipo 1 (Perseguidor): Sigue a la nave cuando está en rango
+ * - Tipo 2 (Francotirador): Dispara con precisión hacia la nave
+ * - Tipo 3 (Tanque): Movimiento lento, disparo en abanico
+ * - Tipo 4 (Kamikaze): Se lanza directamente hacia la nave
  * 
  * @param enemigos Arreglo de enemigos a actualizar.
  * @param num_enemigos Número de enemigos en el arreglo.
- * @param disparos_enemigos Arreglo de disparos de enemigos.
+ * @param disparos_enemigos Arreglo de disparos de enemigos para ataques.
  * @param num_disparos_enemigos Número máximo de disparos de enemigos.
  * @param tiempo_actual Tiempo actual del juego en segundos.
- * @param nave Nave del jugador (para persecución y disparos).
+ * @param nave Nave del jugador (para persecución y cálculo de disparos).
  */
 void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, double tiempo_actual,Nave nave)
 {
@@ -1410,6 +1413,15 @@ void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_
 }
 
 
+/**
+ * @brief Dibuja todos los enemigos activos en pantalla con sus sprites específicos.
+ * 
+ * Renderiza cada enemigo usando su imagen correspondiente según su tipo,
+ * aplicando escalado y rotación si es necesario.
+ * 
+ * @param enemigos Arreglo de enemigos a dibujar.
+ * @param num_enemigos Número total de enemigos en el arreglo.
+ */
 void dibujar_enemigos(Enemigo enemigos[], int num_enemigos)
 {
     for (int i = 0; i < num_enemigos; i++)
@@ -1987,13 +1999,16 @@ bool asteroides_activados(int nivel_actual)
 
 
 /**
- * @brief Inicializa un enemigo según su tipo.
+ * @brief Inicializa un enemigo según su tipo específico.
+ * 
+ * Configura las propiedades del enemigo (vida, velocidad, tamaño, intervalo de disparo)
+ * según el tipo especificado y lo posiciona en las coordenadas del tilemap.
  * 
  * @param enemigo Puntero al enemigo a inicializar.
- * @param col Columna en el mapa.
- * @param fila Fila en el mapa.
+ * @param col Columna en el tilemap donde aparecerá.
+ * @param fila Fila en el tilemap donde aparecerá.
  * @param tipo Tipo de enemigo (0-4).
- * @param imagen_enemigo Imagen del enemigo.
+ * @param imagen_enemigo Imagen temporal (se reemplazará por la específica después).
  */
 void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BITMAP* imagen_enemigo)
 {
@@ -2011,6 +2026,7 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->alto = 40;
             enemigo->velocidad = 1.0f;
             enemigo->vida = 2;
+            enemigo->vida_max = 2;
             enemigo->intervalo_disparo = 2.0 + (rand() % 100) / 100.0;
             break;
             
@@ -2019,6 +2035,7 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->alto = 35;
             enemigo->velocidad = 0.8f;
             enemigo->vida = 2;
+            enemigo->vida_max = 2;
             enemigo->intervalo_disparo = 2.5;
             break;
             
@@ -2027,6 +2044,7 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->alto = 30;
             enemigo->velocidad = 0; // Inmóvil
             enemigo->vida = 1;
+            enemigo->vida_max = 1;
             enemigo->intervalo_disparo = 1.5;
             break;
             
@@ -2035,6 +2053,7 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->alto = 50;
             enemigo->velocidad = 0.3f;
             enemigo->vida = 6;
+            enemigo->vida_max = 6;
             enemigo->intervalo_disparo = 3.0;
             break;
             
@@ -2043,6 +2062,7 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->alto = 30;
             enemigo->velocidad = 1.5f;
             enemigo->vida = 1;
+            enemigo->vida_max = 1;
             enemigo->intervalo_disparo = 999; // No dispara
             break;
             
@@ -2052,19 +2072,25 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->alto = 40;
             enemigo->velocidad = 1.0f;
             enemigo->vida = 1;
+            enemigo->vida_max = 1;
             enemigo->intervalo_disparo = 2.0;
             break;
     }
+
+    printf("Enemigo tipo %d inicializado: vel=%.1f, vida=%d, tamaño=%dx%d\n", tipo, enemigo->velocidad, enemigo->vida, (int)enemigo->ancho, (int)enemigo->alto);
 }
 
 
 /**
- * @brief Disparo especializado del francotirador - apunta directamente a la nave.
+ * @brief Disparo especializado del francotirador que apunta directamente a la nave.
+ * 
+ * Calcula el ángulo hacia la posición actual de la nave y crea un disparo
+ * dirigido con alta precisión.
  * 
  * @param disparos Arreglo de disparos de enemigos.
- * @param num_disparos Número total de disparos.
- * @param enemigo Enemigo francotirador que dispara.
- * @param nave Nave objetivo.
+ * @param num_disparos Número total de disparos disponibles.
+ * @param enemigo Enemigo francotirador que realiza el disparo.
+ * @param nave Nave objetivo para calcular la trayectoria.
  */
 void francotirador_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo, Nave nave)
 {
@@ -2089,11 +2115,14 @@ void francotirador_disparar(Disparo disparos[], int num_disparos, Enemigo enemig
 
 
 /**
- * @brief Disparo especializado del tanque - más lento pero potente.
+ * @brief Disparo especializado del tanque que crea múltiples proyectiles en abanico.
+ * 
+ * El tanque dispara 3 proyectiles simultáneamente en diferentes ángulos
+ * para cubrir un área más amplia de ataque.
  * 
  * @param disparos Arreglo de disparos de enemigos.
- * @param num_disparos Número total de disparos.
- * @param enemigo Enemigo tanque que dispara.
+ * @param num_disparos Número total de disparos disponibles.
+ * @param enemigo Enemigo tanque que realiza el disparo.
  */
 void tanque_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo)
 {
@@ -3004,6 +3033,15 @@ void cambiar_arma(Nave *nave, TipoArma nueva_arma)
 }
 
 
+/**
+ * @brief Actualiza el progreso de mejora de un arma específica.
+ * 
+ * Incrementa el contador de kills para la mejora del arma especificada
+ * y muestra el progreso actual.
+ * 
+ * @param nave Puntero a la nave del jugador.
+ * @param tipo_arma Tipo de arma a actualizar (Arma_laser, Arma_explosiva, etc.).
+ */
 void actualizar_progreso_arma(Nave *nave, TipoArma tipo_arma)
 {
     if (tipo_arma < 0 || tipo_arma > 3)
@@ -3018,6 +3056,16 @@ void actualizar_progreso_arma(Nave *nave, TipoArma tipo_arma)
 }
 
 
+/**
+ * @brief Verifica si un arma puede ser mejorada y aplica la mejora.
+ * 
+ * Comprueba si el arma ha alcanzado el número de kills necesarios para
+ * subir de nivel, aplica la mejora y muestra mensajes informativos.
+ * 
+ * @param nave Puntero a la nave del jugador.
+ * @param tipo_arma Tipo de arma a verificar para mejora.
+ * @param cola_mensajes Cola de mensajes para mostrar notificaciones.
+ */
 void verificar_mejora_arma(Nave *nave, TipoArma tipo_arma, ColaMensajes *cola_mensajes)
 {
     if (tipo_arma < 0 || tipo_arma > 3) return;
@@ -3070,6 +3118,15 @@ void verificar_mejora_arma(Nave *nave, TipoArma tipo_arma, ColaMensajes *cola_me
 }
 
 
+/**
+ * @brief Dibuja la información de las armas en pantalla.
+ * 
+ * Muestra el arma actual, su nivel, progreso de mejora y lista de armas
+ * desbloqueadas con sus respectivas teclas de activación.
+ * 
+ * @param nave Nave del jugador con información de armas.
+ * @param fuente Fuente de texto para renderizar la información.
+ */
 void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
 {
     char texto_arma[100];
@@ -3103,6 +3160,16 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
 }
 
 
+/**
+ * @brief Dispara un láser continuo desde la nave.
+ * 
+ * Activa un láser que permanece activo mientras se mantenga presionada
+ * la tecla, con propiedades que mejoran según el nivel del arma.
+ * 
+ * @param lasers Arreglo de láseres disponibles.
+ * @param max_lasers Número máximo de láseres simultáneos.
+ * @param nave Nave que dispara el láser.
+ */
 void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
 {
     double tiempo_actual = al_get_time();
@@ -3163,16 +3230,19 @@ void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
 
 
 /**
- * @brief 
+ * @brief Actualiza todos los láseres activos.
  * 
+ * Actualiza la posición, verifica colisiones con tilemap y enemigos,
+ * aplica daño según intervalos y maneja el alcance limitado por obstáculos.
  * 
- * 
- * @param lasers 
- * @param max_lasers 
- * @param enemigos 
- * @param num_enemigos 
- * @param puntaje 
- * @param nave 
+ * @param lasers Arreglo de láseres a actualizar.
+ * @param max_lasers Número máximo de láseres.
+ * @param enemigos Arreglo de enemigos para detectar colisiones.
+ * @param num_enemigos Número de enemigos.
+ * @param puntaje Puntero al puntaje del jugador.
+ * @param nave Nave que dispara (para posicionamiento).
+ * @param tilemap Mapa de tiles para detectar obstáculos.
+ * @param contador_debug Contador para mensajes de debug.
  */
 void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int *puntaje, Nave nave, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], int *contador_debug)
 {
@@ -3181,11 +3251,8 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
     int j;
     float centro_x;
     float centro_y;
-    const double intervalo_dano = 0.3;
     bool realiza_dano;
-    bool dano_aplicado = false;
     float alcance_real;
-    float distancia_enemigo;
     int dano_por_tick;
     int puntaje_enemigo;
 
@@ -3247,7 +3314,7 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
                             dano_por_tick = 1;
                             break;
                     }
-                    static double ultimo_dano_enemigo[NUM_ENEMIGOS] = {0};
+
                     realiza_dano = (tiempo_actual - lasers[i].tiempo_inicio >= intervalo_dano);
 
                     if (realiza_dano)
@@ -3302,10 +3369,14 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
 
 
 /**
- * @brief 
+ * @brief Dibuja todos los láseres activos con efectos visuales.
  * 
- * @param lasers 
- * @param max_lasers 
+ * Renderiza los láseres con alcance limitado por obstáculos, efectos
+ * de destello en el origen y chispas en puntos de impacto.
+ * 
+ * @param lasers Arreglo de láseres a dibujar.
+ * @param max_lasers Número máximo de láseres.
+ * @param tilemap Mapa de tiles para calcular alcance real.
  */
 void dibujar_lasers(DisparoLaser lasers[], int max_lasers, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {
@@ -3350,8 +3421,16 @@ void dibujar_lasers(DisparoLaser lasers[], int max_lasers, Tile tilemap[MAPA_FIL
 }
 
 
- /**
- * @brief Crea un powerup de láser.
+/**
+ * @brief Crea un powerup de láser en la posición especificada.
+ * 
+ * Genera un powerup que desbloquea el arma láser cuando es recogido
+ * por el jugador.
+ * 
+ * @param powerups Arreglo de powerups disponibles.
+ * @param max_powerups Número máximo de powerups.
+ * @param x Posición x donde crear el powerup.
+ * @param y Posición y donde crear el powerup.
  */
 void crear_powerup_laser(Powerup powerups[], int max_powerups, float x, float y)
 {
@@ -3408,12 +3487,15 @@ void disparar_segun_arma(Nave nave, Disparo disparos[], int num_disparos, Dispar
 
 
 /**
- * @brief 
+ * @brief Crea un powerup de explosivos en la posición especificada.
  * 
- * @param powerups 
- * @param max_powerups 
- * @param x 
- * @param y 
+ * Genera un powerup que desbloquea el arma explosiva cuando es recogido
+ * por el jugador.
+ * 
+ * @param powerups Arreglo de powerups disponibles.
+ * @param max_powerups Número máximo de powerups.
+ * @param x Posición x donde crear el powerup.
+ * @param y Posición y donde crear el powerup.
  */
 void crear_powerup_explosivo(Powerup powerups[], int max_powerups, float x, float y)
 {
@@ -3437,12 +3519,15 @@ void crear_powerup_explosivo(Powerup powerups[], int max_powerups, float x, floa
 
 
 /**
- * @brief 
+ * @brief Crea un powerup de misiles en la posición especificada.
  * 
- * @param powerups 
- * @param max_powerups 
- * @param x 
- * @param y 
+ * Genera un powerup que desbloquea el arma de misiles teledirigidos
+ * cuando es recogido por el jugador.
+ * 
+ * @param powerups Arreglo de powerups disponibles.
+ * @param max_powerups Número máximo de powerups.
+ * @param x Posición x donde crear el powerup.
+ * @param y Posición y donde crear el powerup.
  */
 void crear_powerup_misil(Powerup powerups[], int max_powerups, float x, float y)
 {
@@ -3466,11 +3551,14 @@ void crear_powerup_misil(Powerup powerups[], int max_powerups, float x, float y)
 
 
 /**
- * @brief 
+ * @brief Dispara un proyectil explosivo desde la nave.
  * 
- * @param explosivos 
- * @param max_explosivos 
- * @param nave 
+ * Crea un proyectil que explota al impactar con enemigos o obstáculos,
+ * causando daño en área con propiedades mejoradas según el nivel del arma.
+ * 
+ * @param explosivos Arreglo de proyectiles explosivos.
+ * @param max_explosivos Número máximo de explosivos simultáneos.
+ * @param nave Nave que dispara el explosivo.
  */
 void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave nave)
 {
@@ -3513,13 +3601,17 @@ void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave 
 
 
 /**
- * @brief 
+ * @brief Actualiza todos los proyectiles explosivos activos.
  * 
- * @param explosivos 
- * @param max_explosivos 
- * @param enemigos 
- * @param num_enemigos 
- * @param puntaje 
+ * Maneja el movimiento, detección de colisiones, explosiones y daño en área
+ * de todos los proyectiles explosivos activos.
+ * 
+ * @param explosivos Arreglo de explosivos a actualizar.
+ * @param max_explosivos Número máximo de explosivos.
+ * @param enemigos Arreglo de enemigos para detectar colisiones y daño.
+ * @param num_enemigos Número de enemigos.
+ * @param puntaje Puntero al puntaje del jugador.
+ * @param tilemap Mapa de tiles para detectar colisiones con obstáculos.
  */
 void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, Enemigo enemigos[], int num_enemigos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {
@@ -3645,6 +3737,15 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
 }
 
 
+/**
+ * @brief Dibuja todos los proyectiles explosivos y sus explosiones.
+ * 
+ * Renderiza los proyectiles en vuelo y las explosiones con efectos
+ * visuales progresivos de expansión y desvanecimiento.
+ * 
+ * @param explosivos Arreglo de explosivos a dibujar.
+ * @param max_explosivos Número máximo de explosivos.
+ */
 void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
 {
     int i;
@@ -3682,6 +3783,18 @@ void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
 }
 
 
+/**
+ * @brief Dispara un misil teledirigido que busca automáticamente enemigos.
+ * 
+ * Crea un misil que puede cambiar de trayectoria para perseguir al enemigo
+ * más cercano, con propiedades mejoradas según el nivel del arma.
+ * 
+ * @param misiles Arreglo de misiles teledirigidos.
+ * @param max_misiles Número máximo de misiles simultáneos.
+ * @param nave Nave que dispara el misil.
+ * @param enemigos Arreglo de enemigos para seleccionar objetivo.
+ * @param num_enemigos Número de enemigos disponibles.
+ */
 void disparar_misil(MisilTeledirigido misiles[], int max_misiles, Nave nave, Enemigo enemigos[], int num_enemigos)
 {
     double tiempo_actual = al_get_time();
@@ -3743,6 +3856,18 @@ void disparar_misil(MisilTeledirigido misiles[], int max_misiles, Nave nave, Ene
 }
 
 
+/**
+ * @brief Actualiza todos los misiles teledirigidos activos.
+ * 
+ * Maneja el seguimiento de objetivos, cambio de trayectoria, búsqueda
+ * de nuevos objetivos y detección de colisiones.
+ * 
+ * @param misiles Arreglo de misiles a actualizar.
+ * @param max_misiles Número máximo de misiles.
+ * @param enemigos Arreglo de enemigos para seguimiento.
+ * @param num_enemigos Número de enemigos.
+ * @param puntaje Puntero al puntaje del jugador.
+ */
 void actualizar_misiles(MisilTeledirigido misiles[], int max_misiles, Enemigo enemigos[], int num_enemigos, int* puntaje)
 {
     int i;
@@ -3847,10 +3972,13 @@ void actualizar_misiles(MisilTeledirigido misiles[], int max_misiles, Enemigo en
 
 
 /**
- * @brief 
+ * @brief Dibuja todos los misiles teledirigidos con efectos visuales.
  * 
- * @param misiles 
- * @param max_misiles 
+ * Renderiza los misiles con orientación dinámica según su velocidad,
+ * incluyendo efectos de estela y punta direccional.
+ * 
+ * @param misiles Arreglo de misiles a dibujar.
+ * @param max_misiles Número máximo de misiles.
  */
 void dibujar_misiles(MisilTeledirigido misiles[], int max_misiles)
 {
@@ -3879,17 +4007,20 @@ void dibujar_misiles(MisilTeledirigido misiles[], int max_misiles)
 
 
 /**
- * @brief 
+ * @brief Verifica si un punto está sobre una línea con tolerancia.
  * 
- * @param x1 
- * @param y1 
- * @param x2 
- * @param y2 
- * @param px 
- * @param py 
- * @param tolerancia 
- * @return true 
- * @return false 
+ * Calcula si un punto específico está dentro de una distancia tolerable
+ * de una línea definida por dos puntos.
+ * 
+ * @param x1 Coordenada x del primer punto de la línea.
+ * @param y1 Coordenada y del primer punto de la línea.
+ * @param x2 Coordenada x del segundo punto de la línea.
+ * @param y2 Coordenada y del segundo punto de la línea.
+ * @param px Coordenada x del punto a verificar.
+ * @param py Coordenada y del punto a verificar.
+ * @param tolerancia Distancia máxima permitida del punto a la línea.
+ * @return true si el punto está sobre la línea dentro de la tolerancia.
+ * @return false en caso contrario.
  */
 bool punto_en_linea_laser(float x1, float y1, float x2, float y2, float px, float py, float tolerancia)
 {
@@ -3947,11 +4078,12 @@ bool linea_intersecta_rectangulo(float x1, float y1, float x2, float y2, float r
     }
     
     // Verificar intersección con cada lado del rectángulo
-    return (linea_intersecta_linea(x1, y1, x2, y2, rect_x1, rect_y1, rect_x2, rect_y1) || // Top
-            linea_intersecta_linea(x1, y1, x2, y2, rect_x2, rect_y1, rect_x2, rect_y2) || // Right
-            linea_intersecta_linea(x1, y1, x2, y2, rect_x2, rect_y2, rect_x1, rect_y2) || // Bottom
-            linea_intersecta_linea(x1, y1, x2, y2, rect_x1, rect_y2, rect_x1, rect_y1));  // Left
+    return (linea_intersecta_linea(x1, y1, x2, y2, rect_x1, rect_y1, rect_x2, rect_y1) ||
+            linea_intersecta_linea(x1, y1, x2, y2, rect_x2, rect_y1, rect_x2, rect_y2) ||
+            linea_intersecta_linea(x1, y1, x2, y2, rect_x2, rect_y2, rect_x1, rect_y2) ||
+            linea_intersecta_linea(x1, y1, x2, y2, rect_x1, rect_y2, rect_x1, rect_y1));
 }
+
 
 /**
  * @brief Verifica si dos líneas se intersectan.
@@ -4024,6 +4156,21 @@ bool laser_intersecta_enemigo_limitado(DisparoLaser laser, Enemigo enemigo, floa
 }
 
 
+/**
+ * @brief Verifica si hay línea de vista libre para explosiones.
+ * 
+ * Comprueba si existe una línea directa entre dos puntos sin obstáculos
+ * sólidos en el tilemap, usado para determinar si una explosión puede
+ * afectar a un objetivo.
+ * 
+ * @param x1 Coordenada x del punto origen.
+ * @param y1 Coordenada y del punto origen.
+ * @param x2 Coordenada x del punto destino.
+ * @param y2 Coordenada y del punto destino.
+ * @param tilemap Mapa de tiles para verificar obstáculos.
+ * @return true si hay línea de vista libre.
+ * @return false si hay obstáculos bloqueando.
+ */
 bool verificar_linea_vista_explosion(float x1, float y1, float x2, float y2, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {    
     float dx = x2 - x1;
@@ -4066,4 +4213,143 @@ bool verificar_linea_vista_explosion(float x1, float y1, float x2, float y2, Til
     }
     
     return true; // Línea de vista libre
+}
+
+
+/**
+ * @brief Carga las imágenes específicas para cada tipo de enemigo.
+ * 
+ * @param imagenes_enemigos Array de punteros a las imágenes de cada tipo.
+ * @return bool true si se cargaron correctamente, false en caso contrario.
+ */
+bool cargar_imagenes_enemigos(ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS])
+{
+    const char *rutas_imagenes[] = {
+        "imagenes/enemigos/Enemigo1.png",     // Tipo 0: Normal
+        "imagenes/enemigos/Enemigo2.png",     // Tipo 1: Perseguidor
+        "imagenes/enemigos/Enemigo3.png",     // Tipo 2: Francotirador
+        "imagenes/enemigos/Enemigo4.png",     // Tipo 3: Tanque
+        "imagenes/enemigos/Enemigo5.png"      // Tipo 4: Kamikaze
+    };
+
+    int i;
+
+    for (i = 0; i < NUM_TIPOS_ENEMIGOS; i++)
+    {
+        imagenes_enemigos[i] = al_load_bitmap(rutas_imagenes[i]);
+
+        if (!imagenes_enemigos[i])
+        {
+            printf("No se pudo cargar %s, creando sprite placeholder\n", rutas_imagenes[i]);
+
+            // Crear sprite de color como fallback
+            imagenes_enemigos[i] = al_create_bitmap(40, 40);
+            al_set_target_bitmap(imagenes_enemigos[i]);
+
+            ALLEGRO_COLOR colores[] = {
+                al_map_rgb(255, 100, 100),   // Tipo 0: Rojo claro
+                al_map_rgb(255, 165, 0),     // Tipo 1: Naranja
+                al_map_rgb(128, 0, 128),     // Tipo 2: Púrpura
+                al_map_rgb(139, 69, 19),     // Tipo 3: Marrón
+                al_map_rgb(255, 255, 0)      // Tipo 4: Amarillo
+            };
+
+            al_clear_to_color(colores[i]);
+            
+            // Agregar símbolo distintivo por tipo
+            switch(i) {
+                case 0: // Normal - círculo simple
+                    al_draw_filled_circle(20, 20, 15, al_map_rgb(150, 50, 50));
+                    break;
+                case 1: // Perseguidor - triángulo
+                    al_draw_filled_triangle(20, 5, 10, 35, 30, 35, al_map_rgb(200, 100, 0));
+                    break;
+                case 2: // Francotirador - línea larga
+                    al_draw_filled_rectangle(18, 5, 22, 35, al_map_rgb(80, 0, 80));
+                    break;
+                case 3: // Tanque - rectángulo grueso
+                    al_draw_filled_rectangle(5, 10, 35, 30, al_map_rgb(100, 50, 0));
+                    break;
+                case 4: // Kamikaze - estrella
+                    al_draw_filled_circle(20, 20, 12, al_map_rgb(200, 200, 0));
+                    al_draw_filled_circle(20, 20, 6, al_map_rgb(255, 255, 100));
+                    break;
+            }
+            
+            al_draw_rectangle(0, 0, 39, 39, al_map_rgb(0, 0, 0), 2);
+            al_set_target_backbuffer(al_get_current_display());
+
+            printf("Sprite placeholder creado para enemigo tipo %d\n", i);
+        }
+        else
+        {
+            printf("Imagen del enemigo tipo %d cargada: %s\n", i, rutas_imagenes[i]);
+        }
+    }
+
+    return true;
+}
+
+
+/**
+ * @brief Asigna la imagen correcta al enemigo según su tipo.
+ * 
+ * @param enemigo Puntero al enemigo.
+ * @param imagenes_enemigos Array con las imágenes de cada tipo.
+ */
+void asignar_imagen_enemigo(Enemigo *enemigo, ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS])
+{
+    if (enemigo->tipo >= 0 && enemigo->tipo < NUM_TIPOS_ENEMIGOS)
+    {
+        enemigo->imagen = imagenes_enemigos[enemigo->tipo];
+        printf("Enemigo tipo %d: imagen asignada correctamente\n", enemigo->tipo);
+    }
+    else
+    {
+        printf("ERROR: Tipo de enemigo inválido: %d\n", enemigo->tipo);
+        enemigo->imagen = imagenes_enemigos[0]; // Usar imagen normal como fallback
+    }
+}
+
+
+/**
+ * @brief Libera la memoria de las imágenes de enemigos.
+ * 
+ * @param imagenes_enemigos Array con las imágenes de cada tipo.
+ */
+void liberar_imagenes_enemigos(ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS])
+{
+    int i;
+
+    for (i = 0; i < NUM_TIPOS_ENEMIGOS; i++)
+    {
+        if (imagenes_enemigos[i])
+        {
+            al_destroy_bitmap(imagenes_enemigos[i]);
+            imagenes_enemigos[i] = NULL;
+        }
+    }
+    printf("Imágenes de enemigos liberadas correctamente\n");
+}
+
+
+/**
+ * @brief Verifica si todas las imágenes de enemigos están cargadas correctamente.
+ * 
+ * @param imagenes_enemigos Array con las imágenes de cada tipo.
+ * @return bool true si todas están cargadas, false en caso contrario.
+ */
+bool verificar_imagenes_enemigos(ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS])
+{
+    for (int i = 0; i < NUM_TIPOS_ENEMIGOS; i++)
+    {
+        if (!imagenes_enemigos[i])
+        {
+            printf("ERROR: Imagen del enemigo tipo %d no está cargada\n", i);
+            return false;
+        }
+    }
+    
+    printf("Todas las imágenes de enemigos están cargadas correctamente\n");
+    return true;
 }

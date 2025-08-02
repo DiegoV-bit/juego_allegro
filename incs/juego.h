@@ -75,16 +75,59 @@
  */
 #define NUM_DISPAROS_ENEMIGOS 15
 
+/**
+ * @def MAX_POWERUPS
+ * @brief Número máximo de power-ups en el juego.
+ */
 #define MAX_POWERUPS 10
+
+/**
+ * @def POWERUP_PROB
+ * @brief Probabilidad de que aparezca un power-up.
+ */
 #define POWERUP_PROB 25
 
+/**
+ * @def POWERUP_ESCUDO_PROB
+ * @brief Probabilidad de que aparezca un power-up de escudo.
+ */
 #define POWERUP_ESCUDO_PROB 40
+
+/**
+ * @def POWERUP_VIDA_PROB
+ * @brief Probabilidad de que aparezca un power-up de vida.
+ */
 #define POWERUP_VIDA_PROB 30
+
+/**
+ * @def POWERUP_RADIAL_PROB
+ * @brief Probabilidad de que aparezca un power-up de disparo radial.
+ */
 #define POWERUP_LASER_PROB 25
+
+/**
+ * @def POWERUP_EXPLOSIVO_PROB
+ * @brief Probabilidad de que aparezca un power-up explosivo.
+ */
 #define POWERUP_EXPLOSIVO_PROB 20
+
+/**
+ * @def POWERUP_MISIL_PROB
+ * @brief Probabilidad de que aparezca un power-up de misil.
+ */
 #define POWERUP_MISIL_PROB 15
 
+/**
+ * @def MAX_COLA_MENSAJES
+ * @brief Número máximo de mensajes en la cola de mensajes.
+ */
 #define MAX_COLA_MENSAJES 5
+
+/**
+ * @def NUM_TIPOS_ENEMIGOS
+ * @brief Número de tipos de enemigos en el juego.
+ */
+#define NUM_TIPOS_ENEMIGOS 5
 
 typedef enum
 {
@@ -298,6 +341,7 @@ typedef struct
     float alto;
     float velocidad;
     int vida;
+    int vida_max;
     bool activo;
     double ultimo_disparo;
     double intervalo_disparo;
@@ -467,4 +511,7 @@ bool linea_intersecta_linea(float x1, float y1, float x2, float y2, float x3, fl
 float verificar_colision_laser_tilemap(DisparoLaser laser, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 bool laser_intersecta_enemigo_limitado(DisparoLaser laser, Enemigo enemigo, float alcance_real);
 bool verificar_linea_vista_explosion(float x1, float y1, float x2, float y2, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
+bool cargar_imagenes_enemigos(ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS]);
+void asignar_imagen_enemigo(Enemigo *enemigo, ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS]);
+void liberar_imagenes_enemigos(ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS]);
 #endif

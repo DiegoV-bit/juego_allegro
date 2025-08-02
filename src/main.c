@@ -31,6 +31,7 @@ int main()
     ALLEGRO_BITMAP *imagen_nave = NULL;
     ALLEGRO_BITMAP *imagen_asteroide = NULL;
     ALLEGRO_BITMAP *imagen_enemigo = NULL;
+    ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS];
 
     Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS];
 
@@ -41,6 +42,12 @@ int main()
     int contador_debug_powerups = 0;
     int contador_debug_lasers = 0;
     //int contador_debug_cola = 0;
+
+    if (!cargar_imagenes_enemigos(imagenes_enemigos))
+    {
+        printf("ERROR: No se pudieron cargar las imágenes de enemigos\n");
+        return -1;
+    }
 
     if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo) != 0)
     {
@@ -164,7 +171,7 @@ int main()
             Enemigo enemigos[NUM_ENEMIGOS];
             for (i = 0; i < num_enemigos_cargados && i < NUM_ENEMIGOS; i++) {
                 enemigos[i] = enemigos_mapa[i];
-                enemigos[i].imagen = imagen_enemigo; // Asegurar que usen el sprite correcto
+                asignar_imagen_enemigo(&enemigos[i], imagenes_enemigos); // Asegurar que usen el sprite correcto
             }
             // Inicializar el resto como inactivos
             for (i = num_enemigos_cargados; i < NUM_ENEMIGOS; i++) {
@@ -329,7 +336,8 @@ int main()
                             int tipo_nave_guardado = nave.tipo;
 
                             SistemaArma armas_guardadas[4];
-                            for (int i = 0; i < 4; i++) {
+                            for (int i = 0; i < 4; i++)
+                            {
                                 armas_guardadas[i] = nave.armas[i];
                             }
                             
@@ -346,7 +354,8 @@ int main()
                             nave.kills_para_mejora = kills_para_mejora_guardado;
                             nave.tipo = tipo_nave_guardado;
 
-                            for (int i = 0; i < 4; i++) {
+                            for (int i = 0; i < 4; i++)
+                            {
                                 nave.armas[i] = armas_guardadas[i];
                             }
                             
@@ -396,7 +405,7 @@ int main()
                             for (int k = 0; k < enemigos_a_copiar; k++) 
                             {
                                 enemigos[k] = enemigos_mapa[k];
-                                enemigos[k].imagen = imagen_enemigo;
+                                asignar_imagen_enemigo(&enemigos[k], imagen_enemigo); // Asegurar que usen el sprite correcto
                                 enemigos[k].activo = true;
                             }
 
@@ -581,6 +590,7 @@ int main()
         }
     }    
 
+    liberar_imagenes_enemigos(imagenes_enemigos);
     destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide, imagen_enemigo);
 
     al_uninstall_system(); // Esto evita fugas de memoria y libera recursos evitando el segmentation fault en WSL
