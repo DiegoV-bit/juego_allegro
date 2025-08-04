@@ -43,7 +43,6 @@ int main()
     int contador_debug_lasers = 0;
     Jefe jefe_final;
     Jefe jefe_nivel;
-    bool hay_jefe_activo = false;
     bool hay_jefe_en_nivel = false;
     ALLEGRO_BITMAP *imagen_jefe = NULL;
 
@@ -137,9 +136,10 @@ int main()
         if (jugando)
         {
             hay_jefe_en_nivel = false;
-            hay_jefe_activo = false;
             memset(&jefe_final, 0, sizeof(Jefe));
             jefe_nivel.activo = false;
+
+            memset(teclas, false, sizeof(teclas)); // Reiniciar teclas
 
             // Recargo el nivel 1 desde cero
             cargar_tilemap("Nivel1.txt", tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_enemigo, &nave_x_inicial, &nave_y_inicial);
@@ -158,6 +158,8 @@ int main()
             // Inicializar nave
             Nave nave = init_nave(nave_x_inicial, nave_y_inicial, 50, 50, 100.0f, 0.1, imagen_nave);
 
+            memset(teclas, false, sizeof(teclas)); // Reiniciar teclas
+
             // Inicializar el sistema de armas
             init_sistema_armas(&nave);
 
@@ -175,6 +177,7 @@ int main()
                 explosivos[i].y = 0;
                 explosivos[i].vx = 0;
                 explosivos[i].vy = 0;
+                explosivos[i].tiempo_vida = 0;
             }
 
             for (int i = 0; i < 6; i++)
@@ -476,7 +479,6 @@ int main()
                             }
 
                             hay_jefe_en_nivel = false;
-                            hay_jefe_activo = false;
                             memset(&jefe_nivel, 0, sizeof(Jefe));
                             jefe_nivel.activo = false;
 
@@ -773,9 +775,10 @@ int main()
             en_menu = true;
 
             hay_jefe_en_nivel = false;
-            hay_jefe_activo = false;
             memset(&jefe_nivel, 0, sizeof(Jefe));
             jefe_nivel.activo = false;
+
+            memset(teclas, false, sizeof(teclas)); // Reiniciar teclas
 
             cursor_x = 0;
             cursor_y = 0;
