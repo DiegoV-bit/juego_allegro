@@ -109,7 +109,7 @@
  * @def POWERUP_EXPLOSIVO_PROB
  * @brief Probabilidad de que aparezca un power-up explosivo.
  */
-#define POWERUP_EXPLOSIVO_PROB 20
+#define POWERUP_EXPLOSIVO_PROB 30
 
 /**
  * @def POWERUP_MISIL_PROB
@@ -206,6 +206,7 @@ typedef struct
     double ultimo_dano;
     int poder;
     float alcance;
+    float dano_por_segundo;
     ALLEGRO_COLOR color;
 } DisparoLaser;
 
@@ -228,6 +229,7 @@ typedef struct
     int dano_directo;
     int dano_area;
     bool exploto;
+    bool dano_aplicado;
 } DisparoExplosivo;
 
 /**
@@ -315,7 +317,7 @@ typedef struct
     float y; /**< Posicion en el eje y */
     float ancho; /**< Ancho de la nave  */
     float largo; /**< Largo de la nave */
-    int vida; /**< Vida de la nave */
+    float vida; /**< Vida de la nave */
     int tipo; /**< Tipo de movilidad de la nave */
     double tiempo_invulnerable; /**< Tiempo que la nave es invulnerable */
     double tiempo_ultimo_dano; /**< Tiempo en el que la nave recibio el ultimo dano */
@@ -401,8 +403,8 @@ typedef struct
     float ancho;
     float alto;
     float velocidad;
-    int vida;
-    int vida_max;
+    float vida;
+    float vida_max;
     bool activo;
     double ultimo_disparo;
     double intervalo_disparo;
@@ -466,7 +468,7 @@ typedef struct
     bool activo;
     TipoAtaqueJefe tipo;
     double tiempo_vida;
-    int dano;
+    float dano;
     float velocidad;
     bool persigue_jugador;
     ALLEGRO_COLOR color;
@@ -478,8 +480,8 @@ typedef struct
     float y;
     float ancho;
     float alto;
-    int vida;
-    int vida_max;
+    float vida;
+    float vida_max;
     int tipo;
     bool activo;
 
@@ -509,7 +511,7 @@ typedef struct
 
 
 /*Funciones*/
-Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave);
+Nave init_nave(float x, float y, float ancho, float largo, float vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave);
 void init_asteroides(Asteroide asteroides[], int num_asteroides, int ancho_ventana, ALLEGRO_BITMAP* imagen_asteroide);
 void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave* nave, Powerup powerups[], int max_powerups);
 bool detectar_colision(Nave* nave, Asteroide asteroide);
@@ -630,9 +632,8 @@ void init_jefe(Jefe* jefe, int tipo, float x, float y, ALLEGRO_BITMAP* imagen);
 void actualizar_jefe(Jefe* jefe, Nave nave, Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagenes_enemigos[NUM_TIPOS_ENEMIGOS], double tiempo_actual);
 void dibujar_jefe(Jefe jefe);
 void jefe_atacar(Jefe* jefe, Nave nave, double tiempo_actual);
-void actualizar_ataques_jefe(AtaqueJefe ataques[], int max_ataques, Nave* nave, int* puntaje);
 void dibujar_ataques_jefe(AtaqueJefe ataques[], int max_ataques);
 bool detectar_colision_ataque_jefe_nave(AtaqueJefe ataque, Nave nave);
 void jefe_invocar_enemigos(Jefe* jefe, Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagenes_enemigos[NUM_TIPOS_ENEMIGOS]);
-bool jefe_recibir_dano(Jefe* jefe, int dano, ColaMensajes* cola_mensajes);
+bool jefe_recibir_dano(Jefe* jefe, float dano, ColaMensajes* cola_mensajes);
 #endif

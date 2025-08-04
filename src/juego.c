@@ -20,7 +20,7 @@
  * @param imagen_nave Imagen de la nave.
  * @return Nave inicializada.
  */
-Nave init_nave(float x, float y, float ancho, float largo, int vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave)
+Nave init_nave(float x, float y, float ancho, float largo, float vida, double tiempo_invulnerable, ALLEGRO_BITMAP *imagen_nave)
 {
     int i;
 
@@ -116,8 +116,8 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
         }
         else
         {
-            nave->vida -= 10;
-            printf("La nave recibió 10 de daño, Vida restante: %d\n", nave->vida);
+            nave->vida -= 5.0f;
+            printf("La nave recibió 10 de daño, Vida restante: %.1f\n", nave->vida);
         }
 
         // Asteroide desaparece tras impactar
@@ -420,9 +420,46 @@ void actualizar_nave(Nave* nave, bool teclas[], Tile tilemap[MAPA_FILAS][MAPA_CO
  */
 void dibujar_barra_vida(Nave nave)
 {
-    float porcentaje_vida = (float)nave.vida / 100.0;
-    al_draw_filled_rectangle(10, 10, 10 + (200 * porcentaje_vida), 30, al_map_rgb(255, 0, 0));
+    float vida_maxima = 100.0f; // Vida máxima de la nave
+    float porcentaje_vida = nave.vida / vida_maxima;
+    ALLEGRO_COLOR color_vida;
+    static ALLEGRO_FONT* fuente_vida = NULL;
+    
+    // Asegurar que el porcentaje esté entre 0 y 1
+    if (porcentaje_vida < 0.0f) porcentaje_vida = 0.0f;
+    if (porcentaje_vida > 1.0f) porcentaje_vida = 1.0f;
+    
+    // Color de la barra según la vida restante
+    if (porcentaje_vida > 0.6f)
+    {
+        color_vida = al_map_rgb(0, 255, 0);      // Verde
+    }
+    else if (porcentaje_vida > 0.3f)
+    {
+        color_vida = al_map_rgb(255, 255, 0);    // Amarillo
+    }
+    else
+    {
+        color_vida = al_map_rgb(255, 0, 0);      // Rojo
+    }
+    
+    // Dibujar barra de vida
+    al_draw_filled_rectangle(10, 10, 10 + (200 * porcentaje_vida), 30, color_vida);
     al_draw_rectangle(10, 10, 210, 30, al_map_rgb(255, 255, 255), 2);
+    
+    // Mostrar vida actual como texto
+    char texto_vida[50];
+    sprintf(texto_vida, "Vida: %.1f/%.1f", nave.vida, vida_maxima);
+    
+    if (!fuente_vida)
+    {
+        fuente_vida = al_create_builtin_font();
+    }
+    
+    if (fuente_vida)
+    {
+        al_draw_text(fuente_vida, al_map_rgb(255, 255, 255), 220, 15, ALLEGRO_ALIGN_LEFT, texto_vida);
+    }
 }
 
 /**
@@ -629,8 +666,6 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
     for (i = 0; i < num_enemigos; i++)
     {
         if (!enemigos[i].activo) continue;
-
-        //bool enemigo_impactado = false;
         
         // Disparos del jugador vs enemigos (USA LA NUEVA FUNCIÓN)
         for (j = 0; j < num_disparos; j++)
@@ -647,7 +682,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                     int tipo_enemigo = enemigos[i].tipo;
 
                     enemigos[i].activo = false;
-                    (*puntaje)++; // Incrementa el puntaje por destruir un enemigo
+                    (*puntaje) += 10; // Incrementa el puntaje por destruir un enemigo
                     nave->kills_para_mejora++;
                     verificar_mejora_disparo_radial(nave, cola_mensajes);
 
@@ -660,6 +695,10 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                     {
                         printf("No se generó powerup (probabilidad %d%%)\n", POWERUP_PROB);
                     }
+                }
+                else
+                {
+                    (*puntaje) += 2;
                 }
                 break;
             }
@@ -674,8 +713,8 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
             }
             else
             {
-                nave->vida -= 20;
-                printf("La nave recibió 20 de daño directo, Vida restante: %d\n", nave->vida);
+                nave->vida -= 10.0f;
+                printf("La nave recibió 20 de daño directo, Vida restante: %.1f\n", nave->vida);
             }
             enemigos[i].activo = false;
         }
@@ -703,7 +742,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                 }
                 
                 nave->vida -= dano;
-                printf("Nave recibio %d de daño por disparo enemigo. vida restante: %d\n", dano, nave->vida);
+                printf("Nave recibio %d de daño por disparo enemigo. vida restante: %.1f\n", dano, nave->vida);
            }
            else
            {
@@ -862,15 +901,53 @@ int detectar_click(Boton botones[], int num_botones, int x, int y)
  */
 void guardar_puntaje(const char* nombre, int puntaje)
 {
-    FILE* archivo = fopen("ranking.txt", "a");
+    Jugador ranking[MAX_JUGADORES];
+    int num_jugadores = 0;
+    int i;
+
+    FILE *archivo = fopen("ranking.txt", "r");
+
     if (archivo)
     {
-        fprintf(archivo, "%s %d\n", nombre, puntaje);
+        while (num_jugadores < MAX_JUGADORES && fscanf(archivo, "%39s %d", ranking[num_jugadores].nombre, &ranking[num_jugadores].puntaje) == 2)
+        {
+            num_jugadores++;
+        }
         fclose(archivo);
+    }
+    
+    if (num_jugadores < MAX_JUGADORES)
+    {
+        strcpy(ranking[num_jugadores].nombre, nombre);
+        ranking[num_jugadores].puntaje = puntaje;
+        num_jugadores++;
     }
     else
     {
-        fprintf(stderr, "Error: no se pudo abrir el archivo de ranking.\n");
+        qsort(ranking, num_jugadores, sizeof(Jugador), comparar_puntajes);
+        if (puntaje > ranking[num_jugadores-1].puntaje)
+        {
+            strcpy(ranking[num_jugadores-1].nombre, nombre);
+            ranking[num_jugadores-1].puntaje = puntaje;
+        }
+    }
+
+    qsort(ranking, num_jugadores, sizeof(Jugador), comparar_puntajes);
+
+    FILE *archivo_escritura = fopen("ranking.txt", "w");
+
+    if (archivo_escritura)
+    {
+        for (i = 0; i < num_jugadores; i++)
+        {
+            fprintf(archivo_escritura, "%s %d\n", ranking[i].nombre, ranking[i].puntaje);
+        }
+        fclose(archivo_escritura);
+        printf("Puntaje guardado: %s - %d puntos\n", nombre, puntaje);
+    }
+    else
+    {
+        printf("Error: No se pudo guardar el puntaje.\n");
     }
 }
 
@@ -884,9 +961,11 @@ void cargar_ranking(Jugador ranking[], int* num_jugadores)
 {
     FILE* archivo = fopen("ranking.txt", "r");
     *num_jugadores = 0;
+    int i;
+
     if (archivo)
     {
-        while (fscanf(archivo, "%s %d", ranking[*num_jugadores].nombre, &ranking[*num_jugadores].puntaje) != EOF && *num_jugadores < MAX_JUGADORES)
+        while (*num_jugadores < MAX_JUGADORES && fscanf(archivo, "%39s %d", ranking[*num_jugadores].nombre, &ranking[*num_jugadores].puntaje) == 2)
         {
             (*num_jugadores)++;
         }
@@ -894,6 +973,12 @@ void cargar_ranking(Jugador ranking[], int* num_jugadores)
 
         // Ordenar el ranking de mayor a menor puntaje
         qsort(ranking, *num_jugadores, sizeof(Jugador), comparar_puntajes);
+        printf("Ranking cargado: %d jugadores\n", *num_jugadores);
+        
+        for (i = 0; i < *num_jugadores && i < 5; i++)
+        {
+            printf("%d. %s - %d puntos\n", i+1, ranking[i].nombre, ranking[i].puntaje);
+        }
     }
     else
     {
@@ -1426,7 +1511,7 @@ void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_
                     } else {
                         nave.vida -= 35;
                         enemigos[i].activo = false;
-                        printf("¡Enemigo kamikaze impactó! Vida restante: %d\n", nave.vida);
+                        printf("¡Enemigo kamikaze impactó! Vida restante: %.1f\n", nave.vida);
                     }
                 }
                 break;
@@ -1446,16 +1531,13 @@ void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_
  */
 void dibujar_enemigos(Enemigo enemigos[], int num_enemigos)
 {
-    for (int i = 0; i < num_enemigos; i++)
+    int i;
+    for (i = 0; i < num_enemigos; i++)
     {
         if (enemigos[i].activo)
         {
             // Dibujar enemigo base
-            al_draw_scaled_bitmap(enemigos[i].imagen, 0, 0, 
-                                al_get_bitmap_width(enemigos[i].imagen), 
-                                al_get_bitmap_height(enemigos[i].imagen),
-                                enemigos[i].x, enemigos[i].y, 
-                                enemigos[i].ancho, enemigos[i].alto, 0);
+            al_draw_scaled_bitmap(enemigos[i].imagen, 0, 0, al_get_bitmap_width(enemigos[i].imagen), al_get_bitmap_height(enemigos[i].imagen), enemigos[i].x, enemigos[i].y, enemigos[i].ancho, enemigos[i].alto, 0);
             
             // Overlay de color según tipo de enemigo
             ALLEGRO_COLOR color_overlay;
@@ -2047,7 +2129,7 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->ancho = 50;
             enemigo->alto = 40;
             enemigo->velocidad = 1.0f;
-            enemigo->vida = 2;
+            enemigo->vida = 2.0f;
             enemigo->vida_max = 2;
             enemigo->intervalo_disparo = 2.0 + (rand() % 100) / 100.0;
             break;
@@ -2056,7 +2138,7 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->ancho = 45;
             enemigo->alto = 35;
             enemigo->velocidad = 0.8f;
-            enemigo->vida = 2;
+            enemigo->vida = 2.0f;
             enemigo->vida_max = 2;
             enemigo->intervalo_disparo = 2.5;
             break;
@@ -2065,7 +2147,7 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->ancho = 40;
             enemigo->alto = 30;
             enemigo->velocidad = 0; // Inmóvil
-            enemigo->vida = 1;
+            enemigo->vida = 1.0f;
             enemigo->vida_max = 1;
             enemigo->intervalo_disparo = 1.5;
             break;
@@ -2074,7 +2156,7 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->ancho = 70;
             enemigo->alto = 50;
             enemigo->velocidad = 0.3f;
-            enemigo->vida = 6;
+            enemigo->vida = 6.0f;
             enemigo->vida_max = 6;
             enemigo->intervalo_disparo = 3.0;
             break;
@@ -2083,7 +2165,7 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->ancho = 35;
             enemigo->alto = 30;
             enemigo->velocidad = 1.5f;
-            enemigo->vida = 1;
+            enemigo->vida = 1.0f;
             enemigo->vida_max = 1;
             enemigo->intervalo_disparo = 999; // No dispara
             break;
@@ -2093,13 +2175,13 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->ancho = 50;
             enemigo->alto = 40;
             enemigo->velocidad = 1.0f;
-            enemigo->vida = 1;
+            enemigo->vida = 1.0f;
             enemigo->vida_max = 1;
             enemigo->intervalo_disparo = 2.0;
             break;
     }
 
-    printf("Enemigo tipo %d inicializado: vel=%.1f, vida=%d, tamaño=%dx%d\n", tipo, enemigo->velocidad, enemigo->vida, (int)enemigo->ancho, (int)enemigo->alto);
+    printf("Enemigo tipo %d inicializado: vel=%.1f, vida=%.1f, tamaño=%dx%d\n", tipo, enemigo->velocidad, enemigo->vida, (int)enemigo->ancho, (int)enemigo->alto);
 }
 
 
@@ -2173,8 +2255,7 @@ void tanque_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo)
 
 bool detectar_colision_disparo_enemigo_escudo(Disparo disparo, float tile_x, float tile_y)
 {
-    return (disparo.x >= tile_x && disparo.x <= tile_x + TILE_ANCHO && 
-            disparo.y >= tile_y && disparo.y <= tile_y + TILE_ALTO);
+    return (disparo.x >= tile_x && disparo.x <= tile_x + TILE_ANCHO && disparo.y >= tile_y && disparo.y <= tile_y + TILE_ALTO);
 }
 
 
@@ -2438,23 +2519,23 @@ void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
     }
     else if (powerup->tipo == 1)
     {
-        int vida_anterior = nave->vida;
-        int vida_a_restaurar = 30;
+        float vida_anterior = nave->vida;
+        float vida_a_restaurar = 30.0f;
 
         nave->vida += vida_a_restaurar;
-        if (nave->vida > 100)
+        if (nave->vida > 100.0f)
         {
-            nave->vida = 100;
+            nave->vida = 100.0f;
         }
 
-        int vida_restaurada = nave->vida - vida_anterior;
+        float vida_restaurada = nave->vida - vida_anterior;
 
-        if (vida_restaurada > 0)
+        if (vida_restaurada > 0.0f)
         {
             agregar_mensaje_cola(cola_mensajes, "Vida Restaurada", 2.0, al_map_rgb(255, 0, 0), true);
 
             char mensaje_detalle[100];
-            if (nave->vida == 100)
+            if (nave->vida == 100.0f)
             {
                 agregar_mensaje_cola(cola_mensajes, "Vida al maximo", 2.0, al_map_rgb(0, 255, 0), true);
             }
@@ -2464,7 +2545,7 @@ void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
                 agregar_mensaje_cola(cola_mensajes, mensaje_detalle, 2.0, al_map_rgb(255, 255, 255), true);
             }
             
-            printf("Vida restaurada: +%d HP (Vida total: %d/100)\n", vida_restaurada, nave->vida);
+            printf("Vida restaurada: +%d HP (Vida total: %.1f/100)\n", vida_restaurada, nave->vida);
         }
         else
         {
@@ -2988,7 +3069,7 @@ void crear_powerup_aleatorio(Powerup powerups[], int max_powerups, float x, floa
         crear_powerup_laser(powerups, max_powerups, x, y);
         printf("Powerup aleatorio: LÁSER\n");
     }
-    else if (probabilidad < POWERUP_ESCUDO_PROB + POWERUP_VIDA_PROB + POWERUP_LASER_PROB + POWERUP_EXPLOSIVO_PROB)
+    else if (probabilidad < POWERUP_ESCUDO_PROB + POWERUP_VIDA_PROB + POWERUP_LASER_PROB + 30)
     {
         crear_powerup_explosivo(powerups, max_powerups, x, y);
         printf("Powerup aleatorio: EXPLOSIVO\n");
@@ -3224,20 +3305,24 @@ void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
             lasers[i].ultimo_dano = 0.0;
             
             lasers[i].duracion_max = 0;
-            lasers[i].poder = 1 + arma_laser.nivel;
+            lasers[i].poder = 1.0f + arma_laser.nivel;
 
             switch(arma_laser.nivel)
             {
                 case 1:
+                    lasers[i].dano_por_segundo = 15.0f;
                     lasers[i].color = al_map_rgba(255, 0, 0, 150); 
                     break;
-                case 2: 
+                case 2:
+                    lasers[i].dano_por_segundo = 25.0f;
                     lasers[i].color = al_map_rgba(255, 100, 0, 180); 
                     break;
-                case 3: 
+                case 3:
+                    lasers[i].dano_por_segundo = 40.0f; 
                     lasers[i].color = al_map_rgba(255, 255, 0, 220); 
                     break;
                 default:
+                    lasers[i].dano_por_segundo = 10.0f;
                     lasers[i].color = al_map_rgba(255, 0, 0, 150); 
                     break;
             }
@@ -3273,10 +3358,9 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
     int j;
     float centro_x;
     float centro_y;
-    bool realiza_dano;
     float alcance_real;
-    int dano_por_tick;
-    int puntaje_enemigo;
+    float dano_aplicado;
+    double var_tiempo;
 
     if (++(*contador_debug) % 60 == 0)
     {
@@ -3300,88 +3384,31 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
 
             for (j = 0; j < num_enemigos; j++)
             {
-                double intervalo_dano;
-
                 if (enemigos[j].activo && laser_intersecta_enemigo_limitado(lasers[i], enemigos[j], alcance_real))
                 {
-                    switch (enemigos[j].tipo)
+                    var_tiempo = tiempo_actual - lasers[i].ultimo_dano;
+
+                    if (var_tiempo > 0.0f)
                     {
-                        case 0:
-                            intervalo_dano = 0.08;
-                            dano_por_tick = 1;
-                            break;
+                        dano_aplicado = lasers[i].dano_por_segundo * var_tiempo;
+                        enemigos[j].vida -= dano_aplicado;
 
-                        case 1:
-                            intervalo_dano = 0.1;
-                            dano_por_tick = 1;
-                            break;
+                        *puntaje += (int)(dano_aplicado * 0.5);
+                        printf("Láser causa %.2f de daño a enemigo tipo %d (Vida restante: %.2f)\n", dano_aplicado, enemigos[j].tipo, enemigos[j].vida);
 
-                        case 2:
-                            intervalo_dano = 0.09;
-                            dano_por_tick = 2;
-                            break;
-
-                        case 3:
-                            intervalo_dano = 0.12;
-                            dano_por_tick = 2;
-                            break;
-
-                        case 4:
-                            intervalo_dano = 0.08;
-                            dano_por_tick = 1;
-                            break;
-                    
-                        default:
-                            intervalo_dano = 0.1;
-                            dano_por_tick = 1;
-                            break;
-                    }
-
-                    realiza_dano = (tiempo_actual - lasers[i].tiempo_inicio >= intervalo_dano);
-
-                    if (realiza_dano)
-                    {
-                        enemigos[j].vida -= dano_por_tick;
                         lasers[i].ultimo_dano = tiempo_actual;
 
-                        printf("Láser dañó enemigo tipo %d: -%d vida (intervalo: %.2fs)\n", enemigos[j].tipo, dano_por_tick, intervalo_dano);
-
-                        if (enemigos[j].vida <= 0)
+                        if (enemigos[j].vida <= 0.0f)
                         {
                             enemigos[j].activo = false;
+                            *puntaje += 50;
+                            printf("Enemigo tipo %d eliminado por láser (+50 puntos)\n", enemigos[j].tipo);
 
-                            switch (enemigos[j].tipo)
+                            if (rand() % 100 < POWERUP_PROB)
                             {
-                                case 0:
-                                    puntaje_enemigo = 10;
-                                    break;
-
-                                case 1:
-                                    puntaje_enemigo = 15;
-                                    break;
-
-                                case 2:
-                                    puntaje_enemigo = 20;
-                                    break;
-
-                                case 3:
-                                    puntaje_enemigo = 30;
-                                    break;
-
-                                case 4:
-                                    puntaje_enemigo = 12;
-                                    break;
-                    
-                                default:
-                                    puntaje_enemigo = 10;
-                                    break;
+                                printf("Powerup creado en posición del enemigo eliminado\n");
                             }
-
-                            *puntaje += puntaje_enemigo;
-                            printf("Enemigo tipo %d eliminado por láser (+%d puntos)\n", enemigos[j].tipo, puntaje_enemigo);
                         }
-
-                        break;
                     }
                 }
             }
@@ -3585,20 +3612,25 @@ void crear_powerup_misil(Powerup powerups[], int max_powerups, float x, float y)
 void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave nave)
 {
     double tiempo_actual = al_get_time();
+    int i;
+    float centro_x;
+    float centro_y;
+    float punta_x;
+    float punta_y;
     SistemaArma arma_explosiva = nave.armas[Arma_explosiva];
     
     // Cooldown entre disparos
     if (tiempo_actual - arma_explosiva.ultimo_uso < 0.5) return;
     
-    for (int i = 0; i < max_explosivos; i++)
+    for (i = 0; i < max_explosivos; i++)
     {
         if (!explosivos[i].activo)
         {
             // Calcular posición de disparo
-            float centro_x = nave.x + nave.ancho / 2.0f;
-            float centro_y = nave.y + nave.largo / 2.0f;
-            float punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
-            float punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
+            centro_x = nave.x + nave.ancho / 2.0f;
+            centro_y = nave.y + nave.largo / 2.0f;
+            punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
+            punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
             
             explosivos[i].x = punta_x;
             explosivos[i].y = punta_y;
@@ -3609,6 +3641,7 @@ void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave 
             explosivos[i].activo = true;
             explosivos[i].tiempo_vida = 0;
             explosivos[i].exploto = false;
+            explosivos[i].dano_aplicado = false;
             
             // Propiedades según nivel
             explosivos[i].radio_explosion = 40 + (arma_explosiva.nivel * 15);
@@ -3648,10 +3681,28 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
     {
         if (explosivos[i].activo && !explosivos[i].exploto)
         {
+            for (j= 0; j< num_enemigos; j++)
+            {
+                if (enemigos[j].activo && detectar_colision_generica(explosivos[i].x, explosivos[i].y, explosivos[i].ancho, explosivos[i].alto, enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
+                {
+                    enemigos[j].vida -= explosivos[i].dano_directo;
+                    printf("¡Proyectil explosivo impactó enemigo %d! Vida restante: %.1f\n", j, enemigos[j].vida);
+
+                    if (enemigos[j].vida <= 0)
+                    {
+                        enemigos[j].activo = false;
+                        *puntaje += 25;
+                    }
+
+                    explosivos[i].exploto = true;
+                    explosivos[i].tiempo_vida = al_get_time();
+                    break;
+                }
+            }
+            
             // Mover proyectil
             explosivos[i].x += explosivos[i].vx;
             explosivos[i].y += explosivos[i].vy;
-            // explosivos[i].tiempo_vida += 0.016; // ~60 FPS
 
             col = (int)(explosivos[i].x / TILE_ANCHO);
             fila = (int)(explosivos[i].y / TILE_ALTO);
@@ -3687,7 +3738,7 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
                     if (detectar_colision_generica(explosivos[i].x, explosivos[i].y, explosivos[i].ancho, explosivos[i].alto, enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
                     {
                         enemigos[j].vida -= explosivos[i].dano_directo;
-                        printf("¡Proyectil explosivo impactó enemigo %d! Vida restante: %d\n", j, enemigos[j].vida);
+                        printf("¡Proyectil explosivo impactó enemigo %d! Vida restante: %.1f\n", j, enemigos[j].vida);
 
                         if (enemigos[j].vida <= 0)
                         {
@@ -3708,6 +3759,7 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
             {
                 // EXPLOSIÓN
                 explosivos[i].exploto = true;
+                explosivos[i].tiempo_vida = al_get_time();
             }
 
             if (al_get_time() - explosivos[i].tiempo_vida > 3.0)
@@ -3732,19 +3784,18 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
                         {
                             if (verificar_linea_vista_explosion(explosivos[i].x, explosivos[i].y, enemigos[j].x + enemigos[j].ancho/2, enemigos[j].y + enemigos[j].alto/2, tilemap))
                             {
-                                enemigos[j].vida -= explosivos[i].dano_area;
-                                printf("¡Daño por explosión! Enemigo recibió %d de daño\n", explosivos[i].dano_area);
-                                
-                                if (enemigos[j].vida <= 0)
+                                if (tiempo_explosion < 0.1)
                                 {
-                                    enemigos[j].activo = false;
-                                    *puntaje += 10;
-                                    printf("Enemigo eliminado por explosión\n");
+                                    enemigos[j].vida -= explosivos[i].dano_area;
+                                    printf("¡Daño por explosión! Enemigo recibió %d de daño\n", explosivos[i].dano_area);
+                                
+                                    if (enemigos[j].vida <= 0)
+                                    {
+                                        enemigos[j].activo = false;
+                                        *puntaje += 15;
+                                        printf("Enemigo eliminado por explosión\n");
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                printf("Enemigo protegido de la explosion\n");
                             }
                         }
                     }
@@ -4422,8 +4473,8 @@ void init_jefe(Jefe *jefe, int tipo, float x, float y, ALLEGRO_BITMAP *imagen)
         case 0:
             jefe->ancho = 120;
             jefe->alto = 80;
-            jefe->vida = 150;
-            jefe->vida_max = 150;
+            jefe->vida = 150.0f;
+            jefe->vida_max = 150.0f;
             jefe->intervalo_ataque = 2.5;
             jefe->max_enemigos_invocacion = 8;
             jefe->velocidad_movimiento = 1.0f;
@@ -4433,8 +4484,8 @@ void init_jefe(Jefe *jefe, int tipo, float x, float y, ALLEGRO_BITMAP *imagen)
         case 1:
             jefe->ancho = 160;
             jefe->alto = 100;
-            jefe->vida = 250;
-            jefe->vida_max = 250;
+            jefe->vida = 250.0f;
+            jefe->vida_max = 250.0f;
             jefe->intervalo_ataque = 2.0;
             jefe->max_enemigos_invocacion = 12;
             jefe->velocidad_movimiento = 1.5f;
@@ -4442,7 +4493,7 @@ void init_jefe(Jefe *jefe, int tipo, float x, float y, ALLEGRO_BITMAP *imagen)
             break;
     }
 
-        printf("Jefe tipo %d inicializado: Vida %d, Tamaño %.0fx%.0f\n", tipo, jefe->vida, jefe->ancho, jefe->alto);
+        printf("Jefe tipo %d inicializado: Vida %.1f, Tamaño %.0fx%.0f\n", tipo, jefe->vida, jefe->ancho, jefe->alto);
 }
 
 
@@ -4633,9 +4684,8 @@ void jefe_atacar(Jefe *jefe, Nave nave, double tiempo_actual)
                                 break;
                             }
                         }
-
-                        break;
                     }
+                    break;
                 
                 case 2:
                     for (i = 0; i < 3; i++)
@@ -5016,13 +5066,15 @@ void jefe_invocar_enemigos(Jefe* jefe, Enemigo enemigos[], int* num_enemigos, AL
  * @param cola_mensajes Cola de mensajes para notificaciones.
  * @return true si el jefe sigue vivo, false si fue derrotado.
  */
-bool jefe_recibir_dano(Jefe* jefe, int dano, ColaMensajes* cola_mensajes)
+bool jefe_recibir_dano(Jefe* jefe, float dano, ColaMensajes* cola_mensajes)
 {
     jefe->vida -= dano;
+
+    printf("Jefe recibió %.2f de daño. Vida restante: %.2f/%.2f\n", dano, jefe->vida, jefe->vida_max);
     
-    if (jefe->vida <= 0)
+    if (jefe->vida <= 0.0f)
     {
-        jefe->vida = 0;
+        jefe->vida = 0.0f;
         jefe->activo = false;
         
         char mensaje[100];
