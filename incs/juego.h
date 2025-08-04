@@ -556,10 +556,10 @@ void mostrar_mensaje(Mensaje* mensaje, const char* texto, float x, float y, doub
 void actualizar_mensaje(Mensaje* mensaje, double tiempo_actual);
 void dibujar_mensaje(Mensaje mensaje, ALLEGRO_FONT* fuente);
 void init_estado_juego(EstadoJuego* estado);
-bool verificar_nivel_completado(Enemigo enemigos[], int num_enemigos);
+bool verificar_nivel_completado(Enemigo enemigos[], int num_enemigos, bool hay_jefe_en_nivel, Jefe *jefe);
 void mostrar_pantalla_transicion(int nivel_completado, int nivel_siguiente, ALLEGRO_FONT* fuente, double tiempo_transcurrido, double duracion_total);
 bool cargar_siguiente_nivel(int nivel, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos_mapa[], int* num_enemigos_cargados, ALLEGRO_BITMAP* imagen_enemigo, float* nave_x, float* nave_y);
-void actualizar_estado_nivel(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual);
+void actualizar_estado_nivel(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual, bool hay_jefe_en_nivel, Jefe *jefe);
 bool asteroides_activados(int nivel_actual);
 void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BITMAP* imagen_enemigo);
 void francotirador_disparar(Disparo disparos[], int num_disparos, Enemigo enemigo, Nave nave);
@@ -605,7 +605,7 @@ void actualizar_progreso_arma(Nave* nave, TipoArma tipo_arma);
 void verificar_mejora_arma(Nave* nave, TipoArma tipo_arma, ColaMensajes* cola_mensajes);
 void dibujar_info_armas(Nave nave, ALLEGRO_FONT* fuente);
 void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave);
-void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int* puntaje, Nave nave, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], int *contador_debug);
+void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int* puntaje, Nave nave, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], int *contador_debug, Powerup powerups[], int max_powerups);
 void dibujar_lasers(DisparoLaser lasers[], int max_lasers, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 void crear_powerup_aleatorio(Powerup powerups[], int max_powerups, float x, float y);
 void crear_powerup_laser(Powerup powerups[], int max_powerups, float x, float y);
@@ -636,4 +636,5 @@ void dibujar_ataques_jefe(AtaqueJefe ataques[], int max_ataques);
 bool detectar_colision_ataque_jefe_nave(AtaqueJefe ataque, Nave nave);
 void jefe_invocar_enemigos(Jefe* jefe, Enemigo enemigos[], int* num_enemigos, ALLEGRO_BITMAP* imagenes_enemigos[NUM_TIPOS_ENEMIGOS]);
 bool jefe_recibir_dano(Jefe* jefe, float dano, ColaMensajes* cola_mensajes);
+void actualizar_estado_nivel_sin_jefe(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual);
 #endif

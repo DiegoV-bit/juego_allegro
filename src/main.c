@@ -169,6 +169,12 @@ int main()
             for (int i = 0; i < 8; i++)
             {
                 explosivos[i].activo = false;
+                explosivos[i].exploto = false;
+                explosivos[i].dano_aplicado = false;
+                explosivos[i].x = 0;
+                explosivos[i].y = 0;
+                explosivos[i].vx = 0;
+                explosivos[i].vy = 0;
             }
 
             for (int i = 0; i < 6; i++)
@@ -196,15 +202,21 @@ int main()
                 asignar_imagen_enemigo(&enemigos[i], imagenes_enemigos); // Asegurar que usen el sprite correcto
             }
             // Inicializar el resto como inactivos
-            for (i = num_enemigos_cargados; i < NUM_ENEMIGOS; i++) {
+            for (i = num_enemigos_cargados; i < NUM_ENEMIGOS; i++) 
+            {
                 enemigos[i].activo = false;
             }
 
             hay_jefe_en_nivel = false;
+
+            printf("Verificando jefes para nivel %d con %d enemigos cargados\n", estado_nivel.nivel_actual, num_enemigos_cargados);
+
             if (estado_nivel.nivel_actual >= 4)
             {
                 for (i = 0; i < num_enemigos_cargados; i++)
                 {
+                    printf("Enemigo %d: tipo %d en (%.0f, %.0f)\n", i, enemigos_mapa[i].tipo, enemigos_mapa[i].x, enemigos_mapa[i].y);
+
                     if (enemigos_mapa[i].tipo == 5 || enemigos_mapa[i].tipo == 6) 
                     {
                         int tipo_jefe = enemigos_mapa[i].tipo == 5 ? 0 : 1; // 5=Destructor(0), 6=Supremo(1)
@@ -221,6 +233,11 @@ int main()
                         break;
                     }
                 }
+                if (!hay_jefe_en_nivel)
+                {
+                    printf("Nivel %d: Sin jefes encontrados\n", estado_nivel.nivel_actual);
+                }
+                
             }
             else
             {
@@ -459,67 +476,32 @@ int main()
                             }
 
                             hay_jefe_en_nivel = false;
-                            for (int k = 0; k < num_enemigos_cargados; k++) {
-                                if (enemigos_mapa[k].tipo == 5 || enemigos_mapa[k].tipo == 6) { // Tipos de jefe
+                            hay_jefe_activo = false;
+                            memset(&jefe_nivel, 0, sizeof(Jefe));
+                            jefe_nivel.activo = false;
+
+                            for (k = 0; k < num_enemigos_cargados; k++)
+                            {
+                                printf("Enemigo recarga %d: tipo %d en (%.0f, %.0f)\n", k, enemigos_mapa[k].tipo, enemigos_mapa[k].x, enemigos_mapa[k].y);
+
+                                if (enemigos_mapa[k].tipo == 5 || enemigos_mapa[k].tipo == 6)
+                                {
                                     int tipo_jefe = enemigos_mapa[k].tipo == 5 ? 0 : 1;
                                     init_jefe(&jefe_nivel, tipo_jefe, enemigos_mapa[k].x, enemigos_mapa[k].y, imagen_jefe);
                                     hay_jefe_en_nivel = true;
-                                    printf("🏆 Jefe cargado en nivel %d: tipo %d\n", estado_nivel.nivel_actual, tipo_jefe);
-                                    
-                                    // Remover jefe del array de enemigos normales
-                                    for (int j = k; j < num_enemigos_cargados - 1; j++) {
+                                    printf("Jefe cargado en nivel %d: enemigo tipo %d -> jefe tipo %d\n", estado_nivel.nivel_actual, enemigos_mapa[k].tipo, tipo_jefe);
+
+                                    for (int j = k; j < num_enemigos_cargados - 1; j++) 
+                                    {
                                         enemigos_mapa[j] = enemigos_mapa[j + 1];
                                     }
                                     num_enemigos_cargados--;
                                     break;
                                 }
                             }
-
-                            printf("Nivel %d iniciado con %d enemigos.\n", estado_nivel.nivel_actual, num_enemigos_cargados);
-                            printf("Powerups conservados: Radial Nv.%d, Tipo Nave: %d\n", nave.nivel_disparo_radial, nave.tipo);
-
-                            // LIMPIAR DISPAROS
-                            init_disparos(disparos, MAX_DISPAROS);
-                            init_disparos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
-                        
-                            printf("Nivel %d iniciado con %d enemigos.\n", estado_nivel.nivel_actual, num_enemigos_cargados);
-                            printf("Powerups conservados: Radial Nv.%d, Tipo Nave: %d\n", nave.nivel_disparo_radial, nave.tipo);
-
-                            // ✅ AGREGAR: Limpiar jefe antes de verificar el nuevo nivel
-                            hay_jefe_en_nivel = false;
-                            hay_jefe_activo = false;
-                            memset(&jefe_nivel, 0, sizeof(Jefe));
-                            jefe_nivel.activo = false;
-
-                            // RECARGAR ENEMIGOS
-                            int enemigos_a_copiar = (num_enemigos_cargados < NUM_ENEMIGOS) ? num_enemigos_cargados : NUM_ENEMIGOS;
-
-                            for (int k = 0; k < enemigos_a_copiar; k++) 
+                            if (!hay_jefe_en_nivel) 
                             {
-                                enemigos[k] = enemigos_mapa[k];
-                                asignar_imagen_enemigo(&enemigos[k], imagenes_enemigos); // Asegurar que usen el sprite correcto
-                                enemigos[k].activo = true;
-                            }
-
-                            // ✅ CORREGIR: Verificar jefe SOLO en niveles apropiados
-                            if (estado_nivel.nivel_actual >= 4) {
-                                for (int k = 0; k < num_enemigos_cargados; k++) {
-                                    if (enemigos_mapa[k].tipo == 5 || enemigos_mapa[k].tipo == 6) { // Tipos de jefe
-                                        int tipo_jefe = enemigos_mapa[k].tipo == 5 ? 0 : 1;
-                                        init_jefe(&jefe_nivel, tipo_jefe, enemigos_mapa[k].x, enemigos_mapa[k].y, imagen_jefe);
-                                        hay_jefe_en_nivel = true;
-                                        printf("🏆 Jefe cargado en nivel %d: tipo %d\n", estado_nivel.nivel_actual, tipo_jefe);
-                                        
-                                        // Remover jefe del array de enemigos normales
-                                        for (int j = k; j < num_enemigos_cargados - 1; j++) {
-                                            enemigos_mapa[j] = enemigos_mapa[j + 1];
-                                        }
-                                        num_enemigos_cargados--;
-                                        break;
-                                    }
-                                }
-                            } else {
-                                printf("Nivel %d: Sin jefes\n", estado_nivel.nivel_actual);
+                                printf("ℹ️ Nivel %d: Sin jefes en recarga\n", estado_nivel.nivel_actual);
                             }
                         }
                         else 
@@ -554,7 +536,7 @@ int main()
                         agregar_mensaje_cola(&cola_mensajes, "Usa las flechas para rotar y avanzar", 3.0, al_map_rgb(255, 255, 255), true); // Centrado
                     }
 
-                    actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje, nave, tilemap, &contador_debug_lasers);
+                    actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje, nave, tilemap, &contador_debug_lasers, powerups, MAX_POWERUPS);
                     actualizar_explosivos(explosivos, 8, enemigos, num_enemigos_cargados, &puntaje, tilemap);
                     actualizar_misiles(misil, 6, enemigos, num_enemigos_cargados, &puntaje);
 
@@ -568,7 +550,7 @@ int main()
                                     printf("Escudo absorbió ataque del jefe\n");
                                 } else {
                                     nave.vida -= jefe_nivel.ataques[k].dano;
-                                    printf("Jefe causó %d de daño. Vida restante: %d\n", jefe_nivel.ataques[k].dano, nave.vida);
+                                    printf("Jefe causo %.1f de daño. Vida restante: %.1f\n", jefe_nivel.ataques[k].dano, nave.vida);
                                     agregar_mensaje_cola(&cola_mensajes, "¡Ataque del Jefe!", 2.0, al_map_rgb(255, 0, 0), false);
                                 }
                                 jefe_nivel.ataques[k].activo = false;
@@ -578,17 +560,19 @@ int main()
 
                     actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &cola_mensajes, &estado_nivel, tiempo_cache, powerups, MAX_POWERUPS);
                     
-                    // ✅ AGREGAR: Verificar colisiones disparos del jugador vs jefe
-                    if (hay_jefe_en_nivel && jefe_nivel.activo) {
+                    if (hay_jefe_en_nivel && jefe_nivel.activo)
+                    {
+                        actualizar_estado_nivel(&estado_nivel, enemigos, num_enemigos_cargados, tiempo_cache, hay_jefe_en_nivel, &jefe_nivel);
                         // Disparos normales vs jefe
-                        for (int j = 0; j < MAX_DISPAROS; j++) {
-                            if (disparos[j].activo && detectar_colision_generica(
-                                disparos[j].x, disparos[j].y, 5, 10,
-                                jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto)) {
-                                
+                        for (int j = 0; j < MAX_DISPAROS; j++) 
+                        {
+                            if (disparos[j].activo && detectar_colision_generica(disparos[j].x, disparos[j].y, 5, 10, jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto))
+                            {
                                 if (jefe_recibir_dano(&jefe_nivel, 10, &cola_mensajes)) {
                                     puntaje += 50; // Puntos por golpear al jefe
-                                } else {
+                                }
+                                else
+                                {
                                     puntaje += 2000; // Gran bonificación por derrotar al jefe
                                     hay_jefe_en_nivel = false;
                                     agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
@@ -653,6 +637,10 @@ int main()
                                 misil[j].activo = false;
                             }
                         }
+                    }
+                    else
+                    {
+                        actualizar_estado_nivel_sin_jefe(&estado_nivel, enemigos, num_enemigos_cargados, tiempo_cache);
                     }
                     
                     al_clear_to_color(al_map_rgb(0, 0, 0));

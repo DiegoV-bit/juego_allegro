@@ -589,7 +589,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
 
     if (estado_nivel->mostrar_transicion)
     {
-        actualizar_estado_nivel(estado_nivel, enemigos, num_enemigos, tiempo_actual);
+        actualizar_estado_nivel_sin_jefe(estado_nivel, enemigos, num_enemigos, tiempo_actual);
         return;
     }
 
@@ -720,7 +720,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
         }
     }
 
-    actualizar_estado_nivel(estado_nivel, enemigos, num_enemigos, tiempo_actual);
+    actualizar_estado_nivel_sin_jefe(estado_nivel, enemigos, num_enemigos, tiempo_actual);
 
     // Disparos de enemigos vs nave (USA LA NUEVA FUNCIÓN)
     for (i = 0; i < num_disparos_enemigos; i++)
@@ -809,8 +809,6 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
             }
         }
     }
-
-    actualizar_estado_nivel(estado_nivel, enemigos, num_enemigos, tiempo_actual);
 }
 
 
@@ -1933,9 +1931,15 @@ void init_estado_juego(EstadoJuego *estado)
  * @param num_enemigos Número de enemigos en el arreglo.
  * @return true si todos los enemigos están inactivos, false en caso contrario.
  */
-bool verificar_nivel_completado(Enemigo enemigos[], int num_enemigos)
+bool verificar_nivel_completado(Enemigo enemigos[], int num_enemigos, bool hay_jefe_en_nivel, Jefe *jefe)
 {
     int i;
+
+    if (hay_jefe_en_nivel && jefe && jefe->activo) 
+    {
+        // Si hay un jefe activo, el nivel no está completo
+        return false;
+    } 
 
     for (i = 0; i < num_enemigos; i++)
     {
@@ -2070,13 +2074,14 @@ bool cargar_siguiente_nivel(int nivel, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], 
  * @param num_enemigos Número de enemigos en el arreglo.
  * @param tiempo_actual Tiempo actual del juego.
  */
-void actualizar_estado_nivel(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual) {
+void actualizar_estado_nivel(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual, bool hay_jefe_en_nivel, Jefe *jefe) {
     // Verificar si todos los enemigos han sido eliminados
-    if (!estado->todos_enemigos_eliminados && verificar_nivel_completado(enemigos, num_enemigos)) 
+    if (!estado->todos_enemigos_eliminados && verificar_nivel_completado(enemigos, num_enemigos, hay_jefe_en_nivel, jefe)) 
     {
         estado->todos_enemigos_eliminados = true;
         estado->mostrar_transicion = true;
         estado->tiempo_inicio_transicion = tiempo_actual;
+        estado->nivel_completado = true;
         
         printf("¡Nivel %d completado! Iniciando transición...\n", estado->nivel_actual);
     }
@@ -2168,6 +2173,24 @@ void init_enemigo_tipo(Enemigo* enemigo, int col, int fila, int tipo, ALLEGRO_BI
             enemigo->vida = 1.0f;
             enemigo->vida_max = 1;
             enemigo->intervalo_disparo = 999; // No dispara
+            break;
+
+        case 5: // Jefe Destructor
+            enemigo->ancho = 120;
+            enemigo->alto = 80;
+            enemigo->velocidad = 1.0f;
+            enemigo->vida = 150.0f;
+            enemigo->vida_max = 150.0f;
+            enemigo->intervalo_disparo = 999; // Los jefes no usan disparos normales
+            break;
+    
+        case 6: // Jefe Supremo
+            enemigo->ancho = 160;
+            enemigo->alto = 100;
+            enemigo->velocidad = 1.5f;
+            enemigo->vida = 250.0f;
+            enemigo->vida_max = 250.0f;
+            enemigo->intervalo_disparo = 999; // Los jefes no usan disparos normales
             break;
             
         default:
@@ -2541,11 +2564,11 @@ void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
             }
             else
             {
-                sprintf(mensaje_detalle, "Vida restaurada: +%d", vida_restaurada);
+                sprintf(mensaje_detalle, "Vida restaurada: +%.1f", vida_restaurada);
                 agregar_mensaje_cola(cola_mensajes, mensaje_detalle, 2.0, al_map_rgb(255, 255, 255), true);
             }
             
-            printf("Vida restaurada: +%d HP (Vida total: %.1f/100)\n", vida_restaurada, nave->vida);
+            printf("Vida restaurada: +%.1f HP (Vida total: %.1f/100)\n", vida_restaurada, nave->vida);
         }
         else
         {
@@ -3351,7 +3374,7 @@ void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
  * @param tilemap Mapa de tiles para detectar obstáculos.
  * @param contador_debug Contador para mensajes de debug.
  */
-void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int *puntaje, Nave nave, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], int *contador_debug)
+void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int *puntaje, Nave nave, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], int *contador_debug, Powerup powerups[], int max_powerups)
 {
     double tiempo_actual = al_get_time();
     int i;
@@ -3361,6 +3384,10 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
     float alcance_real;
     float dano_aplicado;
     double var_tiempo;
+    float punta_x;
+    float punta_y;
+
+    obtener_centro_nave(nave, &centro_x, &centro_y);
 
     if (++(*contador_debug) % 60 == 0)
     {
@@ -3371,9 +3398,8 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
     {
         if (lasers[i].activo)
         {
-            centro_x = nave.x + nave.ancho / 2.0f;
-            centro_y = nave.y + nave.largo / 2.0f;
-            obtener_centro_nave(nave, &centro_x, &centro_y);
+            punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
+            punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
 
             lasers[i].x_nave = centro_x + cos(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
             lasers[i].y_nave = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
@@ -3392,7 +3418,6 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
                     {
                         dano_aplicado = lasers[i].dano_por_segundo * var_tiempo;
                         enemigos[j].vida -= dano_aplicado;
-
                         *puntaje += (int)(dano_aplicado * 0.5);
                         printf("Láser causa %.2f de daño a enemigo tipo %d (Vida restante: %.2f)\n", dano_aplicado, enemigos[j].tipo, enemigos[j].vida);
 
@@ -3401,11 +3426,12 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
                         if (enemigos[j].vida <= 0.0f)
                         {
                             enemigos[j].activo = false;
-                            *puntaje += 50;
+                            *puntaje += 15;
                             printf("Enemigo tipo %d eliminado por láser (+50 puntos)\n", enemigos[j].tipo);
 
                             if (rand() % 100 < POWERUP_PROB)
                             {
+                                crear_powerup_aleatorio(powerups, max_powerups, enemigos[j].x, enemigos[j].y);
                                 printf("Powerup creado en posición del enemigo eliminado\n");
                             }
                         }
@@ -3639,19 +3665,23 @@ void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave 
             explosivos[i].ancho = 8;
             explosivos[i].alto = 12;
             explosivos[i].activo = true;
-            explosivos[i].tiempo_vida = 0;
+            explosivos[i].tiempo_vida = al_get_time();
             explosivos[i].exploto = false;
             explosivos[i].dano_aplicado = false;
             
             // Propiedades según nivel
             explosivos[i].radio_explosion = 40 + (arma_explosiva.nivel * 15);
-            explosivos[i].dano_directo = 3 + arma_explosiva.nivel;
-            explosivos[i].dano_area = 2 + arma_explosiva.nivel;
+            explosivos[i].dano_directo = 15 + arma_explosiva.nivel;
+            explosivos[i].dano_area = 8 + arma_explosiva.nivel;
+
+            nave.armas[Arma_explosiva].ultimo_uso = tiempo_actual;
             
             printf("Explosivo disparado - Nivel %d, Radio %dpx, Daño %d\n", arma_explosiva.nivel, explosivos[i].radio_explosion, explosivos[i].dano_directo);
             break;
         }
     }
+
+    printf("No hay espacio para más explosivos\n");
 }
 
 
@@ -3681,17 +3711,25 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
     {
         if (explosivos[i].activo && !explosivos[i].exploto)
         {
+            explosivos[i].x += explosivos[i].vx;
+            explosivos[i].y += explosivos[i].y;
+
             for (j= 0; j< num_enemigos; j++)
             {
                 if (enemigos[j].activo && detectar_colision_generica(explosivos[i].x, explosivos[i].y, explosivos[i].ancho, explosivos[i].alto, enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
                 {
                     enemigos[j].vida -= explosivos[i].dano_directo;
-                    printf("¡Proyectil explosivo impactó enemigo %d! Vida restante: %.1f\n", j, enemigos[j].vida);
+                    printf("Proyectil explosivo impactó enemigo %d! Vida restante: %.1f\n", j, enemigos[j].vida);
 
                     if (enemigos[j].vida <= 0)
                     {
                         enemigos[j].activo = false;
                         *puntaje += 25;
+                        printf("Enemigo eliminado por impacto directo\n");
+                    }
+                    else
+                    {
+                        *puntaje += 5;
                     }
 
                     explosivos[i].exploto = true;
@@ -3699,111 +3737,102 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
                     break;
                 }
             }
-            
-            // Mover proyectil
-            explosivos[i].x += explosivos[i].vx;
-            explosivos[i].y += explosivos[i].vy;
 
-            col = (int)(explosivos[i].x / TILE_ANCHO);
-            fila = (int)(explosivos[i].y / TILE_ALTO);
-
-            if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
+            if (!explosivos[i].exploto)
             {
-                // Verificar colisión con tilemap
-                if (tilemap[fila][col].tipo == 1 || tilemap[fila][col].tipo == 3) // Colisión con asteroides o bloques solidos
-                {
-                    printf("¡Proyectil explosivo impactó tile sólido en (%d, %d)!\n", col, fila);
+                col = (int)(explosivos[i].x / TILE_ANCHO);
+                fila = (int)(explosivos[i].y / TILE_ALTO);
 
-                    if (tilemap[fila][col].tipo == 1)
+                if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
+                {
+                    // Verificar colisión con tilemap
+                    if (tilemap[fila][col].tipo == 1 || tilemap[fila][col].tipo == 3) // Colisión con asteroides o bloques solidos
                     {
-                        tilemap[fila][col].vida--;
-                        if (tilemap[fila][col].vida <= 0)
+                        printf("¡Proyectil explosivo impactó tile sólido en (%d, %d)!\n", col, fila);
+
+                        if (tilemap[fila][col].tipo == 1)
                         {
-                            tilemap[fila][col].tipo = 0;
-                            printf("Asteroide destruido por explosion\n");
+                            tilemap[fila][col].vida--;
+                            if (tilemap[fila][col].vida <= 0)
+                            {
+                                tilemap[fila][col].tipo = 0;
+                                tilemap[fila][col].vida = 0;
+                                printf("Asteroide destruido por explosion\n");
+                            }
                         }
-                    }
                     
-                    explosivos[i].exploto = true;
-                    explosivos[i].tiempo_vida = al_get_time();
-                    continue;
-                }
-            }
-            
-            // Verificar colisión con enemigos
-            for (j = 0; j < num_enemigos; j++)
-            {
-                if (enemigos[j].activo)
-                {
-                    if (detectar_colision_generica(explosivos[i].x, explosivos[i].y, explosivos[i].ancho, explosivos[i].alto, enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
-                    {
-                        enemigos[j].vida -= explosivos[i].dano_directo;
-                        printf("¡Proyectil explosivo impactó enemigo %d! Vida restante: %.1f\n", j, enemigos[j].vida);
-
-                        if (enemigos[j].vida <= 0)
-                        {
-                            enemigos[j].activo = false;
-                            *puntaje += 15;
-                            printf("Enemigo eliminado por impacto directo explosivo\n");
-                        }
-                        
                         explosivos[i].exploto = true;
                         explosivos[i].tiempo_vida = al_get_time();
-                        break; // Solo explota al primer enemigo impactado
                     }
                 }
             }
             
             // Explotar si sale de pantalla o después de cierto tiempo
-            if (explosivos[i].x < 0 || explosivos[i].x > 800 || explosivos[i].y < 0 || explosivos[i].y > 600)
+            if (!explosivos[i].exploto)
             {
-                // EXPLOSIÓN
-                explosivos[i].exploto = true;
-                explosivos[i].tiempo_vida = al_get_time();
-            }
-
-            if (al_get_time() - explosivos[i].tiempo_vida > 3.0)
-            {
-                explosivos[i].exploto = true;
-                explosivos->tiempo_vida = al_get_time();
+                if (explosivos[i].x < -50 || explosivos[i].x > 850 || explosivos[i].y < -50 || explosivos[i].y > 650)
+                {
+                    explosivos[i].exploto = true;
+                    explosivos[i].tiempo_vida = al_get_time();
+                    printf("Explosivo salió de pantalla - activando explosión\n");
+                }
+                
+                if (al_get_time() - explosivos[i].tiempo_vida > 3.0)
+                {
+                    explosivos[i].exploto = true;
+                    explosivos->tiempo_vida = al_get_time();
+                    printf("Explosivo expiró por tiempo - activando explosión\n");
+                }
             }
         }
-        else if (explosivos[i].exploto)
+        else if (explosivos[i].exploto && explosivos[i].activo)
         {
             tiempo_explosion = al_get_time() - explosivos[i].tiempo_vida;
 
-            if (tiempo_explosion < 0.5)
+            if (tiempo_explosion < 0.3)
             {
-                for (j = 0; j < num_enemigos; j++)
+                if (!explosivos[i].dano_aplicado)
                 {
-                    if (enemigos[j].activo)
-                    {
-                        distancia = sqrt(pow(enemigos[j].x + enemigos[j].ancho/2 - explosivos[i].x, 2) + pow(enemigos[j].y + enemigos[j].alto/2 - explosivos[i].y, 2));
+                    printf("Aplicando daño en área - radio %d\n", explosivos[i].radio_explosion);
 
-                        if (distancia <= explosivos[i].radio_explosion)
+                    for (j = 0; j < num_enemigos; j++)
+                    {
+                        if (enemigos[j].activo)
                         {
-                            if (verificar_linea_vista_explosion(explosivos[i].x, explosivos[i].y, enemigos[j].x + enemigos[j].ancho/2, enemigos[j].y + enemigos[j].alto/2, tilemap))
+                            distancia = sqrt(pow(enemigos[j].x + enemigos[j].ancho/2 - explosivos[i].x, 2) + pow(enemigos[j].y + enemigos[j].alto/2 - explosivos[i].y, 2));
+
+                            if (distancia <= explosivos[i].radio_explosion)
                             {
-                                if (tiempo_explosion < 0.1)
+                                if (verificar_linea_vista_explosion(explosivos[i].x, explosivos[i].y, enemigos[j].x + enemigos[j].ancho/2, enemigos[j].y + enemigos[j].alto/2, tilemap))
                                 {
-                                    enemigos[j].vida -= explosivos[i].dano_area;
-                                    printf("¡Daño por explosión! Enemigo recibió %d de daño\n", explosivos[i].dano_area);
-                                
-                                    if (enemigos[j].vida <= 0)
+                                    if (tiempo_explosion < 0.1 && !explosivos[i].dano_aplicado)
                                     {
-                                        enemigos[j].activo = false;
-                                        *puntaje += 15;
-                                        printf("Enemigo eliminado por explosión\n");
+                                        enemigos[j].vida -= explosivos[i].dano_area;
+                                        printf("¡Daño por explosión! Enemigo recibió %d de daño\n", explosivos[i].dano_area);
+                                
+                                        if (enemigos[j].vida <= 0)
+                                        {
+                                            enemigos[j].activo = false;
+                                            *puntaje += 30;
+                                            printf("Enemigo eliminado por explosión\n");
+                                        }
+                                        else
+                                        {
+                                            *puntaje += 8;
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+
+                    explosivos[i].dano_aplicado = true;
                 }
             }
             else
             {
                 explosivos[i].activo = false;
+                printf("Explosión terminada\n");
             }
         }
     }
@@ -3822,6 +3851,10 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
 void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
 {
     int i;
+    double tiempo_explosion;
+    float progreso;
+    float radio_actual;
+    float alpha;
 
     for (i = 0; i < max_explosivos; i++)
     {
@@ -3830,27 +3863,43 @@ void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
             if (!explosivos[i].exploto)
             {
                 // Dibujar proyectil
-                al_draw_filled_rectangle(explosivos[i].x - explosivos[i].ancho/2, explosivos[i].y - explosivos[i].alto/2, explosivos[i].x + explosivos[i].ancho/2, explosivos[i].y + explosivos[i].alto/2, al_map_rgb(255, 100, 0));
+                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, 4, al_map_rgb(255, 100, 0));
+                al_draw_circle(explosivos[i].x, explosivos[i].y, 6, al_map_rgb(255, 200, 0), 2);
                 
                 // Efecto de estela
-                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, 3, al_map_rgba(255, 200, 0, 100));
+                al_draw_line(explosivos[i].x, explosivos[i].y, explosivos[i].x - explosivos[i].vx, explosivos[i].y - explosivos[i].vy, al_map_rgb(255, 150, 0), 2);
             }
             else
             {
                 // Dibujar explosión
-                float progreso = explosivos[i].tiempo_vida / 0.3f;
-                float radio_actual = explosivos[i].radio_explosion * progreso;
-                int alpha = (int)(255 * (1.0f - progreso));
-                
-                // Círculo exterior (onda expansiva)
-                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual, al_map_rgba(255, 100, 0, alpha/3));
-                
-                // Círculo interior (núcleo)
-                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual * 0.6f, al_map_rgba(255, 200, 0, alpha/2));
-                
-                // Centro brillante
-                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual * 0.3f, al_map_rgba(255, 255, 200, alpha));
-            }
+                tiempo_explosion = al_get_time();
+                progreso = (float)(tiempo_explosion / 0.3);
+
+                if (progreso <= 1.0f)
+                {
+                    radio_actual = explosivos[i].radio_explosion;
+                    alpha = 255 * (1.0f - progreso);
+
+                    // Múltiples anillos de explosión
+                    al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual * 0.3f, al_map_rgba(255, 255, 255, (int)(alpha * 0.8f)));
+                    al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual * 0.6f, al_map_rgba(255, 200, 0, (int)(alpha * 0.6f)));
+                    al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual, al_map_rgba(255, 100, 0, (int)(alpha * 0.4f)));
+                    
+                    // Anillo externo
+                    al_draw_circle(explosivos[i].x, explosivos[i].y, radio_actual, al_map_rgba(255, 0, 0, (int)alpha), 3);
+
+                    // Chispas aleatorias
+                    for (int j = 0; j < 8; j++)
+                    {
+                        float angulo = (j * ALLEGRO_PI * 2) / 8;
+                        float dist = radio_actual * (0.8f + (rand() % 40) / 100.0f);
+                        float spark_x = explosivos[i].x + cos(angulo) * dist;
+                        float spark_y = explosivos[i].y + sin(angulo) * dist;
+                        
+                        al_draw_filled_circle(spark_x, spark_y, 2, al_map_rgba(255, 255, 0, (int)alpha));
+                    }
+                }
+            } 
         }
     }
 }
@@ -4175,22 +4224,20 @@ bool linea_intersecta_linea(float x1, float y1, float x2, float y2, float x3, fl
 
 float verificar_colision_laser_tilemap(DisparoLaser laser, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {
-    float paso = 5.0f;
-    float distancia_actual = 0.0f;
+    float paso;
+    float distancia_actual;
     float x_actual;
     float y_actual;
     int fila;
     int col;
 
+    paso = laser.alcance > 300 ? 10.0f : 5.0f;
+    distancia_actual = 0.0f;
+
     while (distancia_actual < laser.alcance)
     {
         x_actual = laser.x_nave + cos(laser.angulo) * distancia_actual;
         y_actual = laser.y_nave + sin(laser.angulo) * distancia_actual;
-
-        if (x_actual < 0 || x_actual >= 800 || y_actual < 0 || y_actual >= 600)
-        {
-            return distancia_actual;
-        }
         
         col = (int)(x_actual / TILE_ANCHO);
         fila = (int)(y_actual / TILE_ALTO);
@@ -4653,14 +4700,13 @@ void jefe_atacar(Jefe *jefe, Nave nave, double tiempo_actual)
                             ataque->tipo = Ataque_rafaga;
                             ataque->activo = true;
                             ataque->tiempo_vida = tiempo_actual;
-                            ataque->dano = 15;
+                            ataque->dano = 12;
                             ataque->velocidad = 4.0f;
                             ataque->color = al_map_rgb(255, 100, 100);
                             break;
                         }
                     }
                 }
-                
                 break;
 
                 case 1:
@@ -5086,4 +5132,21 @@ bool jefe_recibir_dano(Jefe* jefe, float dano, ColaMensajes* cola_mensajes)
     }
     
     return true;
+}
+
+
+/**
+ * @brief Función wrapper para actualizar estado de nivel sin jefe.
+ * 
+ * Simplifica las llamadas a actualizar_estado_nivel para niveles que no tienen jefe,
+ * evitando tener que pasar false y NULL explícitamente.
+ * 
+ * @param estado Puntero al estado del juego.
+ * @param enemigos Arreglo de enemigos del nivel actual.
+ * @param num_enemigos Número de enemigos en el arreglo.
+ * @param tiempo_actual Tiempo actual del juego.
+ */
+void actualizar_estado_nivel_sin_jefe(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual)
+{
+    actualizar_estado_nivel(estado, enemigos, num_enemigos, tiempo_actual, false, NULL);
 }
