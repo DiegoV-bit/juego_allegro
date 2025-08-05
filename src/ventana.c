@@ -294,11 +294,11 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
         printf("Imagen de menú cargada correctamente.\n");
     }
 
-    *musica_fondo = al_load_sample("audio/musica_fondo.ogg");
+    *musica_fondo = al_load_sample("audio/Cosmic-Circuitry.wav");
     if (!*musica_fondo)
     {
         fprintf(stderr, "Advertencia: no se pudo cargar la música de fondo.\n");
-        *musica_fondo = al_load_sample("audio/Cosmic Circuitry.mp3");
+        *musica_fondo = al_load_sample("audio/Cosmic-Circuitry.wav");
         if (!*musica_fondo)
         {
             fprintf(stderr, "Advertencia: no se pudo cargar música en formato WAV tampoco.\n");
