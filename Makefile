@@ -8,7 +8,7 @@ OBJ_DIR=obj
 SRC_FILES=$(wildcard $(SRC_DIR)/*.c)
 OBJ_FILES=$(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRC_FILES))
 INCLUDE=-I./incs/
-LIBS=-lallegro -lallegro_primitives -lallegro_image -lm -lallegro_audio -lallegro_font -lallegro_ttf
+LIBS=-lallegro -lallegro_primitives -lallegro_image -lm -lallegro_audio -lallegro_acodec -lallegro_font -lallegro_ttf
 
 CFLAGS=-Wall -Wextra -Wpedantic -O3
 LDFLAGS= $(LIBS)

@@ -56,6 +56,21 @@ int init_allegro() {
         return -1;
     }
 
+    if (!al_install_audio()) {
+        fprintf(stderr, "Error: No se pudo inicializar el audio.\n");
+        return -1;
+    }
+    
+    if (!al_init_acodec_addon()) {
+        fprintf(stderr, "Error: No se pudo inicializar los codecs de audio.\n");
+        return -1;
+    }
+
+    if (!al_reserve_samples(1)) {
+        fprintf(stderr, "Error: No se pudo reservar muestras de audio.\n");
+        return -1;
+    }
+
     printf("Allegro inicializado correctamente.\n");
     return 0;
 }
@@ -99,8 +114,12 @@ ALLEGRO_DISPLAY *crear_ventana(int ancho, int largo, const char *titulo) {
  * @param fuente Fuente de letra usada en el juego
  * @param imagen Imagen usada en el juego
  * @param imagen_nave Imagen usada para la nave
+ * @param imagen_asteroide Imagen usada para asteroides
+ * @param imagen_enemigo Imagen usada para enemigos
+ * @param imagen_menu Imagen de fondo del menú
+ * @param musica_fondo Música de fondo del juego
  */
-void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, ALLEGRO_BITMAP* imagen_enemigo)
+void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, ALLEGRO_BITMAP* imagen_enemigo, ALLEGRO_BITMAP *imagen_menu, ALLEGRO_SAMPLE *musica_fondo)
 {
     if (ventana) 
     {
@@ -147,6 +166,19 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
     if (imagen_enemigo) 
     {
         al_destroy_bitmap(imagen_enemigo);
+        imagen_enemigo = NULL;
+    }
+
+    if (imagen_menu)
+    {
+        al_destroy_bitmap(imagen_menu);
+        imagen_menu = NULL;
+    }
+
+    if (musica_fondo)
+    {
+        al_destroy_sample(musica_fondo);
+        musica_fondo = NULL;
     }
 }
 
@@ -162,7 +194,7 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
  * @param imagen_asteroide Puntero doble a la imagen del asteoride
  * @return int Si la inicializacion fue exitosa retorna 0, en caso contrario retorna -1
  */
-int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave, ALLEGRO_BITMAP **imagen_asteroide, ALLEGRO_BITMAP **imagen_enemigo)
+int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave, ALLEGRO_BITMAP **imagen_asteroide, ALLEGRO_BITMAP **imagen_enemigo, ALLEGRO_BITMAP **imagen_menu, ALLEGRO_SAMPLE **musica_fondo, ALLEGRO_SAMPLE_INSTANCE **instancia_musica)
 {
     if (init_allegro() != 0) {
         return -1;
@@ -249,6 +281,48 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
         al_destroy_bitmap(*imagen_nave);
         al_destroy_bitmap(*imagen_asteroide);
         return -1;
+    }
+
+    *imagen_menu = al_load_bitmap("imagenes/Fondo.jpeg");
+    if (!*imagen_menu)
+    {
+        fprintf(stderr, "Advertencia: no se pudo cargar la imagen del menú. Usando fondo negro.\n");
+        *imagen_menu = NULL;
+    }
+    else
+    {
+        printf("Imagen de menú cargada correctamente.\n");
+    }
+
+    *musica_fondo = al_load_sample("audio/musica_fondo.ogg");
+    if (!*musica_fondo)
+    {
+        fprintf(stderr, "Advertencia: no se pudo cargar la música de fondo.\n");
+        *musica_fondo = al_load_sample("audio/Cosmic Circuitry.mp3");
+        if (!*musica_fondo)
+        {
+            fprintf(stderr, "Advertencia: no se pudo cargar música en formato WAV tampoco.\n");
+            *musica_fondo = NULL;
+        }
+    }
+
+    if (*musica_fondo) 
+    {
+        *instancia_musica = al_create_sample_instance(*musica_fondo);
+        if (*instancia_musica) {
+            al_set_sample_instance_playmode(*instancia_musica, ALLEGRO_PLAYMODE_LOOP);
+            al_set_sample_instance_gain(*instancia_musica, 0.5f); // Volumen al 50%
+            al_attach_sample_instance_to_mixer(*instancia_musica, al_get_default_mixer());
+            printf("Música de fondo configurada correctamente.\n");
+        }
+        else
+        {
+            fprintf(stderr, "Error: no se pudo crear la instancia de música.\n");
+        }
+    }
+    else
+    {
+        *instancia_musica = NULL;
     }
 
     return 0;

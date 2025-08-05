@@ -33,6 +33,11 @@ int main()
     ALLEGRO_BITMAP *imagen_enemigo = NULL;
     ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS];
 
+    // Variables del menu principal
+    ALLEGRO_BITMAP *imagen_menu = NULL;
+    ALLEGRO_SAMPLE *musica_fondo = NULL;
+    ALLEGRO_SAMPLE_INSTANCE *instancia_musica = NULL;
+
     Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS];
 
     Enemigo enemigos_mapa[NUM_ENEMIGOS];
@@ -46,7 +51,7 @@ int main()
     bool hay_jefe_en_nivel = false;
     ALLEGRO_BITMAP *imagen_jefe = NULL;
 
-    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo) != 0)
+    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo, &imagen_menu, &musica_fondo, &instancia_musica) != 0)
     {
         return -1;
     }
@@ -68,7 +73,12 @@ int main()
         al_draw_rectangle(0, 0, 119, 79, al_map_rgb(255, 255, 255), 3);
         al_set_target_backbuffer(al_get_current_display());
     }
-    
+
+    if (instancia_musica)
+    {
+        al_play_sample_instance(instancia_musica);
+        printf("Musica de fondo inicializada");
+    }
 
     /*Inicializar los botones del menu*/
     Boton botones[3];
@@ -127,7 +137,18 @@ int main()
 
             if (evento.type == ALLEGRO_EVENT_TIMER)
             {
-                al_clear_to_color(al_map_rgb(0, 0, 0));
+                if (imagen_menu)
+                {
+                    al_draw_scaled_bitmap(imagen_menu, 0, 0, 
+                                        al_get_bitmap_width(imagen_menu), 
+                                        al_get_bitmap_height(imagen_menu), 
+                                        0, 0, 800, 600, 0);
+                }
+                else
+                {
+                    al_clear_to_color(al_map_rgb(0, 0, 0));
+                }
+                
                 dibujar_botones(botones, 3, fuente, cursor_x, cursor_y);
                 al_flip_display();
             }
@@ -800,8 +821,15 @@ int main()
         al_destroy_bitmap(imagen_jefe);
         imagen_jefe = NULL;
     }
+
+    if (instancia_musica)
+    {
+        al_stop_sample_instance(instancia_musica);
+        al_destroy_sample_instance(instancia_musica);
+        instancia_musica = NULL;
+    }
     
-    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide, imagen_enemigo);
+    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide, imagen_enemigo, imagen_menu, musica_fondo);
 
     al_uninstall_system(); // Esto evita fugas de memoria y libera recursos evitando el segmentation fault en WSL
 

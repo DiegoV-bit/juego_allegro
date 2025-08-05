@@ -17,6 +17,8 @@
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
 #include <allegro5/allegro_image.h>
+#include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_acodec.h>
 
 /*Constantes*/
 #define ANCHO_VENTANA 800 /**< Ancho de la ventana */
@@ -25,8 +27,7 @@
 /*Funciones*/
 int init_allegro(); /*Inicializa allegro*/
 ALLEGRO_DISPLAY *crear_ventana(int ancho, int largo, const char *titulo); /*Permite crear la ventana dandole una resolucion especifica y una titulo a la ventana*/
-void mostrar_ventana(); /*Permite mostrar la ventana anteriormente creada*/
-void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, ALLEGRO_BITMAP* imagen_enemigo); /*Permite destruir todos los recursos usados en el juego*/
-int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave, ALLEGRO_BITMAP **imagen_asteroide, ALLEGRO_BITMAP **imagen_enemigo); /*Permite inicializar todos los recursos del juego*/
+void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, ALLEGRO_BITMAP* imagen_enemigo, ALLEGRO_BITMAP *imagen_menu, ALLEGRO_SAMPLE *musica_fondo);
+int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave, ALLEGRO_BITMAP **imagen_asteroide, ALLEGRO_BITMAP **imagen_enemigo, ALLEGRO_BITMAP **imagen_menu, ALLEGRO_SAMPLE **musica_fondo, ALLEGRO_SAMPLE_INSTANCE **instancia_musica);
 
 #endif
