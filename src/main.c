@@ -37,6 +37,14 @@ int main()
     ALLEGRO_BITMAP *imagen_menu = NULL;
     ALLEGRO_SAMPLE *musica_fondo = NULL;
     ALLEGRO_SAMPLE_INSTANCE *instancia_musica = NULL;
+    Boton botones[3];
+    bool en_menu;
+    bool jugando;
+    bool mostrarRanking;
+    bool volver_menu;
+    int cursor_x;
+    int cursor_y;
+    int boton_clicado;
 
     Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS];
 
@@ -50,6 +58,7 @@ int main()
     Jefe jefe_nivel;
     bool hay_jefe_en_nivel = false;
     ALLEGRO_BITMAP *imagen_jefe = NULL;
+    ALLEGRO_EVENT evento;
 
     if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo, &imagen_menu, &musica_fondo, &instancia_musica) != 0)
     {
@@ -74,29 +83,27 @@ int main()
         al_set_target_backbuffer(al_get_current_display());
     }
 
-    if (instancia_musica)
-    {
-        al_play_sample_instance(instancia_musica);
-        printf("Musica de fondo inicializada");
-    }
-
     /*Inicializar los botones del menu*/
-    Boton botones[3];
     init_botones(botones);
 
-    bool en_menu = true;
-    bool jugando = false;
-    bool mostrarRanking = false;
-    bool volver_menu = false;
+    en_menu = true;
+    jugando = false;
+    mostrarRanking = false;
+    volver_menu = false;
 
-    int cursor_x = 0;
-    int cursor_y = 0;
+    cursor_x = 0;
+    cursor_y = 0;
 
     while (true)
     {
         while (en_menu)
         {
-            ALLEGRO_EVENT evento;
+            if (instancia_musica && !al_get_sample_instance_playing(instancia_musica))
+            {
+                al_play_sample_instance(instancia_musica);
+                printf("Música del menú iniciada\n");
+            }
+            
             al_wait_for_event(cola_eventos, &evento);
 
             if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
@@ -109,9 +116,15 @@ int main()
         
             if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN)
             {
-                int boton_clicado = detectar_click(botones, 3, evento.mouse.x, evento.mouse.y);
+                boton_clicado = detectar_click(botones, 3, evento.mouse.x, evento.mouse.y);
                 if (boton_clicado == 0)
                 {
+                    if (instancia_musica)
+                    {
+                        al_stop_sample_instance(instancia_musica);
+                        printf("Música del menú detenida\n");
+                    }
+                    
                     en_menu = false;
                     jugando = true;
                 }
@@ -155,7 +168,7 @@ int main()
         }
     
         if (jugando)
-        {
+        {   
             hay_jefe_en_nivel = false;
             memset(&jefe_final, 0, sizeof(Jefe));
             jefe_nivel.activo = false;
@@ -524,7 +537,7 @@ int main()
                             }
                             if (!hay_jefe_en_nivel) 
                             {
-                                printf("ℹ️ Nivel %d: Sin jefes en recarga\n", estado_nivel.nivel_actual);
+                                printf("Nivel %d: Sin jefes en recarga\n", estado_nivel.nivel_actual);
                             }
                         }
                         else 
