@@ -576,10 +576,50 @@ int main()
                         agregar_mensaje_cola(&cola_mensajes, "Usa las flechas para rotar y avanzar", 3.0, al_map_rgb(255, 255, 255), true); // Centrado
                     }
 
-                    actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje, nave, tilemap, &contador_debug_lasers, powerups, MAX_POWERUPS);
-                    actualizar_explosivos(explosivos, 8, enemigos, num_enemigos_cargados, &puntaje, tilemap);
-                    actualizar_misiles(misil, 6, enemigos, num_enemigos_cargados, &puntaje);
+                    bool hay_lasers_activos = false;
+                    for (int laser_check = 0; laser_check < 5; laser_check++)
+                    {
+                        if (lasers[laser_check].activo)
+                        {
+                            hay_lasers_activos = true;
+                            break;
+                        }
+                    }
 
+                    if (hay_lasers_activos)
+                    {
+                        actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje, nave, tilemap, &contador_debug_lasers, powerups, MAX_POWERUPS);
+                    }
+                    
+                    bool hay_explosivos_activos = false;
+                    for (int exp_check = 0; exp_check < 5; exp_check++)
+                    {
+                        if (lasers[exp_check].activo)
+                        {
+                            hay_explosivos_activos = true;
+                        }
+                    }
+
+                    if (hay_explosivos_activos)
+                    {
+                        actualizar_explosivos(explosivos, 8, enemigos, num_enemigos_cargados, &puntaje, tilemap);
+                    }
+                    
+                    bool hay_misiles_activos = false;
+                    for (int mis_check = 0; mis_check < 5; mis_check++)
+                    {
+                        if (lasers[mis_check].activo)
+                        {
+                            hay_misiles_activos = true;
+                            break;
+                        }
+                    }
+
+                    if (hay_misiles_activos)
+                    {
+                        actualizar_misiles(misil, 6, enemigos, num_enemigos_cargados, &puntaje);
+                    }
+                    
                     if (hay_jefe_en_nivel && jefe_nivel.activo)
                     {
                         actualizar_jefe(&jefe_nivel, nave, enemigos, &num_enemigos_cargados, imagenes_enemigos, tiempo_cache);
@@ -736,16 +776,16 @@ int main()
                             dibujar_ataques_jefe(jefe_nivel.ataques, MAX_ATAQUES_JEFE);
                         }
 
-                        dibujar_powerups(powerups, MAX_POWERUPS, &contador_parpadeo_powerups, &contador_debug_powerups);
+                        dibujar_powerups(powerups, MAX_POWERUPS, &contador_parpadeo_powerups, &contador_debug_powerups, fuente);
 
                         if (debug_mode)
                         {
-                            dibujar_hitboxes_debug(nave, enemigos, num_enemigos_cargados, disparos, MAX_DISPAROS, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, asteroides, NUM_ASTEROIDES, tilemap);
+                            dibujar_hitboxes_debug(nave, enemigos, num_enemigos_cargados, disparos, MAX_DISPAROS, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, asteroides, NUM_ASTEROIDES, tilemap, fuente);
                         }
                         
 
                         dibujar_puntaje(puntaje, fuente);
-                        dibujar_barra_vida(nave);
+                        dibujar_barra_vida(nave, fuente);
                         dibujar_nivel_powerup(nave, fuente);
 
                         dibujar_info_armas(nave, fuente);

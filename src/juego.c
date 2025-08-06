@@ -418,12 +418,11 @@ void actualizar_nave(Nave* nave, bool teclas[], Tile tilemap[MAPA_FILAS][MAPA_CO
  * 
  * @param nave Nave a la que se le va a dibujar la barra de vida.
  */
-void dibujar_barra_vida(Nave nave)
+void dibujar_barra_vida(Nave nave, ALLEGRO_FONT *fuente)
 {
     float vida_maxima = 100.0f; // Vida máxima de la nave
     float porcentaje_vida = nave.vida / vida_maxima;
     ALLEGRO_COLOR color_vida;
-    static ALLEGRO_FONT* fuente_vida = NULL;
     
     // Asegurar que el porcentaje esté entre 0 y 1
     if (porcentaje_vida < 0.0f) porcentaje_vida = 0.0f;
@@ -451,15 +450,7 @@ void dibujar_barra_vida(Nave nave)
     char texto_vida[50];
     sprintf(texto_vida, "Vida: %.1f/%.1f", nave.vida, vida_maxima);
     
-    if (!fuente_vida)
-    {
-        fuente_vida = al_create_builtin_font();
-    }
-    
-    if (fuente_vida)
-    {
-        al_draw_text(fuente_vida, al_map_rgb(255, 255, 255), 220, 15, ALLEGRO_ALIGN_LEFT, texto_vida);
-    }
+    al_draw_text(fuente, al_map_rgb(255, 255, 255), 220, 15, ALLEGRO_ALIGN_LEFT, texto_vida);
 }
 
 /**
@@ -2401,10 +2392,13 @@ void actualizar_powerups(Powerup powerups[], int max_powerups, double tiempo_act
 }
 
 
-void dibujar_powerups(Powerup powerups[], int max_powerups, int *contador_parpadeo, int *contador_debug)
+void dibujar_powerups(Powerup powerups[], int max_powerups, int *contador_parpadeo, int *contador_debug, ALLEGRO_FONT *fuente)
 {
     int i;
     int powerups_activos;
+    float cx;
+    float cy;
+    ALLEGRO_COLOR color_powerup;
 
     *contador_parpadeo = (*contador_parpadeo + 1) % 60; // Incrementar contador de parpadeo
 
@@ -2419,7 +2413,7 @@ void dibujar_powerups(Powerup powerups[], int max_powerups, int *contador_parpad
                 powerups_activos++;
             }
         }
-        
+        printf("Powerups activos: %d\n", powerups_activos);
     }
     
 
@@ -2427,32 +2421,9 @@ void dibujar_powerups(Powerup powerups[], int max_powerups, int *contador_parpad
     {
         if (powerups[i].activo)
         {
-            powerups_activos++;
-
-            ALLEGRO_COLOR color_powerup = powerups[i].color;
-            if (*contador_parpadeo < 30)
-            {
-                switch(powerups[i].tipo) {
-                    case 0: // Escudo
-                        color_powerup = al_map_rgb(150, 255, 255);
-                        break;
-                    case 1: // Vida
-                        color_powerup = al_map_rgb(255, 100, 100);
-                        break;
-                    case 2: // Láser
-                        color_powerup = al_map_rgb(255, 150, 150);
-                        break;
-                    case 3: // Explosivo
-                        color_powerup = al_map_rgb(255, 200, 100);
-                        break;
-                    case 4: // Misil
-                        color_powerup = al_map_rgb(100, 255, 150);
-                        break;
-                }
-            }
-
-            float cx = powerups[i].x + 15;
-            float cy = powerups[i].y + 15;
+            cx = powerups[i].x + 15;
+            cy = powerups[i].y + 15;
+            color_powerup = powerups[i].color;
             
             if (powerups[i].tipo == 0)
             {
@@ -2484,7 +2455,7 @@ void dibujar_powerups(Powerup powerups[], int max_powerups, int *contador_parpad
                 
                 if (*contador_parpadeo < 15)
                 {
-                    al_draw_text(al_create_builtin_font(), al_map_rgb(200, 255, 255), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "ESCUDO");
+                    al_draw_text(fuente, al_map_rgb(200, 255, 255), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "ESCUDO");
                 }
             }
             else if (powerups[i].tipo == 1) // Vida
@@ -2499,7 +2470,7 @@ void dibujar_powerups(Powerup powerups[], int max_powerups, int *contador_parpad
                 
                 if (*contador_parpadeo < 15)
                 {
-                    al_draw_text(al_create_builtin_font(), al_map_rgb(255, 150, 150), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "VIDA");
+                    al_draw_text(fuente, al_map_rgb(255, 150, 150), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "VIDA");
                 }
             }
             else if (powerups[i].tipo == 2) // Láser
@@ -2514,7 +2485,7 @@ void dibujar_powerups(Powerup powerups[], int max_powerups, int *contador_parpad
                 
                 if (*contador_parpadeo < 15)
                 {
-                    al_draw_text(al_create_builtin_font(), al_map_rgb(255, 200, 200), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "LÁSER");
+                    al_draw_text(fuente, al_map_rgb(255, 200, 200), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "LÁSER");
                 }
             }
             else if (powerups[i].tipo == 3) // Explosivo
@@ -2535,7 +2506,7 @@ void dibujar_powerups(Powerup powerups[], int max_powerups, int *contador_parpad
                 
                 if (*contador_parpadeo < 15)
                 {
-                    al_draw_text(al_create_builtin_font(), al_map_rgb(255, 200, 100), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "BOOM");
+                    al_draw_text(fuente, al_map_rgb(255, 200, 100), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "BOOM");
                 }
             }
             else if (powerups[i].tipo == 4) // Misil
@@ -2552,7 +2523,7 @@ void dibujar_powerups(Powerup powerups[], int max_powerups, int *contador_parpad
                 
                 if (*contador_parpadeo < 15)
                 {
-                    al_draw_text(al_create_builtin_font(), al_map_rgb(200, 255, 200), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "MISIL");
+                    al_draw_text(fuente, al_map_rgb(200, 255, 200), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "MISIL");
                 }
             }
         }
@@ -2889,18 +2860,12 @@ void mostrar_mensaje_centrado(Mensaje* mensaje, const char* texto, double duraci
  * @param num_asteroides Número de asteroides.
  * @param tilemap Mapa de tiles.
  */
-void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Disparo disparos[], int num_disparos, Disparo disparos_enemigos[], int num_disparos_enemigos, Asteroide asteroides[], int num_asteroides, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
+void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Disparo disparos[], int num_disparos, Disparo disparos_enemigos[], int num_disparos_enemigos, Asteroide asteroides[], int num_asteroides, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], ALLEGRO_FONT *fuente)
 {
-    static ALLEGRO_FONT* fuente_debug = NULL;
     float centro_nave_x = nave.x + nave.ancho / 2;
     float centro_nave_y = nave.y + nave.largo / 2;
     obtener_centro_nave(nave, &centro_nave_x, &centro_nave_y);
     float radio_nave = obtener_radio_nave(nave);
-
-    if (!fuente_debug) 
-    {
-        fuente_debug = al_create_builtin_font();
-    }
 
     // Hitbox de la nave
     al_draw_circle(centro_nave_x, centro_nave_y, radio_nave, al_map_rgb(0, 255, 0), 2);
@@ -2909,7 +2874,7 @@ void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Dis
     
     char radio_texto[30];
     sprintf(radio_texto, "R:%.1f", radio_nave);
-    al_draw_text(fuente_debug, al_map_rgb(0, 255, 0), centro_nave_x + radio_nave + 5, centro_nave_y - 10, ALLEGRO_ALIGN_LEFT, radio_texto);
+    al_draw_text(fuente, al_map_rgb(0, 255, 0), centro_nave_x + radio_nave + 5, centro_nave_y - 10, ALLEGRO_ALIGN_LEFT, radio_texto);
 
     // Hitbox del escudo si está activo - Cian
     if (nave.escudo.activo)
@@ -2946,7 +2911,7 @@ void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Dis
             // Texto con tipo de enemigo
             char tipo_texto[20];
             sprintf(tipo_texto, "T%d", enemigos[i].tipo);
-            al_draw_text(fuente_debug, al_map_rgb(255, 255, 255), 
+            al_draw_text(fuente, al_map_rgb(255, 255, 255), 
                         centro_x, centro_y - 15, ALLEGRO_ALIGN_CENTER, tipo_texto);
         }
     }
@@ -3004,12 +2969,12 @@ void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Dis
                 if (tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0) {
                     char vida_texto[12];
                     sprintf(vida_texto, "%d", tilemap[fila][col].vida);
-                    al_draw_text(fuente_debug, al_map_rgb(255, 255, 255), x + TILE_ANCHO/2, y + TILE_ALTO/2, ALLEGRO_ALIGN_CENTER, vida_texto);
-                    al_draw_text(fuente_debug, al_map_rgb(150, 255, 150), x + TILE_ANCHO/2, y + TILE_ALTO/2 - 8, ALLEGRO_ALIGN_CENTER, "T");
+                    al_draw_text(fuente, al_map_rgb(255, 255, 255), x + TILE_ANCHO/2, y + TILE_ALTO/2, ALLEGRO_ALIGN_CENTER, vida_texto);
+                    al_draw_text(fuente, al_map_rgb(150, 255, 150), x + TILE_ANCHO/2, y + TILE_ALTO/2 - 8, ALLEGRO_ALIGN_CENTER, "T");
                 } 
                 else if (tilemap[fila][col].tipo == 1 || tilemap[fila][col].tipo == 3) 
                 {
-                    al_draw_text(fuente_debug, al_map_rgb(255, 255, 255), x + TILE_ANCHO/2, y + TILE_ALTO/2, ALLEGRO_ALIGN_CENTER, "S");
+                    al_draw_text(fuente, al_map_rgb(255, 255, 255), x + TILE_ANCHO/2, y + TILE_ALTO/2, ALLEGRO_ALIGN_CENTER, "S");
                 }
             }
         }
@@ -3019,13 +2984,13 @@ void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Dis
     int leyenda_x = 600;
     int leyenda_y = 10;
     
-    al_draw_text(fuente_debug, al_map_rgb(255, 255, 255), leyenda_x, leyenda_y, ALLEGRO_ALIGN_LEFT, "DEBUG HITBOXES:");
-    al_draw_text(fuente_debug, al_map_rgb(0, 255, 0), leyenda_x, leyenda_y + 15, ALLEGRO_ALIGN_LEFT, "Verde: Nave");
-    al_draw_text(fuente_debug, al_map_rgb(255, 0, 0), leyenda_x, leyenda_y + 30, ALLEGRO_ALIGN_LEFT, "Rojo: Enemigos");
-    al_draw_text(fuente_debug, al_map_rgb(0, 0, 255), leyenda_x, leyenda_y + 45, ALLEGRO_ALIGN_LEFT, "Azul: Disparos nave");
-    al_draw_text(fuente_debug, al_map_rgb(255, 255, 0), leyenda_x, leyenda_y + 60, ALLEGRO_ALIGN_LEFT, "Amarillo: Disparos enemigos");
-    al_draw_text(fuente_debug, al_map_rgb(255, 255, 255), leyenda_x, leyenda_y + 75, ALLEGRO_ALIGN_LEFT, "Blanco: Asteroides");
-    al_draw_text(fuente_debug, al_map_rgb(0, 128, 255), leyenda_x, leyenda_y + 90, ALLEGRO_ALIGN_LEFT, "Azul claro: Escudos");
+    al_draw_text(fuente, al_map_rgb(255, 255, 255), leyenda_x, leyenda_y, ALLEGRO_ALIGN_LEFT, "DEBUG HITBOXES:");
+    al_draw_text(fuente, al_map_rgb(0, 255, 0), leyenda_x, leyenda_y + 15, ALLEGRO_ALIGN_LEFT, "Verde: Nave");
+    al_draw_text(fuente, al_map_rgb(255, 0, 0), leyenda_x, leyenda_y + 30, ALLEGRO_ALIGN_LEFT, "Rojo: Enemigos");
+    al_draw_text(fuente, al_map_rgb(0, 0, 255), leyenda_x, leyenda_y + 45, ALLEGRO_ALIGN_LEFT, "Azul: Disparos nave");
+    al_draw_text(fuente, al_map_rgb(255, 255, 0), leyenda_x, leyenda_y + 60, ALLEGRO_ALIGN_LEFT, "Amarillo: Disparos enemigos");
+    al_draw_text(fuente, al_map_rgb(255, 255, 255), leyenda_x, leyenda_y + 75, ALLEGRO_ALIGN_LEFT, "Blanco: Asteroides");
+    al_draw_text(fuente, al_map_rgb(0, 128, 255), leyenda_x, leyenda_y + 90, ALLEGRO_ALIGN_LEFT, "Azul claro: Escudos");
 }
 
 
@@ -3439,7 +3404,10 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
 
     obtener_centro_nave(nave, &centro_x, &centro_y);
 
-    if (++(*contador_debug) % 60 == 0)
+    punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
+    punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
+
+    if (++(*contador_debug) % 300 == 0)
     {
         printf("Laser activo\n");
     }
@@ -3448,9 +3416,6 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
     {
         if (lasers[i].activo)
         {
-            punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
-            punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
-
             lasers[i].x_nave = centro_x + cos(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
             lasers[i].y_nave = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
             lasers[i].angulo = nave.angulo - ALLEGRO_PI / 2;
@@ -4292,7 +4257,7 @@ float verificar_colision_laser_tilemap(DisparoLaser laser, Tile tilemap[MAPA_FIL
     int fila;
     int col;
 
-    paso = laser.alcance > 300 ? 10.0f : 5.0f;
+    paso = laser.alcance > 400 ? 25.0f : laser.alcance > 200 ? 15.0f : 10.0f;
     distancia_actual = 0.0f;
 
     while (distancia_actual < laser.alcance)
