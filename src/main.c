@@ -57,6 +57,7 @@ int main()
     Jefe jefe_final;
     Jefe jefe_nivel;
     bool hay_jefe_en_nivel = false;
+    bool hay_jefe_activo;
     ALLEGRO_BITMAP *imagen_jefe = NULL;
     ALLEGRO_EVENT evento;
 
@@ -170,6 +171,7 @@ int main()
         if (jugando)
         {   
             hay_jefe_en_nivel = false;
+            hay_jefe_activo = false;
             memset(&jefe_final, 0, sizeof(Jefe));
             jefe_nivel.activo = false;
 
@@ -245,6 +247,7 @@ int main()
             }
 
             hay_jefe_en_nivel = false;
+            hay_jefe_activo = false;
 
             printf("Verificando jefes para nivel %d con %d enemigos cargados\n", estado_nivel.nivel_actual, num_enemigos_cargados);
 
@@ -513,6 +516,7 @@ int main()
                             }
 
                             hay_jefe_en_nivel = false;
+                            hay_jefe_activo = false;
                             memset(&jefe_nivel, 0, sizeof(Jefe));
                             jefe_nivel.activo = false;
 
@@ -576,7 +580,8 @@ int main()
                     actualizar_explosivos(explosivos, 8, enemigos, num_enemigos_cargados, &puntaje, tilemap);
                     actualizar_misiles(misil, 6, enemigos, num_enemigos_cargados, &puntaje);
 
-                    if (hay_jefe_en_nivel && jefe_nivel.activo) {
+                    if (hay_jefe_en_nivel && jefe_nivel.activo)
+                    {
                         actualizar_jefe(&jefe_nivel, nave, enemigos, &num_enemigos_cargados, imagenes_enemigos, tiempo_cache);
                         
                         // Verificar colisiones ataques del jefe vs nave
@@ -611,6 +616,8 @@ int main()
                                 {
                                     puntaje += 2000; // Gran bonificación por derrotar al jefe
                                     hay_jefe_en_nivel = false;
+                                    hay_jefe_activo = false;
+                                    jefe_nivel.activo = false;
                                     agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
                                 }
                                 disparos[j].activo = false;
@@ -618,17 +625,26 @@ int main()
                         }
                         
                         // Láseres vs jefe
-                        for (int j = 0; j < 5; j++) {
-                            if (lasers[j].activo) {
+                        for (int j = 0; j < 5; j++)
+                        {
+                            if (lasers[j].activo)
+                            {
                                 float alcance_real = verificar_colision_laser_tilemap(lasers[j], tilemap);
-                                if (laser_intersecta_enemigo_limitado(lasers[j], (Enemigo){jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto, 0, 0, 0, true}, alcance_real)) {
+                                if (laser_intersecta_enemigo_limitado(lasers[j], (Enemigo){jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto, 0, 0, 0, true}, alcance_real))
+                                {
                                     double tiempo_actual = al_get_time();
-                                    if (tiempo_actual - lasers[j].ultimo_dano >= 0.1) { // Daño cada 0.1 segundos
-                                        if (jefe_recibir_dano(&jefe_nivel, lasers[j].poder * 2, &cola_mensajes)) {
+                                    if (tiempo_actual - lasers[j].ultimo_dano >= 0.1)
+                                    {
+                                        if (jefe_recibir_dano(&jefe_nivel, lasers[j].poder * 2, &cola_mensajes))
+                                        {
                                             puntaje += 25;
-                                        } else {
+                                        }
+                                        else
+                                        {
                                             puntaje += 2000;
                                             hay_jefe_en_nivel = false;
+                                            hay_jefe_activo = false;
+                                            jefe_nivel.activo = false;
                                             agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
                                         }
                                         lasers[j].ultimo_dano = tiempo_actual;
@@ -638,17 +654,24 @@ int main()
                         }
                         
                         // Explosivos vs jefe
-                        for (int j = 0; j < 8; j++) {
-                            if (explosivos[j].activo && !explosivos[j].exploto) {
+                        for (int j = 0; j < 8; j++)
+                        {
+                            if (explosivos[j].activo && !explosivos[j].exploto)
+                            {
                                 if (detectar_colision_generica(
                                     explosivos[j].x, explosivos[j].y, explosivos[j].ancho, explosivos[j].alto,
                                     jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto)) {
                                     
-                                    if (jefe_recibir_dano(&jefe_nivel, explosivos[j].dano_directo * 2, &cola_mensajes)) {
+                                    if (jefe_recibir_dano(&jefe_nivel, explosivos[j].dano_directo * 2, &cola_mensajes))
+                                    {
                                         puntaje += 100;
-                                    } else {
+                                    }
+                                    else
+                                    {
                                         puntaje += 2000;
                                         hay_jefe_en_nivel = false;
+                                        hay_jefe_activo = false;
+                                        jefe_nivel.activo = false;
                                         agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
                                     }
                                     explosivos[j].exploto = true;
@@ -658,16 +681,22 @@ int main()
                         }
                         
                         // Misiles vs jefe
-                        for (int j = 0; j < 6; j++) {
+                        for (int j = 0; j < 6; j++)
+                        {
                             if (misil[j].activo && detectar_colision_generica(
                                 misil[j].x, misil[j].y, misil[j].ancho, misil[j].alto,
                                 jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto)) {
                                 
-                                if (jefe_recibir_dano(&jefe_nivel, misil[j].dano * 3, &cola_mensajes)) {
+                                if (jefe_recibir_dano(&jefe_nivel, misil[j].dano * 3, &cola_mensajes))
+                                {
                                     puntaje += 150;
-                                } else {
+                                }
+                                else
+                                {
                                     puntaje += 2000;
                                     hay_jefe_en_nivel = false;
+                                    hay_jefe_activo = false;
+                                    jefe_nivel.activo = false;
                                     agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
                                 }
                                 misil[j].activo = false;
@@ -809,6 +838,7 @@ int main()
             en_menu = true;
 
             hay_jefe_en_nivel = false;
+            hay_jefe_activo = false;
             memset(&jefe_nivel, 0, sizeof(Jefe));
             jefe_nivel.activo = false;
 

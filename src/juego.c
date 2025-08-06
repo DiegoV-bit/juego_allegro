@@ -1934,19 +1934,36 @@ void init_estado_juego(EstadoJuego *estado)
 bool verificar_nivel_completado(Enemigo enemigos[], int num_enemigos, bool hay_jefe_en_nivel, Jefe *jefe)
 {
     int i;
+    int enemigos_activos = 0;
 
-    if (hay_jefe_en_nivel && jefe && jefe->activo) 
+    if (hay_jefe_en_nivel && jefe->activo) 
     {
-        // Si hay un jefe activo, el nivel no está completo
-        return false;
-    } 
+        if (jefe == NULL)
+        {
+            return false;
+        }
+        
+        if (jefe->activo)
+        {
+            return false;
+        }
+        else
+        {
+            printf("Jefe derrotado, verificando enemigos restantes...\n");
+        }
+    }
 
     for (i = 0; i < num_enemigos; i++)
     {
-        if (enemigos[i].activo) 
+        if (enemigos[i].activo)
         {
-            return false; // Si hay al menos un enemigo activo, el nivel no está completo
+            enemigos_activos++;
         }
+    }
+    
+    if (enemigos_activos > 0)
+    {
+        return false;
     }
 
     return true; // Si no hay enemigos activos, el nivel está completo
@@ -1974,10 +1991,14 @@ void mostrar_pantalla_transicion(int nivel_completado, int siguiente_nivel, ALLE
     
     // Efecto de aparición/desaparición del texto
     float alpha_texto = 255.0f;
-    if (progreso < 0.2f) {
+
+    if (progreso < 0.2f)
+    {
         // Fade in en los primeros 20%
         alpha_texto = 255.0f * (progreso / 0.2f);
-    } else if (progreso > 0.8f) {
+    }
+    else if (progreso > 0.8f)
+    {
         // Fade out en los últimos 20%
         alpha_texto = 255.0f * ((1.0f - progreso) / 0.2f);
     }
@@ -1991,13 +2012,28 @@ void mostrar_pantalla_transicion(int nivel_completado, int siguiente_nivel, ALLE
     char texto_titulo[100];
     char texto_subtitulo[100];
     char texto_progreso[100];
+
+    sprintf(texto_titulo, "¡Nivel %d Completado!", nivel_completado);
     
-    if (siguiente_nivel <= 3) {
-        sprintf(texto_titulo, "NIVEL %d COMPLETADO!", nivel_completado);
+    if (siguiente_nivel == 4)
+    {
+        sprintf(texto_subtitulo, "¡ALERTA! Jefe Destructor detectado...");
+        al_draw_text(fuente, al_map_rgba(255, 0, 0, (int)alpha_texto), 400, 350, ALLEGRO_ALIGN_CENTER, "¡Prepárate para el combate!");
+    }
+    else if (siguiente_nivel == 5)
+    {
+        sprintf(texto_subtitulo, "¡PELIGRO MÁXIMO! Jefe Supremo aproximándose...");
+        al_draw_text(fuente, al_map_rgba(255, 0, 0, (int)alpha_texto), 400, 350, ALLEGRO_ALIGN_CENTER, "¡Este es el enemigo final!");
+    }
+    else if (siguiente_nivel > 5) 
+    {
+        sprintf(texto_titulo, "¡MISIÓN COMPLETADA!");
+        sprintf(texto_subtitulo, "¡Has salvado la galaxia!");
+        al_draw_text(fuente, al_map_rgba(0, 255, 0, (int)alpha_texto), 400, 350, ALLEGRO_ALIGN_CENTER, "¡Felicidades, héroe!");
+    }
+    else
+    {
         sprintf(texto_subtitulo, "Preparando Nivel %d...", siguiente_nivel);
-    } else {
-        sprintf(texto_titulo, "FELICIDADES!");
-        sprintf(texto_subtitulo, "Has completado todos los niveles!");
     }
     
     sprintf(texto_progreso, "%.0f%%", progreso * 100);
@@ -2010,7 +2046,21 @@ void mostrar_pantalla_transicion(int nivel_completado, int siguiente_nivel, ALLE
     float barra_ancho = 300;
     float barra_alto = 20;
     float barra_x = 400 - barra_ancho / 2;
-    float barra_y = 350;
+    float barra_y = 380;
+
+    ALLEGRO_COLOR color_barra;
+    if (siguiente_nivel >= 4 && siguiente_nivel <= 5)
+    {
+        color_barra = al_map_rgba(255, 0, 0, (int)alpha_texto); // Rojo para niveles de jefe
+    }
+    else if (siguiente_nivel > 5)
+    {
+        color_barra = al_map_rgba(0, 255, 0, (int)alpha_texto); // Verde para victoria
+    }
+    else
+    {
+        color_barra = al_map_rgba(0, 255, 255, (int)alpha_texto); // Cian para niveles normales
+    }
     
     // Fondo de la barra
     al_draw_filled_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, al_map_rgba(100, 100, 100, (int)alpha_texto));
