@@ -119,7 +119,7 @@ ALLEGRO_DISPLAY *crear_ventana(int ancho, int largo, const char *titulo) {
  * @param imagen_menu Imagen de fondo del menú
  * @param musica_fondo Música de fondo del juego
  */
-void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, ALLEGRO_BITMAP* imagen_enemigo, ALLEGRO_BITMAP *imagen_menu, ALLEGRO_SAMPLE *musica_fondo)
+void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, ALLEGRO_BITMAP* imagen_enemigo, ALLEGRO_BITMAP *imagen_menu, ALLEGRO_AUDIO_STREAM *stream_musica_fondo)
 {
     if (ventana) 
     {
@@ -175,11 +175,13 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
         imagen_menu = NULL;
     }
 
-    if (musica_fondo)
+    if (stream_musica_fondo)
     {
-        al_destroy_sample(musica_fondo);
-        musica_fondo = NULL;
+        al_destroy_audio_stream(stream_musica_fondo);
+        stream_musica_fondo = NULL;
+        printf("Música de fondo destruida correctamente.\n");
     }
+    
 }
 
 /**
@@ -194,7 +196,7 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
  * @param imagen_asteroide Puntero doble a la imagen del asteoride
  * @return int Si la inicializacion fue exitosa retorna 0, en caso contrario retorna -1
  */
-int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave, ALLEGRO_BITMAP **imagen_asteroide, ALLEGRO_BITMAP **imagen_enemigo, ALLEGRO_BITMAP **imagen_menu, ALLEGRO_SAMPLE **musica_fondo, ALLEGRO_SAMPLE_INSTANCE **instancia_musica)
+int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave, ALLEGRO_BITMAP **imagen_asteroide, ALLEGRO_BITMAP **imagen_enemigo, ALLEGRO_BITMAP **imagen_menu, ALLEGRO_AUDIO_STREAM **stream_musica_fondo)
 {
     if (init_allegro() != 0) {
         return -1;
@@ -294,35 +296,53 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
         printf("Imagen de menú cargada correctamente.\n");
     }
 
-    *musica_fondo = al_load_sample("audio/Cosmic-Circuitry.ogg");
-    if (!*musica_fondo)
-    {
-        fprintf(stderr, "Advertencia: no se pudo cargar la música de fondo.\n");
-        *musica_fondo = al_load_sample("audio/Cosmic-Circuitry.ogg");
-        if (!*musica_fondo)
-        {
-            fprintf(stderr, "Advertencia: no se pudo cargar música en formato ogg tampoco.\n");
-            *musica_fondo = NULL;
-        }
-    }
+    printf("Cargando música de fondo del menú...\n");
 
-    if (*musica_fondo) 
+    FILE* test_file = fopen("audio/Cosmic-Circuitry.mp3", "r");
+    if (!test_file) {
+        fprintf(stderr, "❌ ERROR: No se encuentra el archivo audio/Cosmic-Circuitry.mp3\n");
+        *stream_musica_fondo = NULL;
+    }
+    else 
     {
-        *instancia_musica = al_create_sample_instance(*musica_fondo);
-        if (*instancia_musica) {
-            al_set_sample_instance_playmode(*instancia_musica, ALLEGRO_PLAYMODE_LOOP);
-            al_set_sample_instance_gain(*instancia_musica, 0.5f); // Volumen al 50%
-            al_attach_sample_instance_to_mixer(*instancia_musica, al_get_default_mixer());
-            printf("Música de fondo configurada correctamente.\n");
+        fclose(test_file);
+        printf("✅ Archivo encontrado: audio/Cosmic-Circuitry.mp3\n");
+    
+        *stream_musica_fondo = al_load_audio_stream("audio/Cosmic-Circuitry.mp3", 4, 1024);
+        if (*stream_musica_fondo)
+        {
+            printf("✅ Stream de música MP3 cargado correctamente\n");
+        
+            // Configurar el stream
+            al_set_audio_stream_playmode(*stream_musica_fondo, ALLEGRO_PLAYMODE_LOOP);
+            al_set_audio_stream_gain(*stream_musica_fondo, 0.5f); // Volumen al 50%
+            al_attach_audio_stream_to_mixer(*stream_musica_fondo, al_get_default_mixer());
+        
+            printf("🎵 Stream de música configurado correctamente\n");
+            printf("   - Modo: LOOP\n");
+            printf("   - Volumen: 50%%\n");
+            printf("   - Mixer: Conectado\n");
         }
         else
         {
-            fprintf(stderr, "Error: no se pudo crear la instancia de música.\n");
+            fprintf(stderr, "❌ No se pudo cargar el stream MP3, intentando WAV...\n");
+            *stream_musica_fondo = al_load_audio_stream("audio/Cosmic-Circuitry.wav", 4, 1024);
+            if (*stream_musica_fondo)
+            {
+                printf("✅ Stream de música WAV cargado correctamente\n");
+                al_set_audio_stream_playmode(*stream_musica_fondo, ALLEGRO_PLAYMODE_LOOP);
+                al_set_audio_stream_gain(*stream_musica_fondo, 0.5f);
+                al_attach_audio_stream_to_mixer(*stream_musica_fondo, al_get_default_mixer());
+            }
+            else
+            {
+                fprintf(stderr, "❌ No se pudo cargar música en ningún formato\n");
+                fprintf(stderr, "Archivos buscados:\n");
+                fprintf(stderr, "  - audio/Cosmic-Circuitry.mp3\n");
+                fprintf(stderr, "  - audio/Cosmic-Circuitry.wav\n");
+                *stream_musica_fondo = NULL;
+            }
         }
-    }
-    else
-    {
-        *instancia_musica = NULL;
     }
 
     return 0;

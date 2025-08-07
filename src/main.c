@@ -35,8 +35,7 @@ int main()
 
     // Variables del menu principal
     ALLEGRO_BITMAP *imagen_menu = NULL;
-    ALLEGRO_SAMPLE *musica_fondo = NULL;
-    ALLEGRO_SAMPLE_INSTANCE *instancia_musica = NULL;
+    ALLEGRO_AUDIO_STREAM *stream_musica_fondo = NULL;
     Boton botones[3];
     bool en_menu;
     bool jugando;
@@ -61,7 +60,7 @@ int main()
     ALLEGRO_BITMAP *imagen_jefe = NULL;
     ALLEGRO_EVENT evento;
 
-    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo, &imagen_menu, &musica_fondo, &instancia_musica) != 0)
+    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo, &imagen_menu, &stream_musica_fondo) != 0)
     {
         return -1;
     }
@@ -99,9 +98,9 @@ int main()
     {
         while (en_menu)
         {
-            if (instancia_musica && !al_get_sample_instance_playing(instancia_musica))
+            if (stream_musica_fondo && !al_get_audio_stream_playing(stream_musica_fondo))
             {
-                al_play_sample_instance(instancia_musica);
+                al_set_audio_stream_playing(stream_musica_fondo, true);
                 printf("Música del menú iniciada\n");
             }
             
@@ -120,9 +119,9 @@ int main()
                 boton_clicado = detectar_click(botones, 3, evento.mouse.x, evento.mouse.y);
                 if (boton_clicado == 0)
                 {
-                    if (instancia_musica)
+                    if (stream_musica_fondo)
                     {
-                        al_stop_sample_instance(instancia_musica);
+                        al_set_audio_stream_playing(stream_musica_fondo, false);
                         printf("Música del menú detenida\n");
                     }
                     
@@ -592,11 +591,12 @@ int main()
                     }
                     
                     bool hay_explosivos_activos = false;
-                    for (int exp_check = 0; exp_check < 5; exp_check++)
+                    for (int exp_check = 0; exp_check < 8; exp_check++)
                     {
-                        if (lasers[exp_check].activo)
+                        if (explosivos[exp_check].activo)
                         {
                             hay_explosivos_activos = true;
+                            break;
                         }
                     }
 
@@ -606,9 +606,9 @@ int main()
                     }
                     
                     bool hay_misiles_activos = false;
-                    for (int mis_check = 0; mis_check < 5; mis_check++)
+                    for (int mis_check = 0; mis_check < 6; mis_check++)
                     {
-                        if (lasers[mis_check].activo)
+                        if (misil[mis_check].activo)
                         {
                             hay_misiles_activos = true;
                             break;
@@ -905,14 +905,15 @@ int main()
         imagen_jefe = NULL;
     }
 
-    if (instancia_musica)
+    if (stream_musica_fondo)
     {
-        al_stop_sample_instance(instancia_musica);
-        al_destroy_sample_instance(instancia_musica);
-        instancia_musica = NULL;
+        al_set_audio_stream_playing(stream_musica_fondo, false);
+        al_destroy_audio_stream(stream_musica_fondo);
+        stream_musica_fondo = NULL;
+        printf("Stream de música destruido al finalizar\n");
     }
     
-    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide, imagen_enemigo, imagen_menu, musica_fondo);
+    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide, imagen_enemigo, imagen_menu, stream_musica_fondo);
 
     al_uninstall_system(); // Esto evita fugas de memoria y libera recursos evitando el segmentation fault en WSL
 

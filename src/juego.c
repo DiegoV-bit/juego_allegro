@@ -4454,8 +4454,11 @@ void asignar_imagen_enemigo(Enemigo *enemigo, ALLEGRO_BITMAP *imagenes_enemigos[
 {
     if (enemigo->tipo >= 0 && enemigo->tipo < NUM_TIPOS_ENEMIGOS)
     {
-        enemigo->imagen = imagenes_enemigos[enemigo->tipo];
-        printf("Enemigo tipo %d: imagen asignada correctamente\n", enemigo->tipo);
+        if (!enemigo->imagen || enemigo->imagen != imagenes_enemigos[enemigo->tipo])
+        {
+            enemigo->imagen = imagenes_enemigos[enemigo->tipo];
+            printf("Imagen asignada al enemigo tipo %d\n", enemigo->tipo);
+        }
     }
     else
     {
