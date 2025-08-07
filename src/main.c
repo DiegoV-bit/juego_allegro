@@ -644,6 +644,19 @@ int main()
                     if (hay_jefe_en_nivel && jefe_nivel.activo)
                     {
                         actualizar_estado_nivel(&estado_nivel, enemigos, num_enemigos_cargados, tiempo_cache, hay_jefe_en_nivel, &jefe_nivel);
+
+                        int enemigos_restantes = 0;
+
+                        for (int z = 0; z < num_enemigos_cargados; z++)
+                        {
+                            if (enemigos[z].activo) 
+                            {
+                                enemigos_restantes++;
+                            }
+                        }
+
+                        printf("Estado nivel %d: Jefe activo, Enemigos restantes: %d\n", estado_nivel.nivel_actual, enemigos_restantes);
+                        
                         // Disparos normales vs jefe
                         for (int j = 0; j < MAX_DISPAROS; j++) 
                         {
@@ -658,7 +671,26 @@ int main()
                                     hay_jefe_en_nivel = false;
                                     hay_jefe_activo = false;
                                     jefe_nivel.activo = false;
-                                    agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
+
+                                    int enemigos_restantes = 0;
+
+                                    for (int z = 0; z < num_enemigos_cargados; z++)
+                                    {
+                                        if (enemigos[z].activo) enemigos_restantes++;
+                                    }
+                                    
+                                    if (enemigos_restantes > 0)
+                                    {
+                                        agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 3.0, al_map_rgb(255, 215, 0), true);
+                                        char msg_enemigos[100];
+                                        sprintf(msg_enemigos, "Elimina los %d enemigos restantes", enemigos_restantes);
+                                        agregar_mensaje_cola(&cola_mensajes, msg_enemigos, 4.0, al_map_rgb(255, 255, 255), true);
+                                    }
+                                    else
+                                    {
+                                        agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 3.0, al_map_rgb(255, 215, 0), true);
+                                        agregar_mensaje_cola(&cola_mensajes, "¡NIVEL COMPLETADO!", 3.0, al_map_rgb(0, 255, 0), true);
+                                    }
                                 }
                                 disparos[j].activo = false;
                             }
@@ -741,6 +773,26 @@ int main()
                                 }
                                 misil[j].activo = false;
                             }
+                        }
+                    }
+                    else if (hay_jefe_en_nivel && !jefe_nivel.activo)
+                    {
+                        actualizar_estado_nivel(&estado_nivel, enemigos, num_enemigos_cargados, tiempo_cache, hay_jefe_en_nivel, &jefe_nivel);
+
+                        int enemigos_restantes = 0;
+
+                        for (int z = 0; z < num_enemigos_cargados; z++)
+                        {
+                            if (enemigos[z].activo) enemigos_restantes++;
+                        }
+                        
+                        if (enemigos_restantes == 0)
+                        {
+                            printf("Nivel %d completado! Jefe derrotado y todos los enemigos eliminados\n", estado_nivel.nivel_actual);
+                        }
+                        else
+                        {
+                            printf("Jefe derrotado pero quedan %d enemigos en nivel %d\n", enemigos_restantes, estado_nivel.nivel_actual);
                         }
                     }
                     else

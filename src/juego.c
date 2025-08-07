@@ -1521,6 +1521,8 @@ void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_
 void dibujar_enemigos(Enemigo enemigos[], int num_enemigos)
 {
     int i;
+    float porcentaje_vida;
+
     for (i = 0; i < num_enemigos; i++)
     {
         if (enemigos[i].activo)
@@ -1528,66 +1530,23 @@ void dibujar_enemigos(Enemigo enemigos[], int num_enemigos)
             // Dibujar enemigo base
             al_draw_scaled_bitmap(enemigos[i].imagen, 0, 0, al_get_bitmap_width(enemigos[i].imagen), al_get_bitmap_height(enemigos[i].imagen), enemigos[i].x, enemigos[i].y, enemigos[i].ancho, enemigos[i].alto, 0);
             
-            // Overlay de color según tipo de enemigo
-            ALLEGRO_COLOR color_overlay;
-            bool aplicar_overlay = true;
-            
-            switch (enemigos[i].tipo) {
-                case 0: // Normal - sin overlay
-                    aplicar_overlay = false;
-                    break;
-                case 1: // Perseguidor - tinte azul
-                    color_overlay = al_map_rgba(100, 150, 255, 120);
-                    break;
-                case 2: // Francotirador - tinte rojo
-                    color_overlay = al_map_rgba(255, 100, 100, 120);
-                    break;
-                case 3: // Tanque - tinte verde
-                    color_overlay = al_map_rgba(100, 255, 100, 120);
-                    break;
-                case 4: // Kamikaze - tinte amarillo parpadeante
-                    {
-                        static int parpadeo = 0;
-                        parpadeo = (parpadeo + 1) % 30;
-                        if (parpadeo < 15) {
-                            color_overlay = al_map_rgba(255, 255, 100, 150);
-                        } else {
-                            color_overlay = al_map_rgba(255, 200, 0, 150);
-                        }
-                    }
-                    break;
-                default:
-                    aplicar_overlay = false;
-                    break;
-            }
-            
-            // Aplicar overlay de color
-            if (aplicar_overlay) {
-                al_draw_filled_rectangle(enemigos[i].x, enemigos[i].y, 
-                                       enemigos[i].x + enemigos[i].ancho, 
-                                       enemigos[i].y + enemigos[i].alto, 
-                                       color_overlay);
-            }
-            
             // Mostrar barra de vida para tanques
-            if (enemigos[i].tipo == 3) {
-                float porcentaje_vida = (float)enemigos[i].vida / 6.0f;
+            if (enemigos[i].tipo == 3)
+            {
+                porcentaje_vida = enemigos[i].vida / enemigos[i].vida_max;
                 
                 // Fondo de la barra
-                al_draw_filled_rectangle(enemigos[i].x, enemigos[i].y - 8, 
-                                       enemigos[i].x + enemigos[i].ancho, enemigos[i].y - 4, 
-                                       al_map_rgb(100, 0, 0));
+                al_draw_filled_rectangle(enemigos[i].x, enemigos[i].y - 8, enemigos[i].x + enemigos[i].ancho, enemigos[i].y - 4, al_map_rgba(100, 0, 0, 150));
                 
                 // Vida actual
                 al_draw_filled_rectangle(enemigos[i].x, enemigos[i].y - 8, 
                                        enemigos[i].x + (enemigos[i].ancho * porcentaje_vida), 
-                                       enemigos[i].y - 4, 
-                                       al_map_rgb(255, 0, 0));
+                                       enemigos[i].y - 4, al_map_rgba(0, 255, 0, 200));
                 
                 // Borde
                 al_draw_rectangle(enemigos[i].x, enemigos[i].y - 8, 
                                 enemigos[i].x + enemigos[i].ancho, enemigos[i].y - 4, 
-                                al_map_rgb(255, 255, 255), 1);
+                                al_map_rgba(255, 255, 255, 180), 1);
             }
         }
     }
@@ -1926,21 +1885,18 @@ bool verificar_nivel_completado(Enemigo enemigos[], int num_enemigos, bool hay_j
 {
     int i;
     int enemigos_activos = 0;
+    bool jefe_activo = false;
 
-    if (hay_jefe_en_nivel && jefe->activo) 
+    if (hay_jefe_en_nivel && jefe != NULL) 
     {
-        if (jefe == NULL)
-        {
-            return false;
-        }
-        
         if (jefe->activo)
         {
-            return false;
+            jefe->activo = true;
+            printf("Jefe sigue activo\n");
         }
         else
         {
-            printf("Jefe derrotado, verificando enemigos restantes...\n");
+            printf("Jefe ha sido derrotado\n");
         }
     }
 
@@ -1952,12 +1908,33 @@ bool verificar_nivel_completado(Enemigo enemigos[], int num_enemigos, bool hay_j
         }
     }
     
-    if (enemigos_activos > 0)
+    if (hay_jefe_en_nivel)
     {
-        return false;
+        if (jefe_activo || enemigos_activos > 0)
+        {
+            printf("DEBUG: Nivel no completado - Jefe: %s, Enemigos: %d\n", jefe_activo ? "VIVO" : "MUERTO", enemigos_activos);
+            return false; // Nivel no completado
+        }
+        else
+        {
+            printf("DEBUG: ¡NIVEL CON JEFE COMPLETADO! Jefe y todos los enemigos eliminados\n");
+            return true; // Nivel completado: ni jefe ni enemigos
+        }
     }
-
-    return true; // Si no hay enemigos activos, el nivel está completo
+    else
+    {
+        // En niveles sin jefe, solo verificar enemigos normales
+        if (enemigos_activos > 0)
+        {
+            printf("DEBUG: Nivel normal no completado - Enemigos restantes: %d\n", enemigos_activos);
+            return false;
+        }
+        else
+        {
+            printf("DEBUG: ¡NIVEL NORMAL COMPLETADO! Todos los enemigos eliminados\n");
+            return true;
+        }
+    }
 }
 
 
@@ -2713,9 +2690,10 @@ bool verificar_colision_nave_muro(float x, float y, float ancho, float largo, Ti
 
     float centro_x = x + ancho / 2;
     float centro_y = y + largo / 2;
-    float radio = (ancho * 0.7f) / 2.0f;
+    float radio = (ancho * 0.6f) / 2.0f;
     
     // Calcular qué tiles ocupa la nave
+    float margen = ancho * 0.2f;
     int col_izquierda = (int)(x / TILE_ANCHO);
     int col_derecha = (int)((x + ancho - 1) / TILE_ANCHO);
     int fila_superior = (int)(y / TILE_ALTO);
@@ -2867,8 +2845,13 @@ void dibujar_hitboxes_debug(Nave nave, Enemigo enemigos[], int num_enemigos, Dis
     obtener_centro_nave(nave, &centro_nave_x, &centro_nave_y);
     float radio_nave = obtener_radio_nave(nave);
 
-    // Hitbox de la nave
+    // HITBOX REAL DE LA NAVE (más pequeña)
     al_draw_circle(centro_nave_x, centro_nave_y, radio_nave, al_map_rgb(0, 255, 0), 2);
+    
+    // MOSTRAR HITBOX VISUAL VS HITBOX REAL
+    float radio_visual = (nave.ancho * 0.7f) / 2.0f; // Hitbox visual anterior
+    al_draw_circle(centro_nave_x, centro_nave_y, radio_visual, al_map_rgb(100, 255, 100), 1); // Más tenue
+    
     // Centro de la nave
     al_draw_filled_circle(centro_nave_x, centro_nave_y, 3, al_map_rgb(0, 255, 0));
     
@@ -3134,8 +3117,7 @@ float obtener_radio_nave(Nave nave)
 
 void obtener_centro_nave(Nave nave, float* centro_x, float* centro_y)
 {
-    *centro_x = nave.x + nave.ancho / 2;
-    *centro_y = nave.y + nave.largo / 2;
+    return (nave.ancho * 0.6f) / 2.0f;
 }
 
 
