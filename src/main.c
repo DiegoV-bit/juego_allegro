@@ -56,7 +56,6 @@ int main()
     Jefe jefe_final;
     Jefe jefe_nivel;
     bool hay_jefe_en_nivel = false;
-    bool hay_jefe_activo;
     ALLEGRO_BITMAP *imagen_jefe = NULL;
     ALLEGRO_EVENT evento;
 
@@ -170,7 +169,6 @@ int main()
         if (jugando)
         {   
             hay_jefe_en_nivel = false;
-            hay_jefe_activo = false;
             memset(&jefe_final, 0, sizeof(Jefe));
             jefe_nivel.activo = false;
 
@@ -246,7 +244,6 @@ int main()
             }
 
             hay_jefe_en_nivel = false;
-            hay_jefe_activo = false;
 
             printf("Verificando jefes para nivel %d con %d enemigos cargados\n", estado_nivel.nivel_actual, num_enemigos_cargados);
 
@@ -386,6 +383,8 @@ int main()
                 {
                     tiempo_cache = al_get_time();
 
+                    actualizar_cola_mensajes(&cola_mensajes, tiempo_cache);
+
                     // Verificar si necesitamos cargar el siguiente nivel
                     if (estado_nivel.nivel_completado && !estado_nivel.mostrar_transicion && !recargar_nivel)
                     {
@@ -515,7 +514,6 @@ int main()
                             }
 
                             hay_jefe_en_nivel = false;
-                            hay_jefe_activo = false;
                             memset(&jefe_nivel, 0, sizeof(Jefe));
                             jefe_nivel.activo = false;
 
@@ -587,7 +585,7 @@ int main()
 
                     if (hay_lasers_activos)
                     {
-                        actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje, nave, tilemap, &contador_debug_lasers, powerups, MAX_POWERUPS);
+                        actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje, nave, tilemap, &contador_debug_lasers, powerups, MAX_POWERUPS, &cola_mensajes);
                     }
                     
                     bool hay_explosivos_activos = false;
@@ -602,7 +600,7 @@ int main()
 
                     if (hay_explosivos_activos)
                     {
-                        actualizar_explosivos(explosivos, 8, enemigos, num_enemigos_cargados, &puntaje, tilemap);
+                        actualizar_explosivos(explosivos, 8, enemigos, num_enemigos_cargados, &puntaje, tilemap, &nave, &cola_mensajes);
                     }
                     
                     bool hay_misiles_activos = false;
@@ -669,7 +667,6 @@ int main()
                                 {
                                     puntaje += 2000; // Gran bonificación por derrotar al jefe
                                     hay_jefe_en_nivel = false;
-                                    hay_jefe_activo = false;
                                     jefe_nivel.activo = false;
 
                                     int enemigos_restantes = 0;
@@ -702,7 +699,23 @@ int main()
                             if (lasers[j].activo)
                             {
                                 float alcance_real = verificar_colision_laser_tilemap(lasers[j], tilemap);
-                                if (laser_intersecta_enemigo_limitado(lasers[j], (Enemigo){jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto, 0, 0, 0, true}, alcance_real))
+                                Enemigo enemigo_jefe_temp = 
+                                {
+                                    .x = jefe_nivel.x,
+                                    .y = jefe_nivel.y, 
+                                    .ancho = jefe_nivel.ancho,
+                                    .alto = jefe_nivel.alto,
+                                    .velocidad = 0,
+                                    .vida = 0,
+                                    .vida_max = 0,
+                                    .activo = true,
+                                    .ultimo_disparo = 0,
+                                    .intervalo_disparo = 0,
+                                    .imagen = NULL,
+                                    .tipo = 0
+                                };
+
+                                if (laser_intersecta_enemigo_limitado(lasers[j], enemigo_jefe_temp, alcance_real))
                                 {
                                     double tiempo_actual = al_get_time();
                                     if (tiempo_actual - lasers[j].ultimo_dano >= 0.1)
@@ -715,7 +728,6 @@ int main()
                                         {
                                             puntaje += 2000;
                                             hay_jefe_en_nivel = false;
-                                            hay_jefe_activo = false;
                                             jefe_nivel.activo = false;
                                             agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
                                         }
@@ -742,7 +754,6 @@ int main()
                                     {
                                         puntaje += 2000;
                                         hay_jefe_en_nivel = false;
-                                        hay_jefe_activo = false;
                                         jefe_nivel.activo = false;
                                         agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
                                     }
@@ -767,7 +778,6 @@ int main()
                                 {
                                     puntaje += 2000;
                                     hay_jefe_en_nivel = false;
-                                    hay_jefe_activo = false;
                                     jefe_nivel.activo = false;
                                     agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
                                 }
@@ -930,7 +940,6 @@ int main()
             en_menu = true;
 
             hay_jefe_en_nivel = false;
-            hay_jefe_activo = false;
             memset(&jefe_nivel, 0, sizeof(Jefe));
             jefe_nivel.activo = false;
 

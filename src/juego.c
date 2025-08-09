@@ -116,7 +116,7 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
         }
         else
         {
-            nave->vida -= 5.0f;
+            nave->vida -= 20.0f;
             printf("La nave recibió 10 de daño, Vida restante: %.1f\n", nave->vida);
         }
 
@@ -133,12 +133,11 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
             if (detectar_colision_generica(asteroide->x, asteroide->y, asteroide->ancho, asteroide->alto, powerups[i].x, powerups[i].y, 30, 30))
             {
                 powerups[i].activo = false;
-                asteroide->y = -asteroide->alto;
-                asteroide->x = rand() % (800 - (int)asteroide->ancho);
+                //asteroide->y = -asteroide->alto;
+                //asteroide->x = rand() % (800 - (int)asteroide->ancho);
 
-                const char *tipo_powerup = (powerups[i].tipo == 0) ? "ESCUDO" : (powerups[i].tipo == 1) ? "VIDA" : "DESCONOCIDO";
-                printf("¡Asteroide destruyó powerup de %s en (%.0f, %.0f)!\n", tipo_powerup, powerups[i].x, powerups[i].y);
-                return;
+                //const char *tipo_powerup = (powerups[i].tipo == 0) ? "ESCUDO" : (powerups[i].tipo == 1) ? "VIDA" : "DESCONOCIDO";
+                printf("¡Asteroide destruyó powerup\n");
             }
         }
     }
@@ -192,28 +191,6 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
     }
 }
 
-/**
- * @brief Detecta colisiones entre la nave y un asteroide.
- *
- * Esta función verifica si la nave y el asteroide se están tocando.
- *
- * @param nave Puntero a la nave a la que se verifica la colisión.
- * @param asteroide El asteroide a verificar.
- * @return true si hay colisión, false en caso contrario.
- */
-bool detectar_colision(Nave* nave, Asteroide asteroide)
-{
-    float centro_nave_x = nave->x + nave->ancho / 2;
-    float centro_nave_y = nave->y + nave->largo / 2;
-    obtener_centro_nave(*nave, &centro_nave_x, &centro_nave_y);
-    float radio_nave = nave->ancho / 2.0f;
-
-    float centro_asteroide_x = asteroide.x + asteroide.ancho / 2;
-    float centro_asteroide_y = asteroide.y + asteroide.alto / 2;
-    float radio_asteroide = asteroide.ancho / 2.0f;
-
-    return detectar_colision_circular(centro_nave_x, centro_nave_y, radio_nave, centro_asteroide_x, centro_asteroide_y, radio_asteroide);
-}
 
 /**
    * @brief Maneja los eventos de teclado para mover la nave.
@@ -2518,79 +2495,64 @@ void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
 {
     if (powerup->tipo == 0) // escudo
     {
-        if (nave->escudo.activo)
-        {
-            // Si ya tiene escudo, renovar con máxima resistencia
-            nave->escudo.hits_restantes = 3;
-            nave->escudo.hits_max = 3;
-            nave->escudo.tiempo_activacion = al_get_time();
-            nave->escudo.intensidad = 1.0f;
-            
-            agregar_mensaje_cola(cola_mensajes, "¡Escudo Renovado!", 2.0, al_map_rgb(0, 255, 255), true);
-            agregar_mensaje_cola(cola_mensajes, "Resistencia restaurada a 3 hits", 2.0, al_map_rgb(255, 255, 255), true);
-            printf("Escudo renovado - Resistencia restaurada a 3 hits\n");
-        }
-        else
-        {
-            activar_escudo(&nave->escudo, 3);
-            agregar_mensaje_cola(cola_mensajes, "¡Escudo Activado!", 2.0, al_map_rgb(0, 255, 255), true);
-            agregar_mensaje_cola(cola_mensajes, "Resistencia: 3 impactos", 2.0, al_map_rgb(255, 255, 255), true);
-            printf("Escudo activado - Resistencia: 3 hits\n");
-        }
+        activar_escudo(&nave->escudo, 3);
+        agregar_mensaje_cola(cola_mensajes, "¡Escudo Activado!", 2.5, al_map_rgb(0, 255, 255), true);
+        agregar_mensaje_cola(cola_mensajes, "Resistencia a 3 impactos", 2.0, al_map_rgb(255, 255, 255), true);
     }
     else if (powerup->tipo == 1)
     {
-        float vida_anterior = nave->vida;
-        float vida_a_restaurar = 30.0f;
-
-        nave->vida += vida_a_restaurar;
-        if (nave->vida > 100.0f)
+        nave->vida += 25.0f;
+        if (nave->vida > 100.f)
         {
-            nave->vida = 100.0f;
+            nave->vida = 100.f;
         }
-
-        float vida_restaurada = nave->vida - vida_anterior;
-
-        if (vida_restaurada > 0.0f)
+        agregar_mensaje_cola(cola_mensajes, "Vida restaurada", 2.0, al_map_rgb(0, 255, 0), true);
+        agregar_mensaje_cola(cola_mensajes, "¡Recuperaste 25 puntos de vida!", 1.5, al_map_rgb(255, 255, 255), true);
+    }
+    else if (powerup->tipo == 2) 
+    {
+        if (!nave->armas[Arma_laser].desbloqueado)
         {
-            agregar_mensaje_cola(cola_mensajes, "Vida Restaurada", 2.0, al_map_rgb(255, 0, 0), true);
-
-            char mensaje_detalle[100];
-            if (nave->vida == 100.0f)
-            {
-                agregar_mensaje_cola(cola_mensajes, "Vida al maximo", 2.0, al_map_rgb(0, 255, 0), true);
-            }
-            else
-            {
-                sprintf(mensaje_detalle, "Vida restaurada: +%.1f", vida_restaurada);
-                agregar_mensaje_cola(cola_mensajes, mensaje_detalle, 2.0, al_map_rgb(255, 255, 255), true);
-            }
-            
-            printf("Vida restaurada: +%.1f HP (Vida total: %.1f/100)\n", vida_restaurada, nave->vida);
+            nave->armas[Arma_laser].desbloqueado = true;
+            agregar_mensaje_cola(cola_mensajes, "¡NUEVO ARMA DESBLOQUEADA!", 3.0, al_map_rgb(255, 215, 0), true);
+            agregar_mensaje_cola(cola_mensajes, "Láser Continuo", 2.5, al_map_rgb(0, 255, 255), true);
+            agregar_mensaje_cola(cola_mensajes, "Presiona [2] para usar", 3.0, al_map_rgb(255, 255, 255), true);
+            printf("¡Arma láser desbloqueada!\n");
         }
         else
         {
-            agregar_mensaje_cola(cola_mensajes, "Vida al maximo", 1.5, al_map_rgb(255, 255, 0), true);
-            printf("La vida ya esta al maximo (100/100)\n");
+            agregar_mensaje_cola(cola_mensajes, "Arma Láser ya desbloqueada", 2.0, al_map_rgb(255, 255, 0), true);
         }
     }
-    else if (powerup->tipo == 2) { // Láser
-        nave->armas[Arma_laser].desbloqueado = true;
-        cambiar_arma(nave, Arma_laser);
-        agregar_mensaje_cola(cola_mensajes, "¡Láser Desbloqueado!", 2.0, al_map_rgb(255, 0, 0), true);
-        agregar_mensaje_cola(cola_mensajes, "Presiona 2 para usar", 2.0, al_map_rgb(255, 255, 255), true);
+    else if (powerup->tipo == 3) 
+    {
+        if (!nave->armas[Arma_explosiva].desbloqueado)
+        {
+            nave->armas[Arma_explosiva].desbloqueado = true;
+            agregar_mensaje_cola(cola_mensajes, "¡NUEVO ARMA DESBLOQUEADA!", 3.0, al_map_rgb(255, 215, 0), true);
+            agregar_mensaje_cola(cola_mensajes, "Cañón Explosivo", 2.5, al_map_rgb(255, 100, 0), true);
+            agregar_mensaje_cola(cola_mensajes, "Presiona [3] para usar", 3.0, al_map_rgb(255, 255, 255), true);
+            printf("¡Arma explosiva desbloqueada!\n");
+        }
+        else
+        {
+            agregar_mensaje_cola(cola_mensajes, "Arma Explosiva ya desbloqueada", 2.0, al_map_rgb(255, 255, 0), true);
+        }
     }
-    else if (powerup->tipo == 3) { // Explosivo
-        nave->armas[Arma_explosiva].desbloqueado = true;
-        cambiar_arma(nave, Arma_explosiva);
-        agregar_mensaje_cola(cola_mensajes, "¡Cañón Explosivo Desbloqueado!", 2.0, al_map_rgb(255, 100, 0), true);
-        agregar_mensaje_cola(cola_mensajes, "Presiona 3 para usar", 2.0, al_map_rgb(255, 255, 255), true);
-    }
-    else if (powerup->tipo == 4) { // Misil
-        nave->armas[Arma_misil].desbloqueado = true;
-        cambiar_arma(nave, Arma_misil);
-        agregar_mensaje_cola(cola_mensajes, "¡Misiles Teledirigidos Desbloqueados!", 2.0, al_map_rgb(0, 255, 100), true);
-        agregar_mensaje_cola(cola_mensajes, "Presiona 4 para usar", 2.0, al_map_rgb(255, 255, 255), true);
+    else if (powerup->tipo == 4) 
+    {
+        if (!nave->armas[Arma_misil].desbloqueado)
+        {
+            nave->armas[Arma_misil].desbloqueado = true;
+            agregar_mensaje_cola(cola_mensajes, "¡NUEVO ARMA DESBLOQUEADA!", 3.0, al_map_rgb(255, 215, 0), true);
+            agregar_mensaje_cola(cola_mensajes, "Misiles Teledirigidos", 2.5, al_map_rgb(255, 0, 255), true);
+            agregar_mensaje_cola(cola_mensajes, "Presiona [4] para usar", 3.0, al_map_rgb(255, 255, 255), true);
+            printf("¡Arma de misiles desbloqueada!\n");
+        }
+        else
+        {
+            agregar_mensaje_cola(cola_mensajes, "Arma Misil ya desbloqueada", 2.0, al_map_rgb(255, 255, 0), true);
+        }
     }
     
     powerup->activo = false;
@@ -3117,7 +3079,8 @@ float obtener_radio_nave(Nave nave)
 
 void obtener_centro_nave(Nave nave, float* centro_x, float* centro_y)
 {
-    return (nave.ancho * 0.6f) / 2.0f;
+    *centro_x = nave.x + nave.ancho / 2;
+    *centro_y = nave.y + nave.largo / 2;
 }
 
 
@@ -3191,9 +3154,13 @@ void actualizar_progreso_arma(Nave *nave, TipoArma tipo_arma)
  */
 void verificar_mejora_arma(Nave *nave, TipoArma tipo_arma, ColaMensajes *cola_mensajes)
 {
+    char mensaje_principal[100];
+    char mensaje_secundario[100];
+    ALLEGRO_COLOR color_principal;
+    
     if (tipo_arma < 0 || tipo_arma > 3) return;
     
-    SistemaArma* arma = &nave->armas[tipo_arma];
+    SistemaArma *arma = &nave->armas[tipo_arma];
     
     // Verificar si puede subir de nivel
     if (arma->kills_mejora >= arma->kills_necesarias && arma->nivel < 3)
@@ -3210,32 +3177,67 @@ void verificar_mejora_arma(Nave *nave, TipoArma tipo_arma, ColaMensajes *cola_me
             case 3: 
                 arma->kills_necesarias = arma->kills_necesarias * 3; 
                 break;
+            default:
+                arma->kills_necesarias = 0; 
+                break;
         }
 
-        // Mostrar mensaje de mejora
-        char mensaje[100];
-        snprintf(mensaje, sizeof(mensaje), "¡%s mejorada a Nivel %d!", arma->nombre, arma->nivel);
-        agregar_mensaje_cola(cola_mensajes, mensaje, 3.0, al_map_rgb(255, 215, 0), true);
-        
-        // Mensaje de descripción de mejora
-        char desc_mejora[100];
         switch (tipo_arma) 
         {
+            case Arma_normal:
+                sprintf(mensaje_principal, "¡Cañón Normal Nivel %d!", arma->nivel);
+                sprintf(mensaje_secundario, "Cadencia de disparo mejorada");
+                color_principal = al_map_rgb(255, 255, 255);
+                break;
+
             case Arma_laser:
-                snprintf(desc_mejora, sizeof(desc_mejora), "Duración +50%%, Daño +25%%");
+                sprintf(mensaje_principal, "¡Láser Nivel %d!", arma->nivel);
+                if (arma->nivel == 2)
+                    sprintf(mensaje_secundario, "Mayor alcance y daño");
+                else if (arma->nivel == 3)
+                    sprintf(mensaje_secundario, "¡Poder Máximo Alcanzado!");
+                else
+                    sprintf(mensaje_secundario, "Potencia mejorada");
+                color_principal = al_map_rgb(0, 255, 255);
                 break;
+
             case Arma_explosiva:
-                snprintf(desc_mejora, sizeof(desc_mejora), "Radio explosión +30%%, Daño +40%%");
+                sprintf(mensaje_principal, "¡Explosivos Nivel %d!", arma->nivel);
+                if (arma->nivel == 2)
+                    sprintf(mensaje_secundario, "Radio de explosión ampliado");
+                else if (arma->nivel == 3)
+                    sprintf(mensaje_secundario, "¡Devastación Total!");
+                else
+                    sprintf(mensaje_secundario, "Daño explosivo aumentado");
+                color_principal = al_map_rgb(255, 100, 0);
                 break;
+
             case Arma_misil:
-                snprintf(desc_mejora, sizeof(desc_mejora), "Velocidad +50%%, Mejor seguimiento");
+                sprintf(mensaje_principal, "¡Misiles Nivel %d!", arma->nivel);
+                if (arma->nivel == 2)
+                    sprintf(mensaje_secundario, "Velocidad de seguimiento mejorada");
+                else if (arma->nivel == 3)
+                    sprintf(mensaje_secundario, "¡Precisión Letal!");
+                else
+                    sprintf(mensaje_secundario, "Capacidad de búsqueda mejorada");
+                color_principal = al_map_rgb(255, 0, 255);
                 break;
+
             default:
-                snprintf(desc_mejora, sizeof(desc_mejora), "Mejora aplicada");
+                sprintf(mensaje_principal, "¡Arma Mejorada!");
+                sprintf(mensaje_secundario, "Nivel %d alcanzado");
+                color_principal = al_map_rgb(255, 255, 0);
                 break;
         }
 
-        agregar_mensaje_cola(cola_mensajes, desc_mejora, 2.5, al_map_rgb(255, 255, 255), true);
+        agregar_mensaje_cola(cola_mensajes, mensaje_principal, 3.0, color_principal, true);
+        agregar_mensaje_cola(cola_mensajes, mensaje_secundario, 2.5, al_map_rgb(255, 255, 255), true);
+
+        if (arma->nivel == 3)
+        {
+            agregar_mensaje_cola(cola_mensajes, "¡NIVEL MÁXIMO!", 2.0, al_map_rgb(255, 215, 0), true);
+        }
+        
         printf("¡Arma %s mejorada a nivel %d!\n", arma->nombre, arma->nivel);
     }
 }
@@ -3347,6 +3349,7 @@ void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
                     break;
             }
 
+            nave.armas[Arma_laser].ultimo_uso = tiempo_actual;
             printf("Láser disparado - Nivel %d, Poder %d, Duración %.1fs\n", arma_laser.nivel, lasers[i].poder, lasers[i].duracion_max);
             return;
         }   
@@ -3371,7 +3374,7 @@ void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
  * @param tilemap Mapa de tiles para detectar obstáculos.
  * @param contador_debug Contador para mensajes de debug.
  */
-void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int *puntaje, Nave nave, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], int *contador_debug, Powerup powerups[], int max_powerups)
+void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int *puntaje, Nave nave, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], int *contador_debug, Powerup powerups[], int max_powerups, ColaMensajes *cola_mensaje)
 {
     double tiempo_actual = al_get_time();
     int i;
@@ -3423,8 +3426,11 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
                         if (enemigos[j].vida <= 0.0f)
                         {
                             enemigos[j].activo = false;
-                            *puntaje += 15;
-                            printf("Enemigo tipo %d eliminado por láser (+50 puntos)\n", enemigos[j].tipo);
+                            *puntaje += 10;
+
+                            actualizar_progreso_arma(&nave, Arma_laser);
+                            verificar_mejora_arma(&nave, Arma_laser, cola_mensaje);
+                            printf("Enemigo eliminado por láser\n");
 
                             if (rand() % 100 < POWERUP_PROB)
                             {
@@ -3694,7 +3700,7 @@ void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave 
  * @param puntaje Puntero al puntaje del jugador.
  * @param tilemap Mapa de tiles para detectar colisiones con obstáculos.
  */
-void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, Enemigo enemigos[], int num_enemigos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
+void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, Enemigo enemigos[], int num_enemigos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave *nave, ColaMensajes *cola_mensajes)
 {
     int i;
     int j;
@@ -3722,7 +3728,11 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
                     {
                         enemigos[j].activo = false;
                         *puntaje += 15;
-                        printf("Enemigo eliminado por impacto directo\n");
+
+                        actualizar_progreso_arma(&nave, Arma_explosiva);
+                        verificar_mejora_arma(&nave, Arma_explosiva, cola_mensajes);
+
+                        printf("Enemigo eliminado por explosión\n");
                     }
 
                     explosivos[i].exploto = true;
@@ -3978,6 +3988,8 @@ void disparar_misil(MisilTeledirigido misiles[], int max_misiles, Nave nave, Ene
             misiles[i].vel_max = 4.0f + (arma_misil.nivel * 1.0f);
             misiles[i].fuerza_giro = 0.1f + (arma_misil.nivel * 0.05f);
             misiles[i].dano = 4 + arma_misil.nivel;
+
+            nave.armas[Arma_misil].ultimo_uso = tiempo_actual;
 
             printf("Misil disparado - Nivel %d, Objetivo: %d, Vel: %.1f\n", arma_misil.nivel, enemigo_objetivo, misiles[i].vel_max);
             break;
