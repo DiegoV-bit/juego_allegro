@@ -137,7 +137,7 @@ void actualizar_asteroide(Asteroide* asteroide, Tile tilemap[MAPA_FILAS][MAPA_CO
                 //asteroide->x = rand() % (800 - (int)asteroide->ancho);
 
                 //const char *tipo_powerup = (powerups[i].tipo == 0) ? "ESCUDO" : (powerups[i].tipo == 1) ? "VIDA" : "DESCONOCIDO";
-                printf("¡Asteroide destruyó powerup\n");
+                printf("Asteroide destruyó powerup\n");
             }
         }
     }
@@ -738,12 +738,12 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                             disparos_enemigos[i].activo = false;
                             tilemap[fila][col].vida--;
 
-                            printf("¡Disparo enemigo impactó escudo en (%d, %d)! Vida restante: %d\n", col, fila, tilemap[fila][col].vida);
+                            printf("Disparo enemigo impactó escudo en (%d, %d)! Vida restante: %d\n", col, fila, tilemap[fila][col].vida);
 
                             if (tilemap[fila][col].vida <= 0)
                             {
                                 tilemap[fila][col].tipo = 0; // El escudo se destruye
-                                printf("¡Escudo en (%d, %d) destruido completamente!\n", col, fila);
+                                printf("Escudo en (%d, %d) destruido completamente!\n", col, fila);
                             }
 
                             disparo_procesado = true;
@@ -757,7 +757,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                         if (detectar_colision_disparo_enemigo_escudo(disparos_enemigos[i], tile_x, tile_y))
                         {
                             disparos_enemigos[i].activo = false;
-                            printf("¡Disparo enemigo rebotó en muro indestructible en (%d, %d)!\n", col, fila);
+                            printf("Disparo enemigo rebotó en muro indestructible en (%d, %d)!\n", col, fila);
                             disparo_procesado = true;
                         }
                     }
@@ -769,7 +769,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
                         if (detectar_colision_disparo_enemigo_escudo(disparos_enemigos[i], tile_x, tile_y))
                         {
                             disparos_enemigos[i].activo = false;
-                            printf("¡Disparo enemigo impactó asteroide fijo en (%d, %d)!\n", col, fila);
+                            printf("Disparo enemigo impactó asteroide fijo en (%d, %d)!\n", col, fila);
                             disparo_procesado = true;
                         }
                     }
@@ -829,11 +829,34 @@ void init_botones(Boton botones[])
  */
 void dibujar_botones(Boton botones[], int num_botones, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y)
 {
-    for (int i = 0; i < num_botones; i++)
+    int i;
+    ALLEGRO_COLOR color_borde;
+    ALLEGRO_COLOR color_texto;
+    float grosor_borde = 2.0f;
+
+    for (i = 0; i < num_botones; i++)
     {
-        ALLEGRO_COLOR color = cursor_sobre_boton(botones[i], cursor_x, cursor_y) ? al_map_rgb(255, 255, 0) : al_map_rgb(0, 255, 0);
-        al_draw_filled_rectangle(botones[i].x, botones[i].y, botones[i].x + botones[i].ancho, botones[i].y + botones[i].alto, al_map_rgb(0, 0, 0));
-        al_draw_text(fuente, color, botones[i].x + botones[i].ancho / 2, botones[i].y + botones[i].alto / 2, ALLEGRO_ALIGN_CENTER, botones[i].texto);
+        if (cursor_sobre_boton(botones[i], cursor_x, cursor_y))
+        {
+            color_borde = al_map_rgb(255, 255, 255);
+            color_texto = al_map_rgb(0, 255, 0);
+            grosor_borde = 3.0f;
+        }
+        else
+        {
+            color_borde = al_map_rgb(150, 150, 150);
+            color_texto = al_map_rgb(43, 158, 0);
+        }
+
+        al_draw_rectangle(botones[i].x, botones[i].y, 
+                         botones[i].x + botones[i].ancho, 
+                         botones[i].y + botones[i].alto, 
+                         color_borde, grosor_borde);
+
+        al_draw_text(fuente, color_texto, 
+                    botones[i].x + botones[i].ancho / 2, 
+                    botones[i].y + botones[i].alto / 2 - al_get_font_line_height(fuente) / 2, 
+                    ALLEGRO_ALIGN_CENTER, botones[i].texto);
     }   
 }
 
@@ -962,35 +985,41 @@ void cargar_ranking(Jugador ranking[], int* num_jugadores)
  */
 void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores, bool* volver_menu)
 {
+    int i;
+    char texto_jugador[100];
     bool mostrar = true;
+    ALLEGRO_EVENT evento;
     ALLEGRO_EVENT_QUEUE* cola_eventos = al_create_event_queue();
+    ALLEGRO_COLOR color_texto;
     al_register_event_source(cola_eventos, al_get_mouse_event_source());
 
     Boton boton_volver;
     strcpy(boton_volver.texto, "Volver");
-    boton_volver.x = 350;
+
+    boton_volver.x = 50;
     boton_volver.y = 500;
-    boton_volver.ancho = 100;
+    boton_volver.ancho = 120;
     boton_volver.alto = 50;
+
+    int cursor_x = 0;
+    int cursor_y = 0;
 
     while (mostrar)
     {
-        al_clear_to_color(al_map_rgb(0, 0, 0));
-        for (int i = 0; i < num_jugadores; i++)
-        {
-            char texto[100];
-            sprintf(texto, "%d. %s - %d", i + 1, ranking[i].nombre, ranking[i].puntaje);
-            al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 100 + 50 * i, ALLEGRO_ALIGN_CENTER, texto);
-        }
-        
-        al_draw_filled_rectangle(boton_volver.x, boton_volver.y, boton_volver.x + boton_volver.ancho, boton_volver.y + boton_volver.alto, al_map_rgb(0, 0, 0));
-        al_draw_text(fuente, al_map_rgb(0, 255, 0), boton_volver.x + boton_volver.ancho / 2, boton_volver.y + boton_volver.alto / 2, ALLEGRO_ALIGN_CENTER, boton_volver.texto);
-
-        al_flip_display();
-
-        ALLEGRO_EVENT evento;
         al_wait_for_event(cola_eventos, &evento);
 
+        if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
+        {
+            mostrar = false;
+            *volver_menu = true;
+        }
+        
+        if (evento.type == ALLEGRO_EVENT_MOUSE_AXES)
+        {
+            cursor_x = evento.mouse.x;
+            cursor_y = evento.mouse.y;
+        }
+        
         if (evento.type == ALLEGRO_EVENT_MOUSE_BUTTON_DOWN)
         {
             if (cursor_sobre_boton(boton_volver, evento.mouse.x, evento.mouse.y))
@@ -999,8 +1028,47 @@ void mostrar_ranking(ALLEGRO_FONT* fuente, Jugador ranking[], int num_jugadores,
                 *volver_menu = true;
             }
         }
+        
+        if (evento.type == ALLEGRO_EVENT_TIMER || mostrar)
+        {
+            al_clear_to_color(al_map_rgb(0, 0, 0));
+
+            al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 50, ALLEGRO_ALIGN_CENTER, "RANKING DE JUGADORES");
+
+            for (i = 0; i < num_jugadores && i < 10; i++)
+            {
+                sprintf(texto_jugador, "%d. %s - %d puntos", i + 1, ranking[i].nombre, ranking[i].puntaje);
+
+                if (i == 0)
+                {
+                    color_texto = al_map_rgb(255, 215, 0);
+                }
+                else if (i == 1)
+                {
+                    color_texto = al_map_rgb(192, 192, 192);
+                }
+                else if (i == 2)
+                {
+                    color_texto = al_map_rgb(205, 127, 50);
+                }
+                else
+                {
+                    color_texto = al_map_rgb(255, 255, 255);
+                }
+
+                al_draw_text(fuente, color_texto, 400, 120 + i *30, ALLEGRO_ALIGN_CENTER, texto_jugador);
+            }
+            
+            if (num_jugadores == 0)
+            {
+                al_draw_text(fuente, al_map_rgb(150, 150, 150), 400, 300, ALLEGRO_ALIGN_CENTER, "No hay puntuaciones registradas");
+            }
+            
+            dibujar_boton_individual(boton_volver, fuente, cursor_x, cursor_y);
+            al_flip_display();
+        }
     }
-    
+
     al_destroy_event_queue(cola_eventos);
 }
 
@@ -1477,7 +1545,7 @@ void actualizar_enemigos(Enemigo enemigos[], int num_enemigos, Disparo disparos_
                     } else {
                         nave.vida -= 35;
                         enemigos[i].activo = false;
-                        printf("¡Enemigo kamikaze impactó! Vida restante: %.1f\n", nave.vida);
+                        printf("Enemigo kamikaze impactó! Vida restante: %.1f\n", nave.vida);
                     }
                 }
                 break;
@@ -1716,7 +1784,7 @@ void verificar_mejora_disparo_radial(Nave *nave, ColaMensajes* cola_mensajes)
         
         // Mostrar mensaje de mejora
         char texto_mejora[100];
-        sprintf(texto_mejora, "¡Disparo Radial Nivel %d Desbloqueado!", nave->nivel_disparo_radial);
+        sprintf(texto_mejora, "Disparo Radial Nivel %d Desbloqueado!", nave->nivel_disparo_radial);
         
         agregar_mensaje_cola(cola_mensajes, texto_mejora, 3.5, al_map_rgb(255, 255, 0), true);
 
@@ -1729,7 +1797,7 @@ void verificar_mejora_disparo_radial(Nave *nave, ColaMensajes* cola_mensajes)
             agregar_mensaje_cola(cola_mensajes, "Ahora disparas 5 proyectiles", 2.5, al_map_rgb(255, 255, 255), true);
         }
         
-        printf("¡Mejora de disparo radial! Nivel actual: %d\n", nave->nivel_disparo_radial);
+        printf("Mejora de disparo radial! Nivel actual: %d\n", nave->nivel_disparo_radial);
     }
 }
 
@@ -1894,7 +1962,7 @@ bool verificar_nivel_completado(Enemigo enemigos[], int num_enemigos, bool hay_j
         }
         else
         {
-            printf("DEBUG: ¡NIVEL CON JEFE COMPLETADO! Jefe y todos los enemigos eliminados\n");
+            printf("DEBUG: NIVEL CON JEFE COMPLETADO! Jefe y todos los enemigos eliminados\n");
             return true; // Nivel completado: ni jefe ni enemigos
         }
     }
@@ -1908,7 +1976,7 @@ bool verificar_nivel_completado(Enemigo enemigos[], int num_enemigos, bool hay_j
         }
         else
         {
-            printf("DEBUG: ¡NIVEL NORMAL COMPLETADO! Todos los enemigos eliminados\n");
+            printf("DEBUG: NIVEL NORMAL COMPLETADO! Todos los enemigos eliminados\n");
             return true;
         }
     }
@@ -1958,23 +2026,23 @@ void mostrar_pantalla_transicion(int nivel_completado, int siguiente_nivel, ALLE
     char texto_subtitulo[100];
     char texto_progreso[100];
 
-    sprintf(texto_titulo, "¡Nivel %d Completado!", nivel_completado);
+    sprintf(texto_titulo, "Nivel %d Completado!", nivel_completado);
     
     if (siguiente_nivel == 4)
     {
-        sprintf(texto_subtitulo, "¡ALERTA! Jefe Destructor detectado...");
-        al_draw_text(fuente, al_map_rgba(255, 0, 0, (int)alpha_texto), 400, 350, ALLEGRO_ALIGN_CENTER, "¡Prepárate para el combate!");
+        sprintf(texto_subtitulo, "ALERTA! Jefe Destructor detectado...");
+        al_draw_text(fuente, al_map_rgba(255, 0, 0, (int)alpha_texto), 400, 350, ALLEGRO_ALIGN_CENTER, "Prepárate para el combate!");
     }
     else if (siguiente_nivel == 5)
     {
-        sprintf(texto_subtitulo, "¡PELIGRO MÁXIMO! Jefe Supremo aproximándose...");
-        al_draw_text(fuente, al_map_rgba(255, 0, 0, (int)alpha_texto), 400, 350, ALLEGRO_ALIGN_CENTER, "¡Este es el enemigo final!");
+        sprintf(texto_subtitulo, "PELIGRO MÁXIMO! Jefe Supremo aproximándose...");
+        al_draw_text(fuente, al_map_rgba(255, 0, 0, (int)alpha_texto), 400, 350, ALLEGRO_ALIGN_CENTER, "Este es el enemigo final!");
     }
     else if (siguiente_nivel > 5) 
     {
-        sprintf(texto_titulo, "¡MISIÓN COMPLETADA!");
-        sprintf(texto_subtitulo, "¡Has salvado la galaxia!");
-        al_draw_text(fuente, al_map_rgba(0, 255, 0, (int)alpha_texto), 400, 350, ALLEGRO_ALIGN_CENTER, "¡Felicidades, héroe!");
+        sprintf(texto_titulo, "MISIÓN COMPLETADA!");
+        sprintf(texto_subtitulo, "Has salvado la galaxia!");
+        al_draw_text(fuente, al_map_rgba(0, 255, 0, (int)alpha_texto), 400, 350, ALLEGRO_ALIGN_CENTER, "Felicidades, héroe!");
     }
     else
     {
@@ -1992,7 +2060,7 @@ void mostrar_pantalla_transicion(int nivel_completado, int siguiente_nivel, ALLE
     float barra_alto = 20;
     float barra_x = 400 - barra_ancho / 2;
     float barra_y = 380;
-
+    /*
     ALLEGRO_COLOR color_barra;
     if (siguiente_nivel >= 4 && siguiente_nivel <= 5)
     {
@@ -2006,6 +2074,8 @@ void mostrar_pantalla_transicion(int nivel_completado, int siguiente_nivel, ALLE
     {
         color_barra = al_map_rgba(0, 255, 255, (int)alpha_texto); // Cian para niveles normales
     }
+    */
+    
     
     // Fondo de la barra
     al_draw_filled_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, al_map_rgba(100, 100, 100, (int)alpha_texto));
@@ -2078,7 +2148,7 @@ void actualizar_estado_nivel(EstadoJuego* estado, Enemigo enemigos[], int num_en
         estado->tiempo_inicio_transicion = tiempo_actual;
         estado->nivel_completado = true;
         
-        printf("¡Nivel %d completado! Iniciando transición...\n", estado->nivel_actual);
+        printf("Nivel %d completado! Iniciando transición...\n", estado->nivel_actual);
     }
     
     // Manejar la transición
@@ -2655,7 +2725,7 @@ bool verificar_colision_nave_muro(float x, float y, float ancho, float largo, Ti
     float radio = (ancho * 0.6f) / 2.0f;
     
     // Calcular qué tiles ocupa la nave
-    float margen = ancho * 0.2f;
+    //float margen = ancho * 0.2f;
     int col_izquierda = (int)(x / TILE_ANCHO);
     int col_derecha = (int)((x + ancho - 1) / TILE_ANCHO);
     int fila_superior = (int)(y / TILE_ALTO);
@@ -2703,7 +2773,7 @@ void agregar_mensaje_cola(ColaMensajes *cola, const char *texto, double duracion
 {
     if (cola->cantidad >= MAX_COLA_MENSAJES)
     {
-        printf("¡Cola de mensajes llena! No se puede agregar el mensaje: %s\n", texto);
+        printf("Cola de mensajes llena! No se puede agregar el mensaje: %s\n", texto);
         return;
     }
 
@@ -3185,47 +3255,47 @@ void verificar_mejora_arma(Nave *nave, TipoArma tipo_arma, ColaMensajes *cola_me
         switch (tipo_arma) 
         {
             case Arma_normal:
-                sprintf(mensaje_principal, "¡Cañón Normal Nivel %d!", arma->nivel);
+                sprintf(mensaje_principal, "Cañón Normal Nivel %d!", arma->nivel);
                 sprintf(mensaje_secundario, "Cadencia de disparo mejorada");
                 color_principal = al_map_rgb(255, 255, 255);
                 break;
 
             case Arma_laser:
-                sprintf(mensaje_principal, "¡Láser Nivel %d!", arma->nivel);
+                sprintf(mensaje_principal, "Láser Nivel %d!", arma->nivel);
                 if (arma->nivel == 2)
                     sprintf(mensaje_secundario, "Mayor alcance y daño");
                 else if (arma->nivel == 3)
-                    sprintf(mensaje_secundario, "¡Poder Máximo Alcanzado!");
+                    sprintf(mensaje_secundario, "Poder Máximo Alcanzado!");
                 else
                     sprintf(mensaje_secundario, "Potencia mejorada");
                 color_principal = al_map_rgb(0, 255, 255);
                 break;
 
             case Arma_explosiva:
-                sprintf(mensaje_principal, "¡Explosivos Nivel %d!", arma->nivel);
+                sprintf(mensaje_principal, "Explosivos Nivel %d!", arma->nivel);
                 if (arma->nivel == 2)
                     sprintf(mensaje_secundario, "Radio de explosión ampliado");
                 else if (arma->nivel == 3)
-                    sprintf(mensaje_secundario, "¡Devastación Total!");
+                    sprintf(mensaje_secundario, "Devastación Total!");
                 else
                     sprintf(mensaje_secundario, "Daño explosivo aumentado");
                 color_principal = al_map_rgb(255, 100, 0);
                 break;
 
             case Arma_misil:
-                sprintf(mensaje_principal, "¡Misiles Nivel %d!", arma->nivel);
+                sprintf(mensaje_principal, "Misiles Nivel %d!", arma->nivel);
                 if (arma->nivel == 2)
                     sprintf(mensaje_secundario, "Velocidad de seguimiento mejorada");
                 else if (arma->nivel == 3)
-                    sprintf(mensaje_secundario, "¡Precisión Letal!");
+                    sprintf(mensaje_secundario, "Precisión Letal!");
                 else
                     sprintf(mensaje_secundario, "Capacidad de búsqueda mejorada");
                 color_principal = al_map_rgb(255, 0, 255);
                 break;
 
             default:
-                sprintf(mensaje_principal, "¡Arma Mejorada!");
-                sprintf(mensaje_secundario, "Nivel %d alcanzado");
+                sprintf(mensaje_principal, "Arma Mejorada!");
+                sprintf(mensaje_secundario, "Nivel %d alcanzado", arma->nivel);
                 color_principal = al_map_rgb(255, 255, 0);
                 break;
         }
@@ -3235,10 +3305,10 @@ void verificar_mejora_arma(Nave *nave, TipoArma tipo_arma, ColaMensajes *cola_me
 
         if (arma->nivel == 3)
         {
-            agregar_mensaje_cola(cola_mensajes, "¡NIVEL MÁXIMO!", 2.0, al_map_rgb(255, 215, 0), true);
+            agregar_mensaje_cola(cola_mensajes, "NIVEL MÁXIMO!", 2.0, al_map_rgb(255, 215, 0), true);
         }
         
-        printf("¡Arma %s mejorada a nivel %d!\n", arma->nombre, arma->nivel);
+        printf("Arma %s mejorada a nivel %d!\n", arma->nombre, arma->nivel);
     }
 }
 
@@ -3268,7 +3338,7 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
     }
     else if (arma_actual.nivel == 3)
     {
-        al_draw_text(fuente, al_map_rgb(0, 255, 0), 10, 160, ALLEGRO_ALIGN_LEFT, "¡Arma al máximo nivel!");
+        al_draw_text(fuente, al_map_rgb(0, 255, 0), 10, 160, ALLEGRO_ALIGN_LEFT, "Arma al máximo nivel!");
     }
     
     int y_offset = 180;
@@ -3401,8 +3471,8 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
     {
         if (lasers[i].activo)
         {
-            lasers[i].x_nave = centro_x + cos(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
-            lasers[i].y_nave = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
+            lasers[i].x_nave = punta_x;
+            lasers[i].y_nave = punta_y;
             lasers[i].angulo = nave.angulo - ALLEGRO_PI / 2;
 
             // Verifica el alcance real tomando en cuenta los obstaculos
@@ -3955,9 +4025,12 @@ void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
                 int b = 0;
                 int a = (int)(255 * alpha_circulo);
                 
-                if (r < 0) r = 0; if (r > 255) r = 255;
-                if (g < 0) g = 0; if (g > 255) g = 255;
-                if (a < 0) a = 0; if (a > 255) a = 255;
+                if (r < 0) r = 0;
+                if (r > 255) r = 255;
+                if (g < 0) g = 0;
+                if (g > 255) g = 255;
+                if (a < 0) a = 0;
+                if (a > 255) a = 255;
                 
                 ALLEGRO_COLOR color_explosion = al_map_rgba(r, g, b, a);
                 
@@ -4675,7 +4748,7 @@ void actualizar_jefe(Jefe *jefe, Nave nave, Enemigo enemigos[], int *num_enemigo
         jefe->en_furia = true;
         jefe->tiempo_furia = tiempo_actual;
         jefe->velocidad_movimiento *= 0.6f; // Aumentar velocidad en furia
-        printf("¡Jefe entra en FURIA! Velocidad aumentada a %.2f\n", jefe->velocidad_movimiento);
+        printf("Jefe entra en FURIA! Velocidad aumentada a %.2f\n", jefe->velocidad_movimiento);
     }
     
     jefe->tiempo_animacion += 0.02;
@@ -5224,7 +5297,7 @@ bool jefe_recibir_dano(Jefe* jefe, float dano, ColaMensajes* cola_mensajes)
         jefe->activo = false;
         
         char mensaje[100];
-        sprintf(mensaje, "¡JEFE %s DERROTADO!", jefe->tipo == 0 ? "DESTRUCTOR" : "SUPREMO");
+        sprintf(mensaje, "JEFE %s DERROTADO!", jefe->tipo == 0 ? "DESTRUCTOR" : "SUPREMO");
         agregar_mensaje_cola(cola_mensajes, mensaje, 4.0, al_map_rgb(255, 255, 0), true);
         
         printf("Jefe derrotado!\n");
@@ -5249,4 +5322,47 @@ bool jefe_recibir_dano(Jefe* jefe, float dano, ColaMensajes* cola_mensajes)
 void actualizar_estado_nivel_sin_jefe(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual)
 {
     actualizar_estado_nivel(estado, enemigos, num_enemigos, tiempo_actual, false, NULL);
+}
+
+
+/**
+ * @brief Dibuja un botón individual con el estilo elegante del menú principal.
+ * 
+ * @param boton Botón a dibujar.
+ * @param fuente Fuente usada para el texto.
+ * @param cursor_x Posición x del cursor.
+ * @param cursor_y Posición y del cursor.
+ */
+void dibujar_boton_individual(Boton boton, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y)
+{
+    ALLEGRO_COLOR color_borde;
+    ALLEGRO_COLOR color_texto;
+    float grosor_borde = 2.0f;
+    
+    // ✅ VERIFICAR SI EL CURSOR ESTÁ SOBRE EL BOTÓN
+    if (cursor_sobre_boton(boton, cursor_x, cursor_y))
+    {
+        // Botón con hover - más brillante
+        color_borde = al_map_rgb(255, 255, 255);    // Borde blanco brillante
+        color_texto = al_map_rgb(255, 255, 0);      // Texto amarillo
+        grosor_borde = 3.0f;                        // Borde más grueso
+    }
+    else
+    {
+        // Botón normal
+        color_borde = al_map_rgb(150, 150, 150);    // Borde gris
+        color_texto = al_map_rgb(255, 255, 255);    // Texto blanco
+    }
+    
+    // ✅ SOLO DIBUJAR EL BORDE (SIN FONDO NEGRO)
+    al_draw_rectangle(boton.x, boton.y, 
+                     boton.x + boton.ancho, 
+                     boton.y + boton.alto, 
+                     color_borde, grosor_borde);
+    
+    // ✅ DIBUJAR EL TEXTO CENTRADO
+    al_draw_text(fuente, color_texto, 
+                boton.x + boton.ancho / 2, 
+                boton.y + boton.alto / 2 - al_get_font_line_height(fuente) / 2, 
+                ALLEGRO_ALIGN_CENTER, boton.texto);
 }
