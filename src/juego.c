@@ -2496,7 +2496,7 @@ void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
     if (powerup->tipo == 0) // escudo
     {
         activar_escudo(&nave->escudo, 3);
-        agregar_mensaje_cola(cola_mensajes, "¡Escudo Activado!", 2.5, al_map_rgb(0, 255, 255), true);
+        agregar_mensaje_cola(cola_mensajes, "Escudo Activado!", 2.5, al_map_rgb(0, 255, 255), true);
         agregar_mensaje_cola(cola_mensajes, "Resistencia a 3 impactos", 2.0, al_map_rgb(255, 255, 255), true);
     }
     else if (powerup->tipo == 1)
@@ -2507,17 +2507,17 @@ void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
             nave->vida = 100.f;
         }
         agregar_mensaje_cola(cola_mensajes, "Vida restaurada", 2.0, al_map_rgb(0, 255, 0), true);
-        agregar_mensaje_cola(cola_mensajes, "¡Recuperaste 25 puntos de vida!", 1.5, al_map_rgb(255, 255, 255), true);
+        agregar_mensaje_cola(cola_mensajes, "Recuperaste 25 puntos de vida!", 1.5, al_map_rgb(255, 255, 255), true);
     }
     else if (powerup->tipo == 2) 
     {
         if (!nave->armas[Arma_laser].desbloqueado)
         {
             nave->armas[Arma_laser].desbloqueado = true;
-            agregar_mensaje_cola(cola_mensajes, "¡NUEVO ARMA DESBLOQUEADA!", 3.0, al_map_rgb(255, 215, 0), true);
+            agregar_mensaje_cola(cola_mensajes, "NUEVO ARMA DESBLOQUEADA!", 3.0, al_map_rgb(255, 215, 0), true);
             agregar_mensaje_cola(cola_mensajes, "Láser Continuo", 2.5, al_map_rgb(0, 255, 255), true);
             agregar_mensaje_cola(cola_mensajes, "Presiona [2] para usar", 3.0, al_map_rgb(255, 255, 255), true);
-            printf("¡Arma láser desbloqueada!\n");
+            printf("Arma láser desbloqueada!\n");
         }
         else
         {
@@ -2529,10 +2529,10 @@ void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
         if (!nave->armas[Arma_explosiva].desbloqueado)
         {
             nave->armas[Arma_explosiva].desbloqueado = true;
-            agregar_mensaje_cola(cola_mensajes, "¡NUEVO ARMA DESBLOQUEADA!", 3.0, al_map_rgb(255, 215, 0), true);
+            agregar_mensaje_cola(cola_mensajes, "NUEVO ARMA DESBLOQUEADA!", 3.0, al_map_rgb(255, 215, 0), true);
             agregar_mensaje_cola(cola_mensajes, "Cañón Explosivo", 2.5, al_map_rgb(255, 100, 0), true);
             agregar_mensaje_cola(cola_mensajes, "Presiona [3] para usar", 3.0, al_map_rgb(255, 255, 255), true);
-            printf("¡Arma explosiva desbloqueada!\n");
+            printf("Arma explosiva desbloqueada!\n");
         }
         else
         {
@@ -2544,10 +2544,10 @@ void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
         if (!nave->armas[Arma_misil].desbloqueado)
         {
             nave->armas[Arma_misil].desbloqueado = true;
-            agregar_mensaje_cola(cola_mensajes, "¡NUEVO ARMA DESBLOQUEADA!", 3.0, al_map_rgb(255, 215, 0), true);
+            agregar_mensaje_cola(cola_mensajes, "NUEVO ARMA DESBLOQUEADA!", 3.0, al_map_rgb(255, 215, 0), true);
             agregar_mensaje_cola(cola_mensajes, "Misiles Teledirigidos", 2.5, al_map_rgb(255, 0, 255), true);
             agregar_mensaje_cola(cola_mensajes, "Presiona [4] para usar", 3.0, al_map_rgb(255, 255, 255), true);
-            printf("¡Arma de misiles desbloqueada!\n");
+            printf("Arma de misiles desbloqueada!\n");
         }
         else
         {
@@ -3641,45 +3641,48 @@ void crear_powerup_misil(Powerup powerups[], int max_powerups, float x, float y)
 void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave nave)
 {
     double tiempo_actual = al_get_time();
-    int i;
-    float centro_x;
-    float centro_y;
-    float punta_x;
-    float punta_y;
     SistemaArma arma_explosiva = nave.armas[Arma_explosiva];
     
     // Cooldown entre disparos
     if (tiempo_actual - arma_explosiva.ultimo_uso < 0.5) return;
     
-    for (i = 0; i < max_explosivos; i++)
+    for (int i = 0; i < max_explosivos; i++)
     {
         if (!explosivos[i].activo)
         {
-            // Calcular posición de disparo
-            centro_x = nave.x + nave.ancho / 2.0f;
-            centro_y = nave.y + nave.largo / 2.0f;
-            punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
-            punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI/2) * (nave.largo / 2.0f);
+            float centro_x, centro_y;
+            obtener_centro_nave(nave, &centro_x, &centro_y);
             
+            // Calcular posición de disparo desde la punta de la nave
+            float punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
+            float punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
+            
+            // ✅ INICIALIZAR COMPLETAMENTE EL EXPLOSIVO
             explosivos[i].x = punta_x;
             explosivos[i].y = punta_y;
-            explosivos[i].vx = cos(nave.angulo - ALLEGRO_PI/2) * 8.0f;
-            explosivos[i].vy = sin(nave.angulo - ALLEGRO_PI/2) * 8.0f;
             explosivos[i].ancho = 8;
             explosivos[i].alto = 12;
             explosivos[i].activo = true;
-            explosivos[i].tiempo_vida = al_get_time();
             explosivos[i].exploto = false;
             explosivos[i].dano_aplicado = false;
             
-            // Propiedades según nivel
-            explosivos[i].radio_explosion = 40 + (arma_explosiva.nivel * 15);
-            explosivos[i].dano_directo = 15 + arma_explosiva.nivel;
-            explosivos[i].dano_area = 8 + arma_explosiva.nivel;
-
-            nave.armas[Arma_explosiva].ultimo_uso = tiempo_actual;
+            // ✅ VELOCIDAD IGUAL A DISPARO NORMAL (450 píxeles por segundo)
+            float velocidad = 450.0f; // Misma velocidad que disparo normal
+            explosivos[i].vx = cos(nave.angulo - ALLEGRO_PI / 2) * velocidad;
+            explosivos[i].vy = sin(nave.angulo - ALLEGRO_PI / 2) * velocidad;
             
-            printf("Explosivo disparado - Nivel %d, Radio %dpx, Daño %d\n", arma_explosiva.nivel, explosivos[i].radio_explosion, explosivos[i].dano_directo);
+            // Propiedades según nivel del arma
+            explosivos[i].radio_explosion = 50 + (arma_explosiva.nivel * 20); // Radio aumenta con nivel
+            explosivos[i].dano_directo = 30 + (arma_explosiva.nivel * 15);    // Daño aumenta con nivel
+            explosivos[i].dano_area = 20 + (arma_explosiva.nivel * 10);       // Daño de área aumenta
+            explosivos[i].tiempo_vida = tiempo_actual + 3.0; // 3 segundos de vida máxima
+            
+            printf("Explosivo disparado: velocidad=450, radio=%d, daño_directo=%d, daño_área=%d\n", 
+                   explosivos[i].radio_explosion, explosivos[i].dano_directo, explosivos[i].dano_area);
+            
+            // ✅ ACTUALIZAR TIEMPO DE ÚLTIMO USO
+            nave.armas[Arma_explosiva].ultimo_uso = tiempo_actual;
+            return;
         }
     }
 
@@ -3702,140 +3705,193 @@ void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave 
  */
 void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, Enemigo enemigos[], int num_enemigos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Nave *nave, ColaMensajes *cola_mensajes)
 {
-    int i;
-    int j;
-    int fila;
-    int col;
-    double tiempo_explosion;
-    float distancia;
-
-    for (i = 0; i < max_explosivos; i++)
+    double tiempo_actual = al_get_time();
+    
+    for (int i = 0; i < max_explosivos; i++)
     {
-        if (explosivos[i].activo && !explosivos[i].exploto)
+        if (!explosivos[i].activo) continue;
+        
+        // ✅ SI NO HA EXPLOTADO AÚN, MOVER EL PROYECTIL
+        if (!explosivos[i].exploto)
         {
-            explosivos[i].x += explosivos[i].vx;
-            explosivos[i].y += explosivos[i].vy;
-
-            // Verificar colision con enemigos
-            for (j = 0; j < num_enemigos; j++)
+            // Mover el proyectil
+            explosivos[i].x += explosivos[i].vx * (1.0f / 60.0f); // Asumiendo 60 FPS
+            explosivos[i].y += explosivos[i].vy * (1.0f / 60.0f);
+            
+            // ✅ VERIFICAR COLISIÓN CON ENEMIGOS
+            for (int j = 0; j < num_enemigos; j++)
             {
-                if (enemigos[j].activo && detectar_colision_generica(explosivos[i].x, explosivos[i].y, explosivos[i].ancho, explosivos[i].alto, enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
+                if (enemigos[j].activo && detectar_colision_generica(
+                    explosivos[i].x, explosivos[i].y, explosivos[i].ancho, explosivos[i].alto,
+                    enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
                 {
-                    enemigos[j].vida -= explosivos[i].dano_directo;
-                    printf("Proyectil explosivo impactó enemigo %d! Vida restante: %.1f\n", j, enemigos[j].vida);
-
-                    if (enemigos[j].vida <= 0)
-                    {
-                        enemigos[j].activo = false;
-                        *puntaje += 15;
-
-                        actualizar_progreso_arma(&nave, Arma_explosiva);
-                        verificar_mejora_arma(&nave, Arma_explosiva, cola_mensajes);
-
-                        printf("Enemigo eliminado por explosión\n");
-                    }
-
+                    printf("Explosivo impactó enemigo tipo %d\n", enemigos[j].tipo);
+                    
+                    // ✅ ACTIVAR EXPLOSIÓN
                     explosivos[i].exploto = true;
-                    explosivos[i].tiempo_vida = al_get_time();
-                    explosivos[i].dano_aplicado = false;
-                    break;
+                    explosivos[i].tiempo_vida = tiempo_actual; // Marcar tiempo de explosión
+                    explosivos[i].dano_aplicado = false; // Resetear para aplicar daño de área
+                    goto colision_detectada;
                 }
             }
-
-            if (!explosivos[i].exploto)
+            
+            // ✅ VERIFICAR COLISIÓN CON BLOQUES DEL TILEMAP
+            int col_izq = (int)(explosivos[i].x / TILE_ANCHO);
+            int col_der = (int)((explosivos[i].x + explosivos[i].ancho - 1) / TILE_ANCHO);
+            int fila_sup = (int)(explosivos[i].y / TILE_ALTO);
+            int fila_inf = (int)((explosivos[i].y + explosivos[i].alto - 1) / TILE_ALTO);
+            
+            for (int fila = fila_sup; fila <= fila_inf; fila++)
             {
-                col = (int)(explosivos[i].x / TILE_ANCHO);
-                fila = (int)(explosivos[i].y / TILE_ALTO);
-
-                if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
+                for (int col = col_izq; col <= col_der; col++)
                 {
-                    // Verificar colisión con tilemap
-                    if (tilemap[fila][col].tipo == 1 || tilemap[fila][col].tipo == 3) // Colisión con asteroides o bloques solidos
+                    if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
                     {
-                        printf("¡Proyectil explosivo impactó tile sólido en (%d, %d)!\n", col, fila);
-
-                        if (tilemap[fila][col].tipo == 1)
+                        if (tilemap[fila][col].tipo == 1) // ✅ BLOQUE SÓLIDO (NO DESTRUCTIBLE)
                         {
-                            tilemap[fila][col].vida--;
+                            printf("Explosivo impactó bloque SÓLIDO en (%d,%d) - Solo explota, no lo destruye\n", col, fila);
+                            
+                            // ✅ ACTIVAR EXPLOSIÓN PERO NO DAÑAR EL BLOQUE
+                            explosivos[i].exploto = true;
+                            explosivos[i].tiempo_vida = tiempo_actual;
+                            explosivos[i].dano_aplicado = false;
+                            goto colision_detectada;
+                        }
+                        else if (tilemap[fila][col].tipo == 2) // ✅ ESCUDO DESTRUCTIBLE
+                        {
+                            printf("Explosivo impactó escudo DESTRUCTIBLE en (%d,%d) - Explota y lo daña\n", col, fila);
+                            
+                            // ✅ ACTIVAR EXPLOSIÓN Y DAÑAR EL BLOQUE DESTRUCTIBLE
+                            explosivos[i].exploto = true;
+                            explosivos[i].tiempo_vida = tiempo_actual;
+                            explosivos[i].dano_aplicado = false;
+                            
+                            // ✅ DAÑAR SOLO EL BLOQUE IMPACTADO DIRECTAMENTE
+                            tilemap[fila][col].vida -= explosivos[i].dano_directo;
                             if (tilemap[fila][col].vida <= 0)
                             {
-                                tilemap[fila][col].tipo = 0;
-                                tilemap[fila][col].vida = 0;
-                                printf("Asteroide destruido por explosion\n");
+                                tilemap[fila][col].tipo = 0; // Destruir escudo
+                                printf("Escudo destruido por impacto directo de explosivo\n");
                             }
+                            goto colision_detectada;
                         }
-                    
-                        explosivos[i].exploto = true;
-                        explosivos[i].tiempo_vida = al_get_time();
-                        explosivos[i].dano_aplicado = false;
                     }
                 }
             }
             
-            // Explotar si sale de pantalla o después de cierto tiempo
-            if (!explosivos[i].exploto)
+            colision_detectada:
+            
+            // ✅ VERIFICAR SI SALIÓ DE LA PANTALLA
+            if (explosivos[i].x < -20 || explosivos[i].x > 820 || 
+                explosivos[i].y < -20 || explosivos[i].y > 620)
             {
-                if (explosivos[i].x < -50 || explosivos[i].x > 850 || explosivos[i].y < -50 || explosivos[i].y > 650)
-                {
-                    explosivos[i].exploto = true;
-                    explosivos[i].tiempo_vida = al_get_time();
-                    explosivos[i].dano_aplicado = false;
-                    printf("Explosivo salió de pantalla - activando explosión\n");
-                }
-                else if (al_get_time() - explosivos[i].tiempo_vida > 3.0)
-                {
-                    explosivos[i].exploto = true;
-                    explosivos->tiempo_vida = al_get_time();
-                    explosivos[i].dano_aplicado = false;
-                    printf("Explosivo expiró por tiempo - activando explosión\n");
-                }
+                explosivos[i].activo = false;
+                printf("Explosivo salió de pantalla\n");
+                continue;
+            }
+            
+            // ✅ VERIFICAR TIEMPO DE VIDA MÁXIMO
+            if (tiempo_actual > explosivos[i].tiempo_vida)
+            {
+                printf("Explosivo explotó por tiempo límite\n");
+                explosivos[i].exploto = true;
+                explosivos[i].tiempo_vida = tiempo_actual;
+                explosivos[i].dano_aplicado = false;
             }
         }
-        else if (explosivos[i].exploto && explosivos[i].activo)
+        else // ✅ SI YA EXPLOTÓ, MANEJAR LA ANIMACIÓN
         {
-            tiempo_explosion = al_get_time() - explosivos[i].tiempo_vida;
-
-            if (tiempo_explosion < 0.5)
+            double tiempo_explosion = tiempo_actual - explosivos[i].tiempo_vida;
+            
+            // ✅ APLICAR DAÑO DE ÁREA UNA SOLA VEZ
+            if (!explosivos[i].dano_aplicado)
             {
-                if (!explosivos[i].dano_aplicado)
+                printf("Aplicando daño de explosión en área\n");
+                
+                // Dañar enemigos en el radio de explosión
+                for (int j = 0; j < num_enemigos; j++)
                 {
-                    printf("Aplicando daño en área - radio %d\n", explosivos[i].radio_explosion);
-
-                    for (j = 0; j < num_enemigos; j++)
+                    if (enemigos[j].activo)
                     {
-                        if (enemigos[j].activo)
+                        float distancia = sqrt(
+                            (enemigos[j].x + enemigos[j].ancho/2 - explosivos[i].x) * 
+                            (enemigos[j].x + enemigos[j].ancho/2 - explosivos[i].x) +
+                            (enemigos[j].y + enemigos[j].alto/2 - explosivos[i].y) * 
+                            (enemigos[j].y + enemigos[j].alto/2 - explosivos[i].y)
+                        );
+                        
+                        if (distancia <= explosivos[i].radio_explosion)
                         {
-                            distancia = sqrt(pow(enemigos[j].x + enemigos[j].ancho/2 - explosivos[i].x, 2) + pow(enemigos[j].y + enemigos[j].alto/2 - explosivos[i].y, 2));
-
-                            if (distancia <= explosivos[i].radio_explosion)
+                            // ✅ VERIFICAR LÍNEA DE VISTA PARA EXPLOSIONES
+                            if (verificar_linea_vista_explosion(
+                                explosivos[i].x, explosivos[i].y,
+                                enemigos[j].x + enemigos[j].ancho/2, 
+                                enemigos[j].y + enemigos[j].alto/2, 
+                                tilemap))
                             {
-                                if (verificar_linea_vista_explosion(explosivos[i].x, explosivos[i].y, enemigos[j].x + enemigos[j].ancho/2, enemigos[j].y + enemigos[j].alto/2, tilemap))
-                                {
-                                    enemigos[j].vida -= explosivos[i].dano_area;
-                                    printf("¡Daño por explosión! Enemigo recibió %d de daño\n", explosivos[i].dano_area);
+                                float factor_distancia = 1.0f - (distancia / explosivos[i].radio_explosion);
+                                int dano_final = (int)(explosivos[i].dano_area * factor_distancia);
                                 
-                                    if (enemigos[j].vida <= 0)
-                                    {
-                                        enemigos[j].activo = false;
-                                        *puntaje += 10;
-                                        printf("Enemigo eliminado por explosión\n");
-                                    }
-                                }
-                                else
+                                enemigos[j].vida -= dano_final;
+                                printf("Enemigo tipo %d recibió %d de daño por explosión (distancia: %.1f)\n", 
+                                       enemigos[j].tipo, dano_final, distancia);
+                                
+                                if (enemigos[j].vida <= 0)
                                 {
-                                    printf("Enemigo protegido de explosión por obstáculo\n");
+                                    enemigos[j].activo = false;
+                                    (*puntaje) += 15;
+                                    
+                                    // ✅ VERIFICAR MEJORA DEL ARMA EXPLOSIVA
+                                    actualizar_progreso_arma(nave, Arma_explosiva);
+                                    verificar_mejora_arma(nave, Arma_explosiva, cola_mensajes);
+                                    
+                                    printf("Enemigo eliminado por explosión\n");
                                 }
                             }
                         }
                     }
-
-                    explosivos[i].dano_aplicado = true;
                 }
+                
+                // ✅ DAÑAR SOLO BLOQUES DESTRUCTIBLES EN EL RADIO DE EXPLOSIÓN
+                for (int fila = 0; fila < MAPA_FILAS; fila++)
+                {
+                    for (int col = 0; col < MAPA_COLUMNAS; col++)
+                    {
+                        if (tilemap[fila][col].tipo == 2) // ✅ SOLO ESCUDOS DESTRUCTIBLES
+                        {
+                            float tile_centro_x = col * TILE_ANCHO + TILE_ANCHO/2;
+                            float tile_centro_y = fila * TILE_ALTO + TILE_ALTO/2;
+                            
+                            float distancia = sqrt(
+                                (tile_centro_x - explosivos[i].x) * (tile_centro_x - explosivos[i].x) +
+                                (tile_centro_y - explosivos[i].y) * (tile_centro_y - explosivos[i].y)
+                            );
+                            
+                            if (distancia <= explosivos[i].radio_explosion * 0.7f) // Radio menor para bloques
+                            {
+                                float factor_distancia = 1.0f - (distancia / (explosivos[i].radio_explosion * 0.7f));
+                                int dano_bloque = (int)(explosivos[i].dano_area * factor_distancia * 0.5f);
+                                
+                                tilemap[fila][col].vida -= dano_bloque;
+                                if (tilemap[fila][col].vida <= 0)
+                                {
+                                    tilemap[fila][col].tipo = 0; // Destruir bloque destructible
+                                    printf("Escudo destructible en (%d,%d) destruido por explosión en área\n", col, fila);
+                                }
+                            }
+                        }
+                        // ✅ LOS BLOQUES SÓLIDOS (tipo 1) NO RECIBEN DAÑO DE ÁREA
+                    }
+                }
+                
+                explosivos[i].dano_aplicado = true;
             }
-            else
+            
+            // ✅ DESACTIVAR DESPUÉS DE LA ANIMACIÓN (0.5 segundos)
+            if (tiempo_explosion > 0.5)
             {
                 explosivos[i].activo = false;
-                printf("Explosión terminada\n");
+                printf("Animación de explosión terminada\n");
             }
         }
     }
@@ -3853,71 +3909,92 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
  */
 void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
 {
-    int i;
-    double tiempo_explosion;
-    float progreso;
-    float radio_actual;
-    float alpha;
-    int particulas;
-    int p;
-    ALLEGRO_COLOR color_proyectil = al_map_rgb(255, 100, 0);
-
-    for (i = 0; i < max_explosivos; i++)
+    double tiempo_actual = al_get_time();
+    
+    for (int i = 0; i < max_explosivos; i++)
     {
-        if (explosivos[i].activo)
+        if (!explosivos[i].activo) continue;
+        
+        // ✅ SI NO HA EXPLOTADO, DIBUJAR PROYECTIL
+        if (!explosivos[i].exploto)
         {
-            if (!explosivos[i].exploto)
+            ALLEGRO_COLOR color_proyectil = al_map_rgb(255, 100, 0); // Naranja
+            
+            // Dibujar proyectil con efecto de estela
+            al_draw_filled_circle(explosivos[i].x + explosivos[i].ancho/2, 
+                                 explosivos[i].y + explosivos[i].alto/2, 
+                                 4, color_proyectil);
+            
+            // Estela del proyectil
+            al_draw_filled_circle(explosivos[i].x + explosivos[i].ancho/2 - explosivos[i].vx * 0.01f, 
+                                 explosivos[i].y + explosivos[i].alto/2 - explosivos[i].vy * 0.01f, 
+                                 2, al_map_rgba(255, 50, 0, 128));
+        }
+        else // ✅ SI HA EXPLOTADO, DIBUJAR ANIMACIÓN DE EXPLOSIÓN
+        {
+            double tiempo_explosion = tiempo_actual - explosivos[i].tiempo_vida;
+            float progreso = (float)(tiempo_explosion / 0.5); // 0.5 segundos de duración
+            
+            if (progreso > 1.0f) progreso = 1.0f;
+            
+            // ✅ ANIMACIÓN DE EXPANSIÓN Y DESVANECIMIENTO
+            float radio_actual = explosivos[i].radio_explosion * progreso;
+            float alpha = 1.0f - progreso; // Se desvanece con el tiempo
+            
+            // ✅ MÚLTIPLES CÍRCULOS PARA EFECTO REALISTA
+            int num_circulos = 5;
+            for (int c = 0; c < num_circulos; c++)
             {
-                // Proyectil en vuelo
-                al_draw_filled_circle(explosivos[i].x + explosivos[i].ancho/2, explosivos[i].y + explosivos[i].alto/2, explosivos[i].ancho/2, color_proyectil);
-
-                // Efecto de la estela
-                al_draw_filled_circle(explosivos[i].x + explosivos[i].ancho/2 - explosivos[i].vx, explosivos[i].y + explosivos[i].alto/2 - explosivos[i].vy, explosivos[i].ancho/3, al_map_rgba(255, 50, 0, 100));
-            }
-            else
-            {
-                // Dibujar explosión
-                tiempo_explosion = al_get_time();
-                progreso = (float)(tiempo_explosion / 0.5);
-
-                if (progreso <= 1.0f)
+                float factor_radio = (c + 1) / (float)num_circulos;
+                float radio_circulo = radio_actual * factor_radio;
+                float alpha_circulo = alpha * (1.0f - factor_radio * 0.5f);
+                
+                // Colores que van del amarillo al rojo
+                int r = (int)(255 * alpha_circulo);
+                int g = (int)((255 - c * 30) * alpha_circulo);
+                int b = 0;
+                int a = (int)(255 * alpha_circulo);
+                
+                if (r < 0) r = 0; if (r > 255) r = 255;
+                if (g < 0) g = 0; if (g > 255) g = 255;
+                if (a < 0) a = 0; if (a > 255) a = 255;
+                
+                ALLEGRO_COLOR color_explosion = al_map_rgba(r, g, b, a);
+                
+                if (c == num_circulos - 1) // Círculo exterior
                 {
-                    // Expansion de radio
-                    radio_actual = explosivos[i].radio_explosion * progreso;
-
-                    // Devanecimiento
-                    alpha = 255 * (1.0f - progreso);
-
-                    // Múltiples anillos de explosión
-                    al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual, 
-                                         al_map_rgba(255, 100, 0, (int)(alpha * 0.6f))); // Naranja interior
-                    
-                    al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual * 0.7f, 
-                                         al_map_rgba(255, 200, 0, (int)(alpha * 0.8f))); // Amarillo medio
-                    
-                    al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_actual * 0.4f, 
-                                         al_map_rgba(255, 255, 255, (int)alpha)); // Blanco centro
-                    
-                    // Anillo externo
-                    al_draw_circle(explosivos[i].x, explosivos[i].y, radio_actual, al_map_rgba(255, 0, 0, (int)alpha), 3);
-
-                    // Chispas aleatorias
-                    particulas = 8 + (int)(progreso * 12); // Más partículas con el tiempo
-                    for (p = 0; p < particulas; p++)
-                    {
-                        float angulo = (float)p * (2.0f * ALLEGRO_PI / particulas);
-                        float dist_particula = radio_actual * (0.8f + 0.4f * progreso);
-                        float x_particula = explosivos[i].x + cos(angulo) * dist_particula;
-                        float y_particula = explosivos[i].y + sin(angulo) * dist_particula;
-                        
-                        al_draw_filled_circle(x_particula, y_particula, 2, 
-                                             al_map_rgba(255, 150, 0, (int)(alpha * 0.7f)));
-                    }
-
-                    al_draw_circle(explosivos[i].x, explosivos[i].y, radio_actual, 
-                                    al_map_rgba(255, 0, 0, (int)(alpha * 0.8f)), 3);
+                    al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_circulo, color_explosion);
                 }
-            } 
+                else // Círculos interiores
+                {
+                    al_draw_filled_circle(explosivos[i].x, explosivos[i].y, radio_circulo, color_explosion);
+                }
+            }
+            
+            // ✅ PARTÍCULAS DE EXPLOSIÓN
+            int num_particulas = 8 + (int)(progreso * 12); // Más partículas conforme avanza
+            for (int p = 0; p < num_particulas; p++)
+            {
+                float angulo = (2.0f * ALLEGRO_PI * p) / num_particulas;
+                float distancia_particula = radio_actual * (0.8f + (rand() % 40) / 100.0f);
+                
+                float px = explosivos[i].x + cos(angulo) * distancia_particula;
+                float py = explosivos[i].y + sin(angulo) * distancia_particula;
+                
+                int size = 2 + rand() % 3;
+                ALLEGRO_COLOR color_particula = al_map_rgba(255, 150 - (int)(progreso * 100), 0, (int)(alpha * 200));
+                
+                al_draw_filled_circle(px, py, size, color_particula);
+            }
+            
+            // ✅ EFECTO DE DESTELLO EN EL CENTRO
+            if (progreso < 0.3f) // Solo durante los primeros momentos
+            {
+                float alpha_destello = (0.3f - progreso) / 0.3f;
+                ALLEGRO_COLOR color_destello = al_map_rgba(255, 255, 255, (int)(alpha_destello * 255));
+                
+                al_draw_filled_circle(explosivos[i].x, explosivos[i].y, 8, color_destello);
+            }
         }
     }
 }
