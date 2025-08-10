@@ -3324,32 +3324,149 @@ void verificar_mejora_arma(Nave *nave, TipoArma tipo_arma, ColaMensajes *cola_me
  */
 void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
 {
-    char texto_arma[100];
+    // ✅ POSICIÓN BASE PARA TODO EL HUD DE ARMAS
+    int hud_x = 600;
+    int hud_y = 480; // Subido para dar espacio arriba de los slots
+    
     SistemaArma arma_actual = nave.armas[nave.arma_seleccionada];
-
-    snprintf(texto_arma, sizeof(texto_arma), "Arma: %s Lv.%d", arma_actual.nombre, arma_actual.nivel);
-    al_draw_text(fuente, al_map_rgb(255, 215, 0), 10, 140, ALLEGRO_ALIGN_LEFT, texto_arma);
-
+    
+    // ✅ CUADRO DE ARMA ACTIVA - ARRIBA DE TODO
+    int cuadro_x = hud_x;
+    int cuadro_y = hud_y;
+    int cuadro_ancho = 180;
+    int cuadro_alto = 40;
+    
+    al_draw_filled_rectangle(cuadro_x, cuadro_y, cuadro_x + cuadro_ancho, cuadro_y + cuadro_alto, al_map_rgba(0, 0, 0, 150));
+    al_draw_rectangle(cuadro_x, cuadro_y, cuadro_x + cuadro_ancho, cuadro_y + cuadro_alto, al_map_rgb(255, 215, 0), 2);
+    
+    // ✅ NOMBRE CORTO DEL ARMA ACTIVA
+    char nombre_corto[15];
+    switch (nave.arma_seleccionada)
+    {
+        case 0: strcpy(nombre_corto, "NORMAL"); break;
+        case 1: strcpy(nombre_corto, "LÁSER"); break;
+        case 2: strcpy(nombre_corto, "EXPLOSIVO"); break;
+        case 3: strcpy(nombre_corto, "MISIL"); break;
+        default: strcpy(nombre_corto, "DESCONOCIDO"); break;
+    }
+    
+    al_draw_text(fuente, al_map_rgb(255, 255, 255), cuadro_x + 10, cuadro_y + 5, ALLEGRO_ALIGN_LEFT, nombre_corto);
+    
+    // ✅ NIVEL DEL ARMA ACTIVA
+    char nivel_texto[10];
+    //sprintf(nivel_texto, "LV%d", arma_actual.nivel);
+    al_draw_text(fuente, al_map_rgb(255, 215, 0), cuadro_x + 100, cuadro_y + 5, ALLEGRO_ALIGN_LEFT, nivel_texto);
+    
+    // ✅ BARRA DE PROGRESO DEL ARMA ACTIVA
     if (arma_actual.nivel < 3 && arma_actual.kills_necesarias > 0)
     {
-        char progreso[50];
-        snprintf(progreso, sizeof(progreso), "Progreso: %d/%d kills", arma_actual.kills_mejora, arma_actual.kills_necesarias);
-        al_draw_text(fuente, al_map_rgb(255, 255, 255), 10, 160, ALLEGRO_ALIGN_LEFT, progreso);
+        float progreso = (float)arma_actual.kills_mejora / arma_actual.kills_necesarias;
+        if (progreso > 1.0f) progreso = 1.0f;
+        
+        // Barra de progreso
+        int barra_x = cuadro_x + 10;
+        int barra_y = cuadro_y + 25;
+        int barra_ancho = 150;
+        int barra_alto = 4;
+        
+        al_draw_filled_rectangle(barra_x, barra_y, barra_x + (barra_ancho * progreso), barra_y + barra_alto, 
+                               al_map_rgb(0, 255, 100));
+        al_draw_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
+                        al_map_rgb(150, 150, 150), 1);
+        
+        // Texto de progreso pequeño
+        char prog_texto[20];
+        sprintf(prog_texto, "%d/%d", arma_actual.kills_mejora, arma_actual.kills_necesarias);
+        al_draw_text(fuente, al_map_rgb(200, 200, 200), cuadro_x + 85, cuadro_y + 20, ALLEGRO_ALIGN_CENTER, prog_texto);
     }
     else if (arma_actual.nivel == 3)
     {
-        al_draw_text(fuente, al_map_rgb(0, 255, 0), 10, 160, ALLEGRO_ALIGN_LEFT, "Arma al máximo nivel!");
+        al_draw_text(fuente, al_map_rgb(255, 215, 0), cuadro_x + 85, cuadro_y + 22, ALLEGRO_ALIGN_CENTER, "MAX");
     }
     
-    int y_offset = 180;
-    for (int i = 0; i < 4; i++) {
-        if (nave.armas[i].desbloqueado)
+    // ✅ SLOTS DE ARMAS - DEBAJO DEL CUADRO PRINCIPAL
+    int slots_y = cuadro_y + cuadro_alto + 10; // 10 píxeles de separación
+    int slot_size = 40;
+    int slot_spacing = 5;
+    
+    for (int i = 0; i < 4; i++)
+    {
+        int slot_x = hud_x + (i * (slot_size + slot_spacing));
+        
+        SistemaArma arma = nave.armas[i];
+        
+        // ✅ COLORES SEGÚN ESTADO DEL ARMA
+        ALLEGRO_COLOR color_fondo, color_borde, color_texto;
+        
+        if (!arma.desbloqueado)
         {
-            ALLEGRO_COLOR color = (i == nave.arma_seleccionada) ? al_map_rgb(255, 255, 0) : al_map_rgb(150, 150, 150);
+            // Arma bloqueada - gris oscuro
+            color_fondo = al_map_rgba(50, 50, 50, 150);
+            color_borde = al_map_rgb(80, 80, 80);
+            color_texto = al_map_rgb(100, 100, 100);
+        }
+        else if (nave.arma_seleccionada == i)
+        {
+            // Arma activa - dorado brillante
+            color_fondo = al_map_rgba(255, 215, 0, 100);
+            color_borde = al_map_rgb(255, 255, 255);
+            color_texto = al_map_rgb(255, 255, 255);
+        }
+        else
+        {
+            // Arma disponible - azul suave
+            color_fondo = al_map_rgba(0, 100, 200, 80);
+            color_borde = al_map_rgb(150, 150, 255);
+            color_texto = al_map_rgb(200, 200, 255);
+        }
+        
+        // ✅ DIBUJAR SLOT
+        al_draw_filled_rectangle(slot_x, slots_y, slot_x + slot_size, slots_y + slot_size, color_fondo);
+        al_draw_rectangle(slot_x, slots_y, slot_x + slot_size, slots_y + slot_size, color_borde, 2);
+        
+        // ✅ NÚMERO DE TECLA
+        char tecla[3];
+        sprintf(tecla, "%d", i + 1);
+        al_draw_text(fuente, color_texto, slot_x + 5, slots_y + 5, ALLEGRO_ALIGN_LEFT, tecla);
+        
+        // ✅ ICONO VISUAL DEL ARMA
+        if (arma.desbloqueado)
+        {
+            int centro_x = slot_x + slot_size/2;
+            int centro_y = slots_y + slot_size/2;
             
-            char tecla[20];
-            snprintf(tecla, sizeof(tecla), "%d: %s", i+1, nave.armas[i].nombre);
-            al_draw_text(fuente, color, 10, y_offset + (i * 15), ALLEGRO_ALIGN_LEFT, tecla);
+            switch (i)
+            {
+                case 0: // Normal - punto simple
+                    al_draw_filled_circle(centro_x, centro_y, 3, color_texto);
+                    break;
+                    
+                case 1: // Láser - línea horizontal
+                    al_draw_line(centro_x - 8, centro_y, centro_x + 8, centro_y, color_texto, 3);
+                    break;
+                    
+                case 2: // Explosivo - cruz
+                    al_draw_line(centro_x - 6, centro_y, centro_x + 6, centro_y, color_texto, 2);
+                    al_draw_line(centro_x, centro_y - 6, centro_x, centro_y + 6, color_texto, 2);
+                    break;
+                    
+                case 3: // Misil - triángulo
+                    al_draw_filled_triangle(centro_x, centro_y - 6, centro_x - 5, centro_y + 4, 
+                                          centro_x + 5, centro_y + 4, color_texto);
+                    break;
+            }
+        }
+        
+        // ✅ INDICADORES DE NIVEL (puntos pequeños)
+        if (arma.desbloqueado)
+        {
+            for (int nivel = 1; nivel <= 3; nivel++)
+            {
+                ALLEGRO_COLOR color_punto = (nivel <= arma.nivel) ? 
+                    al_map_rgb(0, 255, 0) : al_map_rgb(60, 60, 60);
+                
+                al_draw_filled_circle(slot_x + 8 + (nivel * 8), slots_y + slot_size - 8, 2, color_punto);
+            }
         }
     }
 }
