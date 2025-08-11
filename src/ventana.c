@@ -8,9 +8,9 @@
 
 ALLEGRO_DISPLAY *ventana = NULL;
 ALLEGRO_EVENT_QUEUE *cola_eventos = NULL;
-ALLEGRO_BITMAP* imagen_fondo = NULL;
-ALLEGRO_BITMAP* imagen_nave = NULL;
-ALLEGRO_BITMAP* imagen_asteroide = NULL;
+ALLEGRO_BITMAP *imagen_fondo = NULL;
+ALLEGRO_BITMAP *imagen_nave = NULL;
+ALLEGRO_BITMAP *imagen_asteroide = NULL;
 
 /**
  * @brief Inicializa la biblioteca Allegro.
@@ -20,54 +20,47 @@ ALLEGRO_BITMAP* imagen_asteroide = NULL;
  * 
  * @return 0 si la inicialización fue exitosa, -1 en caso de error.
  */
-int init_allegro() {
-    if (!al_init()) {
+int init_allegro()
+{
+    if (!al_init())
+    {
         fprintf(stderr, "Error al inicializar Allegro.\n");
         return -1;
     }
 
-    if (!al_install_keyboard()) {
+    if (!al_install_keyboard())
+    {
         fprintf(stderr, "Error: No se pudo inicializar el teclado.\n");
         return -1;
     }
 
-    if (!al_init_primitives_addon()) {
+    if (!al_init_primitives_addon())
+    {
         fprintf(stderr, "Error: No se pudo inicializar los primitivos.\n");
         return -1;
     }
 
-    if (!al_install_mouse()) {
+    if (!al_install_mouse())
+    {
         fprintf(stderr, "Error: No se pudo inicializar el mouse.\n");
         return -1;
     }
 
-    if (!al_init_font_addon()) {
+    if (!al_init_font_addon())
+    {
         fprintf(stderr, "Error: No se pudo inicializar las fuentes.\n");
         return -1;
     }
     
-    if (!al_init_ttf_addon()) {
+    if (!al_init_ttf_addon())
+    {
         fprintf(stderr, "Error: No se pudo inicializar las fuentes TTF.\n");
         return -1;
     }
 
-    if (!al_init_image_addon()) {
+    if (!al_init_image_addon())
+    {
         fprintf(stderr, "Error: No se pudo inicializar las imagenes.\n");
-        return -1;
-    }
-
-    if (!al_install_audio()) {
-        fprintf(stderr, "Error: No se pudo inicializar el audio.\n");
-        return -1;
-    }
-    
-    if (!al_init_acodec_addon()) {
-        fprintf(stderr, "Error: No se pudo inicializar los codecs de audio.\n");
-        return -1;
-    }
-
-    if (!al_reserve_samples(1)) {
-        fprintf(stderr, "Error: No se pudo reservar muestras de audio.\n");
         return -1;
     }
 
@@ -85,15 +78,18 @@ int init_allegro() {
  * @param titulo Título de la ventana.
  * @return Puntero a la ventana creada, o NULL en caso de error.
  */
-ALLEGRO_DISPLAY *crear_ventana(int ancho, int largo, const char *titulo) {
+ALLEGRO_DISPLAY *crear_ventana(int ancho, int largo, const char *titulo)
+{
     ventana = al_create_display(ancho, largo);
-    if (!ventana) {
+    if (!ventana) 
+    {
         fprintf(stderr, "Error al crear la ventana.\n");
         return NULL;
     }
 
     cola_eventos = al_create_event_queue();
-    if (!cola_eventos) {
+    if (!cola_eventos)
+    {
         fprintf(stderr, "Error: No se pudo crear la cola de eventos.\n");
         al_destroy_display(ventana);
         return NULL;
@@ -119,7 +115,7 @@ ALLEGRO_DISPLAY *crear_ventana(int ancho, int largo, const char *titulo) {
  * @param imagen_menu Imagen de fondo del menú
  * @param musica_fondo Música de fondo del juego
  */
-void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, ALLEGRO_BITMAP* imagen_enemigo, ALLEGRO_BITMAP *imagen_menu, ALLEGRO_AUDIO_STREAM *stream_musica_fondo)
+void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, ALLEGRO_BITMAP* imagen_enemigo, ALLEGRO_BITMAP *imagen_menu)
 {
     if (ventana) 
     {
@@ -175,13 +171,7 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
         imagen_menu = NULL;
     }
 
-    if (stream_musica_fondo)
-    {
-        al_destroy_audio_stream(stream_musica_fondo);
-        stream_musica_fondo = NULL;
-        printf("Música de fondo destruida correctamente.\n");
-    }
-    
+    printf("Recursos destruidos con exito.\n");
 }
 
 /**
@@ -196,26 +186,30 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
  * @param imagen_asteroide Puntero doble a la imagen del asteoride
  * @return int Si la inicializacion fue exitosa retorna 0, en caso contrario retorna -1
  */
-int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave, ALLEGRO_BITMAP **imagen_asteroide, ALLEGRO_BITMAP **imagen_enemigo, ALLEGRO_BITMAP **imagen_menu, ALLEGRO_AUDIO_STREAM **stream_musica_fondo)
+int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave, ALLEGRO_BITMAP **imagen_asteroide, ALLEGRO_BITMAP **imagen_enemigo, ALLEGRO_BITMAP **imagen_menu)
 {
-    if (init_allegro() != 0) {
+    if (init_allegro() != 0)
+     {
         return -1;
     }
 
     *ventana = crear_ventana(ANCHO_VENTANA, ALTO_VENTANA, "Juego de Naves");
-    if (!*ventana) {
+    if (!*ventana) 
+    {
         return -1;
     }
 
     *cola_eventos = al_create_event_queue();
-    if (!*cola_eventos) {
+    if (!*cola_eventos) 
+    {
         fprintf(stderr, "Error: no se pudo crear la cola de eventos.\n");
         al_destroy_display(*ventana);
         return -1;
     }
 
     *temporizador = al_create_timer(1.0 / 60); // 60 FPS
-    if (!*temporizador) {
+    if (!*temporizador) 
+    {
         fprintf(stderr, "Error: no se pudo crear el temporizador.\n");
         al_destroy_event_queue(*cola_eventos);
         al_destroy_display(*ventana);
@@ -230,7 +224,8 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
     al_start_timer(*temporizador);
 
     *fuente = al_load_ttf_font("pixel_arial_11/PIXEARG_.TTF", 24, 0);
-    if (!*fuente) {
+    if (!*fuente) 
+    {
         fprintf(stderr, "Error: no se pudo crear la fuente.\n");
         al_destroy_event_queue(*cola_eventos);
         al_destroy_display(*ventana);
@@ -249,7 +244,8 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
     }
 
     *imagen_nave = al_load_bitmap("imagenes/jugador/nave.png");
-    if (!*imagen_nave) {
+    if (!*imagen_nave)
+    {
         fprintf(stderr, "Error: no se pudo cargar la imagen de la nave.\n");
         al_destroy_event_queue(*cola_eventos);
         al_destroy_display(*ventana);
@@ -260,7 +256,8 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
     }
 
     *imagen_asteroide = al_load_bitmap("imagenes/enemigos/asteroide.png");
-    if (!*imagen_asteroide) {
+    if (!*imagen_asteroide)
+    {
         fprintf(stderr, "Error: no se pudo cargar la imagen del asteroide.\n");
         al_destroy_event_queue(*cola_eventos);
         al_destroy_display(*ventana);
@@ -273,7 +270,8 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
 
         // Cargar imagen específica para enemigos
     *imagen_enemigo = al_load_bitmap("imagenes/enemigos/Enemigo1.png");
-    if (!imagen_enemigo) {
+    if (!imagen_enemigo)
+    {
         fprintf(stderr, "Error: no se pudo cargar la imagen del enemigo.\n");
         al_destroy_event_queue(*cola_eventos);
         al_destroy_display(*ventana);
@@ -294,55 +292,6 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
     else
     {
         printf("Imagen de menú cargada correctamente.\n");
-    }
-
-    printf("Cargando música de fondo del menú...\n");
-
-    FILE* test_file = fopen("audio/Cosmic-Circuitry.mp3", "r");
-    if (!test_file) {
-        fprintf(stderr, "❌ ERROR: No se encuentra el archivo audio/Cosmic-Circuitry.mp3\n");
-        *stream_musica_fondo = NULL;
-    }
-    else 
-    {
-        fclose(test_file);
-        printf("✅ Archivo encontrado: audio/Cosmic-Circuitry.mp3\n");
-    
-        *stream_musica_fondo = al_load_audio_stream("audio/Cosmic-Circuitry.mp3", 4, 1024);
-        if (*stream_musica_fondo)
-        {
-            printf("✅ Stream de música MP3 cargado correctamente\n");
-        
-            // Configurar el stream
-            al_set_audio_stream_playmode(*stream_musica_fondo, ALLEGRO_PLAYMODE_LOOP);
-            al_set_audio_stream_gain(*stream_musica_fondo, 0.5f); // Volumen al 50%
-            al_attach_audio_stream_to_mixer(*stream_musica_fondo, al_get_default_mixer());
-        
-            printf("🎵 Stream de música configurado correctamente\n");
-            printf("   - Modo: LOOP\n");
-            printf("   - Volumen: 50%%\n");
-            printf("   - Mixer: Conectado\n");
-        }
-        else
-        {
-            fprintf(stderr, "❌ No se pudo cargar el stream MP3, intentando WAV...\n");
-            *stream_musica_fondo = al_load_audio_stream("audio/Cosmic-Circuitry.wav", 4, 1024);
-            if (*stream_musica_fondo)
-            {
-                printf("✅ Stream de música WAV cargado correctamente\n");
-                al_set_audio_stream_playmode(*stream_musica_fondo, ALLEGRO_PLAYMODE_LOOP);
-                al_set_audio_stream_gain(*stream_musica_fondo, 0.5f);
-                al_attach_audio_stream_to_mixer(*stream_musica_fondo, al_get_default_mixer());
-            }
-            else
-            {
-                fprintf(stderr, "❌ No se pudo cargar música en ningún formato\n");
-                fprintf(stderr, "Archivos buscados:\n");
-                fprintf(stderr, "  - audio/Cosmic-Circuitry.mp3\n");
-                fprintf(stderr, "  - audio/Cosmic-Circuitry.wav\n");
-                *stream_musica_fondo = NULL;
-            }
-        }
     }
 
     return 0;

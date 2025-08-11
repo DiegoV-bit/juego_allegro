@@ -14,6 +14,7 @@ int main()
     srand(time(NULL)); // Inicializa el generador de números aleatorios
     bool teclas[ALLEGRO_KEY_MAX] = {false};
     int i;
+    int j;
     int k;
     float nave_x_inicial;
     float nave_y_inicial;
@@ -35,7 +36,6 @@ int main()
 
     // Variables del menu principal
     ALLEGRO_BITMAP *imagen_menu = NULL;
-    ALLEGRO_AUDIO_STREAM *stream_musica_fondo = NULL;
     Boton botones[3];
     bool en_menu;
     bool jugando;
@@ -58,8 +58,50 @@ int main()
     bool hay_jefe_en_nivel = false;
     ALLEGRO_BITMAP *imagen_jefe = NULL;
     ALLEGRO_EVENT evento;
+    bool recargar_nivel;
+    bool juego_terminado;
+    Asteroide asteroides[NUM_ASTEROIDES];
+    EstadoJuego estado_nivel;
+    Nave nave;
+    Disparo disparos[MAX_DISPAROS];
+    Powerup powerups[MAX_POWERUPS];
+    Disparo disparos_enemigos[NUM_DISPAROS_ENEMIGOS];
+    Enemigo enemigos[NUM_ENEMIGOS];
+    int tipo_jefe;
+    int puntaje;
+    ColaMensajes cola_mensajes;
+    double tiempo_cache;
+    bool laser_activo;
+    int laser_desactivado;
+    int siguiente_nivel;
+    int nivel_disparo_radial_guardado;
+    int kills_para_mejora_guardado;
+    int tipo_nave_guardado;
+    SistemaArma armas_guardadas[4];
+    int clear_i;
+    TipoArma arma_actual_guardada;
+    int arma_seleccionada_guardada;
+    int enemigos_a_copiar;
+    bool hay_lasers_activos;
+    int laser_check;
+    bool hay_explosivos_activos;
+    int exp_check;
+    bool hay_misiles_activos;
+    int mis_check;
+    int enemigos_restantes;
+    int z;
+    char msg_enemigos[100];
+    float alcance_real;
+    double tiempo_actual;
+    double tiempo_transcurrido;
+    char texto_nivel[50];
+    char nombre_jugador[MAX_NOMBRE];
+    char texto_puntaje_final[100];
+    bool esperando;
+    ALLEGRO_EVENT victoria;
+    int num_jugadores;
 
-    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo, &imagen_menu, &stream_musica_fondo) != 0)
+    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo, &imagen_menu) != 0)
     {
         return -1;
     }
@@ -96,13 +138,7 @@ int main()
     while (true)
     {
         while (en_menu)
-        {
-            if (stream_musica_fondo && !al_get_audio_stream_playing(stream_musica_fondo))
-            {
-                al_set_audio_stream_playing(stream_musica_fondo, true);
-                printf("Música del menú iniciada\n");
-            }
-            
+        {   
             al_wait_for_event(cola_eventos, &evento);
 
             if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
@@ -117,13 +153,7 @@ int main()
             {
                 boton_clicado = detectar_click(botones, 3, evento.mouse.x, evento.mouse.y);
                 if (boton_clicado == 0)
-                {
-                    if (stream_musica_fondo)
-                    {
-                        al_set_audio_stream_playing(stream_musica_fondo, false);
-                        printf("Música del menú detenida\n");
-                    }
-                    
+                {   
                     en_menu = false;
                     jugando = true;
                 }
@@ -151,10 +181,7 @@ int main()
             {
                 if (imagen_menu)
                 {
-                    al_draw_scaled_bitmap(imagen_menu, 0, 0, 
-                                        al_get_bitmap_width(imagen_menu), 
-                                        al_get_bitmap_height(imagen_menu), 
-                                        0, 0, 800, 600, 0);
+                    al_draw_scaled_bitmap(imagen_menu, 0, 0, al_get_bitmap_width(imagen_menu), al_get_bitmap_height(imagen_menu), 0, 0, 800, 600, 0);
                 }
                 else
                 {
@@ -178,30 +205,28 @@ int main()
             cargar_tilemap("Nivel1.txt", tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_enemigo, &nave_x_inicial, &nave_y_inicial);
 
             // Inicializar estado del juego
-            EstadoJuego estado_nivel;
             init_estado_juego(&estado_nivel);
 
-            bool recargar_nivel = false;
-            bool juego_terminado = false;
+            recargar_nivel = false;
+            juego_terminado = false;
 
             // Inicializar asteroides
-            Asteroide asteroides[NUM_ASTEROIDES];
             init_asteroides(asteroides, NUM_ASTEROIDES, 800, imagen_asteroide);
 
             // Inicializar nave
-            Nave nave = init_nave(nave_x_inicial, nave_y_inicial, 50, 50, 100.0f, 0.1, imagen_nave);
+            nave = init_nave(nave_x_inicial, nave_y_inicial, 50, 50, 100.0f, 0.1, imagen_nave);
 
             memset(teclas, false, sizeof(teclas)); // Reiniciar teclas
 
             // Inicializar el sistema de armas
             init_sistema_armas(&nave);
 
-            for (int i = 0; i < 5; i++)
+            for (i = 0; i < 5; i++)
             {
                 lasers[i].activo = false;
             }
 
-            for (int i = 0; i < 8; i++)
+            for (i = 0; i < 8; i++)
             {
                 explosivos[i].activo = false;
                 explosivos[i].exploto = false;
@@ -213,27 +238,23 @@ int main()
                 explosivos[i].tiempo_vida = 0;
             }
 
-            for (int i = 0; i < 6; i++)
+            for (i = 0; i < 6; i++)
             {
                 misil[i].activo = false;
             }
 
             // Inicializar disparos
-            Disparo disparos[MAX_DISPAROS];
             init_disparos(disparos, MAX_DISPAROS);
 
             // Inicializar Powerups
-            Powerup powerups[MAX_POWERUPS];
             for (k = 0; k < MAX_POWERUPS; k++)
             {
                 init_powerup(&powerups[k]);
             }
             
             // Inicializar Enemigos
-            Disparo disparos_enemigos[NUM_DISPAROS_ENEMIGOS];
-
-            Enemigo enemigos[NUM_ENEMIGOS];
-            for (i = 0; i < num_enemigos_cargados && i < NUM_ENEMIGOS; i++) {
+            for (i = 0; i < num_enemigos_cargados && i < NUM_ENEMIGOS; i++)
+            {
                 enemigos[i] = enemigos_mapa[i];
                 asignar_imagen_enemigo(&enemigos[i], imagenes_enemigos); // Asegurar que usen el sprite correcto
             }
@@ -255,13 +276,13 @@ int main()
 
                     if (enemigos_mapa[i].tipo == 5 || enemigos_mapa[i].tipo == 6) 
                     {
-                        int tipo_jefe = enemigos_mapa[i].tipo == 5 ? 0 : 1; // 5=Destructor(0), 6=Supremo(1)
+                        tipo_jefe = enemigos_mapa[i].tipo == 5 ? 0 : 1; // 5=Destructor(0), 6=Supremo(1)
                         init_jefe(&jefe_nivel, tipo_jefe, enemigos_mapa[i].x, enemigos_mapa[i].y, imagen_jefe);
                         hay_jefe_en_nivel = true;
                         printf("Jefe encontrado en nivel %d: tipo %d\n", estado_nivel.nivel_actual, tipo_jefe);
                     
                         // Remover jefe del array de enemigos normales
-                        for (int k = i; k < num_enemigos_cargados - 1; k++) 
+                        for (k = i; k < num_enemigos_cargados - 1; k++) 
                         {
                             enemigos_mapa[k] = enemigos_mapa[k + 1];
                         }
@@ -283,18 +304,16 @@ int main()
             init_disparos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
 
             // Inicializar puntaje en 0
-            int puntaje = 0;
+            puntaje = 0;
 
             // Inicializar Mensajes
-            ColaMensajes cola_mensajes;
             init_cola_mensajes(&cola_mensajes);
 
-            double tiempo_cache = 0;
+            tiempo_cache = 0;
 
             /*Bucle del juego*/
             while (jugando && !juego_terminado) 
             {
-                ALLEGRO_EVENT evento;
                 al_wait_for_event(cola_eventos, &evento);
 
                 if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
@@ -313,7 +332,7 @@ int main()
                         {
                             if (nave.arma_actual == Arma_laser)
                             {
-                                bool laser_activo = false;
+                                laser_activo = false;
                                 for (i = 0; i < 5; i++)
                                 {
                                     if (lasers[i].activo)
@@ -350,7 +369,7 @@ int main()
                     {
                         if (nave.arma_actual == Arma_laser)
                         {
-                            int laser_desactivado = 0;
+                            laser_desactivado = 0;
                             for (i = 0; i < 5; i++)
                             {
                                 if (lasers[i].activo)
@@ -395,7 +414,7 @@ int main()
                     // Cargar siguiente nivel si es necesario
                     if (recargar_nivel)
                     {
-                        int siguiente_nivel = estado_nivel.nivel_actual + 1;
+                        siguiente_nivel = estado_nivel.nivel_actual + 1;
 
                         if (cargar_siguiente_nivel(siguiente_nivel, tilemap, enemigos_mapa, &num_enemigos_cargados, imagen_enemigo, &nave_x_inicial, &nave_y_inicial))
                         {
@@ -409,44 +428,43 @@ int main()
                                 powerups[k].y = 0;
                             }
 
-                            for (int clear_i = 0; clear_i < MAX_DISPAROS; clear_i++)
+                            for (clear_i = 0; clear_i < MAX_DISPAROS; clear_i++)
                             {
                                 disparos[clear_i].activo = false;
                             }
 
-                            for (int clear_i = 0; clear_i < NUM_DISPAROS_ENEMIGOS; clear_i++)
+                            for (clear_i = 0; clear_i < NUM_DISPAROS_ENEMIGOS; clear_i++)
                             {
                                 disparos_enemigos[clear_i].activo = false;
                             }
 
-                            for (int clear_i = 0; clear_i < 5; clear_i++)
+                            for (clear_i = 0; clear_i < 5; clear_i++)
                             {
                                 lasers[clear_i].activo = false;
                             }
 
-                            for (int clear_i = 0; clear_i < 8; clear_i++)
+                            for (clear_i = 0; clear_i < 8; clear_i++)
                             {
                                 explosivos[clear_i].activo = false;
                             }
 
-                            for (int clear_i = 0; clear_i < 6; clear_i++)
+                            for (clear_i = 0; clear_i < 6; clear_i++)
                             {
                                 misil[clear_i].activo = false;
                             }
 
                             // Guardar el estado de la nave antes de reinicializarla
-                            int nivel_disparo_radial_guardado = nave.nivel_disparo_radial;
-                            int kills_para_mejora_guardado = nave.kills_para_mejora;
-                            int tipo_nave_guardado = nave.tipo;
+                            nivel_disparo_radial_guardado = nave.nivel_disparo_radial;
+                            kills_para_mejora_guardado = nave.kills_para_mejora;
+                            tipo_nave_guardado = nave.tipo;
 
-                            SistemaArma armas_guardadas[4];
-                            for (int i = 0; i < 4; i++)
+                            for (i = 0; i < 4; i++)
                             {
                                 armas_guardadas[i] = nave.armas[i];
                             }
                             
-                            TipoArma arma_actual_guardada = nave.arma_actual;
-                            int arma_seleccionada_guardada = nave.arma_seleccionada;
+                            arma_actual_guardada = nave.arma_actual;
+                            arma_seleccionada_guardada = nave.arma_seleccionada;
 
                             nave.escudo.activo = false;
 
@@ -458,7 +476,7 @@ int main()
                             nave.kills_para_mejora = kills_para_mejora_guardado;
                             nave.tipo = tipo_nave_guardado;
 
-                            for (int i = 0; i < 4; i++)
+                            for (i = 0; i < 4; i++)
                             {
                                 nave.armas[i] = armas_guardadas[i];
                             }
@@ -474,7 +492,7 @@ int main()
                             }
                             else
                             {
-                                for (int k = 0; k < NUM_ASTEROIDES; k++)
+                                for (k = 0; k < NUM_ASTEROIDES; k++)
                                 {
                                     asteroides[k].y = -2000;
                                     asteroides[k].x = -2000;
@@ -494,7 +512,7 @@ int main()
                             else
                             {
                                 // Desactivar completamente los asteroides
-                                for (int k = 0; k < NUM_ASTEROIDES; k++)
+                                for (k = 0; k < NUM_ASTEROIDES; k++)
                                 {
                                     asteroides[k].y = -1000; // Fuera de la pantalla
                                     asteroides[k].x = -1000;
@@ -504,9 +522,9 @@ int main()
                             }
 
                             // RECARGAR ENEMIGOS
-                            int enemigos_a_copiar = (num_enemigos_cargados < NUM_ENEMIGOS) ? num_enemigos_cargados : NUM_ENEMIGOS;
+                            enemigos_a_copiar = (num_enemigos_cargados < NUM_ENEMIGOS) ? num_enemigos_cargados : NUM_ENEMIGOS;
 
-                            for (int k = 0; k < enemigos_a_copiar; k++) 
+                            for (k = 0; k < enemigos_a_copiar; k++) 
                             {
                                 enemigos[k] = enemigos_mapa[k];
                                 asignar_imagen_enemigo(&enemigos[k], imagenes_enemigos); // Asegurar que usen el sprite correcto
@@ -523,12 +541,12 @@ int main()
 
                                 if (enemigos_mapa[k].tipo == 5 || enemigos_mapa[k].tipo == 6)
                                 {
-                                    int tipo_jefe = enemigos_mapa[k].tipo == 5 ? 0 : 1;
+                                    tipo_jefe = enemigos_mapa[k].tipo == 5 ? 0 : 1;
                                     init_jefe(&jefe_nivel, tipo_jefe, enemigos_mapa[k].x, enemigos_mapa[k].y, imagen_jefe);
                                     hay_jefe_en_nivel = true;
                                     printf("Jefe cargado en nivel %d: enemigo tipo %d -> jefe tipo %d\n", estado_nivel.nivel_actual, enemigos_mapa[k].tipo, tipo_jefe);
 
-                                    for (int j = k; j < num_enemigos_cargados - 1; j++) 
+                                    for (j = k; j < num_enemigos_cargados - 1; j++) 
                                     {
                                         enemigos_mapa[j] = enemigos_mapa[j + 1];
                                     }
@@ -563,7 +581,7 @@ int main()
                     if (puntaje >= 30 && nave.tipo == 0)
                     {
                         nave.tipo = 1;
-                        for(int k = 0; k < ALLEGRO_KEY_MAX; k++)
+                        for(k = 0; k < ALLEGRO_KEY_MAX; k++)
                         {
                             teclas[k] = false; // Reiniciar teclas para evitar problemas de movimiento
                         }
@@ -573,8 +591,8 @@ int main()
                         agregar_mensaje_cola(&cola_mensajes, "Usa las flechas para rotar y avanzar", 3.0, al_map_rgb(255, 255, 255), true); // Centrado
                     }
 
-                    bool hay_lasers_activos = false;
-                    for (int laser_check = 0; laser_check < 5; laser_check++)
+                    hay_lasers_activos = false;
+                    for (laser_check = 0; laser_check < 5; laser_check++)
                     {
                         if (lasers[laser_check].activo)
                         {
@@ -588,8 +606,8 @@ int main()
                         actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje, &nave, tilemap, &contador_debug_lasers, powerups, MAX_POWERUPS, &cola_mensajes);
                     }
                     
-                    bool hay_explosivos_activos = false;
-                    for (int exp_check = 0; exp_check < 8; exp_check++)
+                    hay_explosivos_activos = false;
+                    for (exp_check = 0; exp_check < 8; exp_check++)
                     {
                         if (explosivos[exp_check].activo)
                         {
@@ -603,8 +621,8 @@ int main()
                         actualizar_explosivos(explosivos, 8, enemigos, num_enemigos_cargados, &puntaje, tilemap, &nave, &cola_mensajes);
                     }
                     
-                    bool hay_misiles_activos = false;
-                    for (int mis_check = 0; mis_check < 6; mis_check++)
+                    hay_misiles_activos = false;
+                    for (mis_check = 0; mis_check < 6; mis_check++)
                     {
                         if (misil[mis_check].activo)
                         {
@@ -623,11 +641,16 @@ int main()
                         actualizar_jefe(&jefe_nivel, nave, enemigos, &num_enemigos_cargados, imagenes_enemigos, tiempo_cache);
                         
                         // Verificar colisiones ataques del jefe vs nave
-                        for (int k = 0; k < MAX_ATAQUES_JEFE; k++) {
-                            if (jefe_nivel.ataques[k].activo && detectar_colision_ataque_jefe_nave(jefe_nivel.ataques[k], nave)) {
-                                if (escudo_recibir_dano(&nave.escudo)) {
+                        for (k = 0; k < MAX_ATAQUES_JEFE; k++)
+                        {
+                            if (jefe_nivel.ataques[k].activo && detectar_colision_ataque_jefe_nave(jefe_nivel.ataques[k], nave))
+                            {
+                                if (escudo_recibir_dano(&nave.escudo))
+                                {
                                     printf("Escudo absorbió ataque del jefe\n");
-                                } else {
+                                }
+                                else
+                                {
                                     nave.vida -= jefe_nivel.ataques[k].dano;
                                     printf("Jefe causo %.1f de daño. Vida restante: %.1f\n", jefe_nivel.ataques[k].dano, nave.vida);
                                     agregar_mensaje_cola(&cola_mensajes, "¡Ataque del Jefe!", 2.0, al_map_rgb(255, 0, 0), false);
@@ -643,9 +666,9 @@ int main()
                     {
                         actualizar_estado_nivel(&estado_nivel, enemigos, num_enemigos_cargados, tiempo_cache, hay_jefe_en_nivel, &jefe_nivel);
 
-                        int enemigos_restantes = 0;
+                        enemigos_restantes = 0;
 
-                        for (int z = 0; z < num_enemigos_cargados; z++)
+                        for (z = 0; z < num_enemigos_cargados; z++)
                         {
                             if (enemigos[z].activo) 
                             {
@@ -656,11 +679,12 @@ int main()
                         printf("Estado nivel %d: Jefe activo, Enemigos restantes: %d\n", estado_nivel.nivel_actual, enemigos_restantes);
                         
                         // Disparos normales vs jefe
-                        for (int j = 0; j < MAX_DISPAROS; j++) 
+                        for (j = 0; j < MAX_DISPAROS; j++) 
                         {
                             if (disparos[j].activo && detectar_colision_generica(disparos[j].x, disparos[j].y, 5, 10, jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto))
                             {
-                                if (jefe_recibir_dano(&jefe_nivel, 10, &cola_mensajes)) {
+                                if (jefe_recibir_dano(&jefe_nivel, 10, &cola_mensajes))
+                                {
                                     puntaje += 50; // Puntos por golpear al jefe
                                 }
                                 else
@@ -669,17 +693,16 @@ int main()
                                     hay_jefe_en_nivel = false;
                                     jefe_nivel.activo = false;
 
-                                    int enemigos_restantes = 0;
+                                    enemigos_restantes = 0;
 
-                                    for (int z = 0; z < num_enemigos_cargados; z++)
+                                    for (z = 0; z < num_enemigos_cargados; z++)
                                     {
                                         if (enemigos[z].activo) enemigos_restantes++;
                                     }
                                     
                                     if (enemigos_restantes > 0)
                                     {
-                                        agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 3.0, al_map_rgb(255, 215, 0), true);
-                                        char msg_enemigos[100];
+                                        agregar_mensaje_cola(&cola_mensajes, "JEFE DERROTADO!", 3.0, al_map_rgb(255, 215, 0), true);
                                         sprintf(msg_enemigos, "Elimina los %d enemigos restantes", enemigos_restantes);
                                         agregar_mensaje_cola(&cola_mensajes, msg_enemigos, 4.0, al_map_rgb(255, 255, 255), true);
                                     }
@@ -694,11 +717,11 @@ int main()
                         }
                         
                         // Láseres vs jefe
-                        for (int j = 0; j < 5; j++)
+                        for (j = 0; j < 5; j++)
                         {
                             if (lasers[j].activo)
                             {
-                                float alcance_real = verificar_colision_laser_tilemap(lasers[j], tilemap);
+                                alcance_real = verificar_colision_laser_tilemap(lasers[j], tilemap);
                                 Enemigo enemigo_jefe_temp = 
                                 {
                                     .x = jefe_nivel.x,
@@ -717,7 +740,7 @@ int main()
 
                                 if (laser_intersecta_enemigo_limitado(lasers[j], enemigo_jefe_temp, alcance_real))
                                 {
-                                    double tiempo_actual = al_get_time();
+                                    tiempo_actual = al_get_time();
                                     if (tiempo_actual - lasers[j].ultimo_dano >= 0.1)
                                     {
                                         if (jefe_recibir_dano(&jefe_nivel, lasers[j].poder * 2, &cola_mensajes))
@@ -729,7 +752,7 @@ int main()
                                             puntaje += 2000;
                                             hay_jefe_en_nivel = false;
                                             jefe_nivel.activo = false;
-                                            agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
+                                            agregar_mensaje_cola(&cola_mensajes, "JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
                                         }
                                         lasers[j].ultimo_dano = tiempo_actual;
                                     }
@@ -738,14 +761,12 @@ int main()
                         }
                         
                         // Explosivos vs jefe
-                        for (int j = 0; j < 8; j++)
+                        for (j = 0; j < 8; j++)
                         {
                             if (explosivos[j].activo && !explosivos[j].exploto)
                             {
-                                if (detectar_colision_generica(
-                                    explosivos[j].x, explosivos[j].y, explosivos[j].ancho, explosivos[j].alto,
-                                    jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto)) {
-                                    
+                                if (detectar_colision_generica(explosivos[j].x, explosivos[j].y, explosivos[j].ancho, explosivos[j].alto, jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto))
+                                {
                                     if (jefe_recibir_dano(&jefe_nivel, explosivos[j].dano_directo * 2, &cola_mensajes))
                                     {
                                         puntaje += 100;
@@ -764,12 +785,10 @@ int main()
                         }
                         
                         // Misiles vs jefe
-                        for (int j = 0; j < 6; j++)
+                        for (j = 0; j < 6; j++)
                         {
-                            if (misil[j].activo && detectar_colision_generica(
-                                misil[j].x, misil[j].y, misil[j].ancho, misil[j].alto,
-                                jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto)) {
-                                
+                            if (misil[j].activo && detectar_colision_generica(misil[j].x, misil[j].y, misil[j].ancho, misil[j].alto, jefe_nivel.x, jefe_nivel.y, jefe_nivel.ancho, jefe_nivel.alto))
+                            {
                                 if (jefe_recibir_dano(&jefe_nivel, misil[j].dano * 3, &cola_mensajes))
                                 {
                                     puntaje += 150;
@@ -779,7 +798,7 @@ int main()
                                     puntaje += 2000;
                                     hay_jefe_en_nivel = false;
                                     jefe_nivel.activo = false;
-                                    agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
+                                    agregar_mensaje_cola(&cola_mensajes, "JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
                                 }
                                 misil[j].activo = false;
                             }
@@ -789,9 +808,9 @@ int main()
                     {
                         actualizar_estado_nivel(&estado_nivel, enemigos, num_enemigos_cargados, tiempo_cache, hay_jefe_en_nivel, &jefe_nivel);
 
-                        int enemigos_restantes = 0;
+                        enemigos_restantes = 0;
 
-                        for (int z = 0; z < num_enemigos_cargados; z++)
+                        for (z = 0; z < num_enemigos_cargados; z++)
                         {
                             if (enemigos[z].activo) enemigos_restantes++;
                         }
@@ -815,7 +834,7 @@ int main()
                     // Si estamos en transición, mostrar pantalla de transición
                     if (estado_nivel.mostrar_transicion)
                     {
-                        double tiempo_transcurrido = al_get_time() - estado_nivel.tiempo_inicio_transicion;
+                        tiempo_transcurrido = al_get_time() - estado_nivel.tiempo_inicio_transicion;
                         mostrar_pantalla_transicion(estado_nivel.nivel_actual, estado_nivel.nivel_actual + 1, fuente, tiempo_transcurrido, estado_nivel.duracion_transicion);
                     }
                     else
@@ -833,7 +852,8 @@ int main()
                         dibujar_enemigos(enemigos, num_enemigos_cargados);
                         dibujar_disparos_enemigos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
 
-                        if (hay_jefe_en_nivel && jefe_nivel.activo) {
+                        if (hay_jefe_en_nivel && jefe_nivel.activo)
+                        {
                             dibujar_jefe(jefe_nivel);
                             dibujar_ataques_jefe(jefe_nivel.ataques, MAX_ATAQUES_JEFE);
                         }
@@ -856,7 +876,6 @@ int main()
                         dibujar_cola_mensajes(cola_mensajes, fuente);
                         
                         // Mostrar nivel actual
-                        char texto_nivel[50];
                         sprintf(texto_nivel, "Nivel: %d", estado_nivel.nivel_actual);
                         al_draw_text(fuente, al_map_rgb(255, 255, 255), 10, 120, ALLEGRO_ALIGN_LEFT, texto_nivel);
                     }
@@ -877,23 +896,19 @@ int main()
                     if (juego_terminado)
                     {
                         jugando = false;
-                        // Capturar nombre para el ranking
-                        char nombre_jugador[MAX_NOMBRE];
                         
                         // Mostrar mensaje de victoria antes de pedir el nombre
                         al_clear_to_color(al_map_rgb(0, 0, 0));
                         al_draw_text(fuente, al_map_rgb(0, 255, 0), 400, 250, ALLEGRO_ALIGN_CENTER, "FELICIDADES!");
                         al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 300, ALLEGRO_ALIGN_CENTER, "Has completado todos los niveles!");
-                        char texto_puntaje_final[100];
                         sprintf(texto_puntaje_final, "Puntaje final: %d", puntaje);
                         al_draw_text(fuente, al_map_rgb(255, 255, 0), 400, 350, ALLEGRO_ALIGN_CENTER, texto_puntaje_final);
                         al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 400, ALLEGRO_ALIGN_CENTER, "Presiona cualquier tecla para continuar...");
                         al_flip_display();
 
-                        bool esperando = true;
+                        esperando = true;
                         while (esperando)
                         {
-                            ALLEGRO_EVENT victoria;
                             al_wait_for_event(cola_eventos, &victoria);
                             if (victoria.type == ALLEGRO_EVENT_KEY_DOWN || victoria.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
                             {
@@ -912,7 +927,6 @@ int main()
         if (mostrarRanking)
         {
             Jugador ranking[MAX_JUGADORES];
-            int num_jugadores;
             bool volver_menu_ranking = false;
             cargar_ranking(ranking, &num_jugadores);
             mostrar_ranking(fuente, ranking, num_jugadores, &volver_menu_ranking);
@@ -959,16 +973,8 @@ int main()
         al_destroy_bitmap(imagen_jefe);
         imagen_jefe = NULL;
     }
-
-    if (stream_musica_fondo)
-    {
-        al_set_audio_stream_playing(stream_musica_fondo, false);
-        al_destroy_audio_stream(stream_musica_fondo);
-        stream_musica_fondo = NULL;
-        printf("Stream de música destruido al finalizar\n");
-    }
     
-    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide, imagen_enemigo, imagen_menu, stream_musica_fondo);
+    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide, imagen_enemigo, imagen_menu);
 
     al_uninstall_system(); // Esto evita fugas de memoria y libera recursos evitando el segmentation fault en WSL
 
