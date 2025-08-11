@@ -603,7 +603,7 @@ void actualizar_progreso_arma(Nave* nave, TipoArma tipo_arma);
 void verificar_mejora_arma(Nave* nave, TipoArma tipo_arma, ColaMensajes* cola_mensajes);
 void dibujar_info_armas(Nave nave, ALLEGRO_FONT* fuente);
 void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave);
-void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int* puntaje, Nave nave, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], int *contador_debug, Powerup powerups[], int max_powerups, ColaMensajes *cola_mensajes);
+void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int* puntaje, Nave *nave, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], int *contador_debug, Powerup powerups[], int max_powerups, ColaMensajes *cola_mensajes);
 void dibujar_lasers(DisparoLaser lasers[], int max_lasers, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 void crear_powerup_aleatorio(Powerup powerups[], int max_powerups, float x, float y);
 void crear_powerup_laser(Powerup powerups[], int max_powerups, float x, float y);

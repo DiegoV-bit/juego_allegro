@@ -585,7 +585,7 @@ int main()
 
                     if (hay_lasers_activos)
                     {
-                        actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje, nave, tilemap, &contador_debug_lasers, powerups, MAX_POWERUPS, &cola_mensajes);
+                        actualizar_lasers(lasers, 5, enemigos, num_enemigos_cargados, &puntaje, &nave, tilemap, &contador_debug_lasers, powerups, MAX_POWERUPS, &cola_mensajes);
                     }
                     
                     bool hay_explosivos_activos = false;

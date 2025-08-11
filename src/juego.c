@@ -579,31 +579,34 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
 
     for (i = 0; i < num_disparos; i++)
     {
-        if (disparos[i].activo)
+        if (!disparos[i].activo) continue;
+    
+        for (j = 0; j < num_enemigos; j++)
         {
-            int col_disparo = (int)(disparos[i].x / TILE_ANCHO);
-            int fila_disparo = (int)(disparos[i].y / TILE_ALTO);
-
-            if (fila_disparo >= 0 && fila_disparo < MAPA_FILAS && col_disparo >= 0 && col_disparo < MAPA_COLUMNAS)
+            if (!enemigos[j].activo) continue;
+        
+            if (detectar_colision_disparo_enemigo(disparos[i], enemigos[j]))
             {
-                Tile *tile = &tilemap[fila_disparo][col_disparo];
-
-                if (tile->tipo == 3)
+                enemigos[j].vida -= 10;
+                disparos[i].activo = false;
+            
+                if (enemigos[j].vida <= 0)
                 {
-                    disparos[i].activo = false;
-                    printf("Disparo rebotó en bloque sólido en (%d, %d)\n", col_disparo, fila_disparo);
-                    continue;
-                }
+                    enemigos[j].activo = false;
+                    (*puntaje) += 10;
                 
-                if (tile->tipo == 2 && tile->vida > 0)
-                {
-                    printf("Disparo del jugador atravesó escudo del mapa en (%d, %d)\n", col_disparo, fila_disparo);
+                    // ✅ AGREGAR PROGRESO DEL ARMA NORMAL
+                    actualizar_progreso_arma(nave, Arma_normal);
+                    verificar_mejora_arma(nave, Arma_normal, cola_mensajes);
+                
+                    // Crear powerup aleatorio
+                    int probabilidad_powerup = rand() % 100;
+                    if (probabilidad_powerup < POWERUP_PROB)
+                    {
+                        crear_powerup_aleatorio(powerups, max_powerups, enemigos[j].x, enemigos[j].y);
+                    }
                 }
-
-                if (tile->tipo == 1)
-                {
-                    printf("Disparo del jugador atravesó escudo del mapa en (%d, %d)\n", col_disparo, fila_disparo);
-                }
+                break;
             }
         }
     }
@@ -3238,90 +3241,59 @@ void verificar_mejora_arma(Nave *nave, TipoArma tipo_arma, ColaMensajes *cola_me
         arma->nivel++;
         arma->kills_mejora = 0;
         
-        // Aumentar requisitos para siguiente nivel
-        switch (arma->nivel) 
+        if (arma->nivel == 2)
         {
-            case 2: 
-                arma->kills_necesarias = arma->kills_necesarias * 2; 
-                break;
-            case 3: 
-                arma->kills_necesarias = arma->kills_necesarias * 3; 
-                break;
-            default:
-                arma->kills_necesarias = 0; 
-                break;
+            switch (tipo_arma)
+            {
+                case Arma_normal: arma->kills_necesarias = 0; break; // El arma normal no mejora más allá del nivel 1
+                case Arma_laser: arma->kills_necesarias = 15; break;
+                case Arma_explosiva: arma->kills_necesarias = 20; break;
+                case Arma_misil: arma->kills_necesarias = 25; break;
+            }
         }
+        else if (arma->nivel == 3)
+        {
+            arma->nivel == 3;
+        }
+        
+        sprintf(mensaje_principal, "¡%s Nivel %d!", arma->nombre, arma->nivel);
 
         switch (tipo_arma) 
         {
             case Arma_normal:
-                sprintf(mensaje_principal, "Cañón Normal Nivel %d!", arma->nivel);
-                sprintf(mensaje_secundario, "Cadencia de disparo mejorada");
-                color_principal = al_map_rgb(255, 255, 255);
+                sprintf(mensaje_secundario, "El arma normal no mejora");
                 break;
-
             case Arma_laser:
-                sprintf(mensaje_principal, "Láser Nivel %d!", arma->nivel);
                 if (arma->nivel == 2)
-                    sprintf(mensaje_secundario, "Mayor alcance y daño");
-                else if (arma->nivel == 3)
-                    sprintf(mensaje_secundario, "Poder Máximo Alcanzado!");
+                    sprintf(mensaje_secundario, "Más daño y alcance");
                 else
-                    sprintf(mensaje_secundario, "Potencia mejorada");
-                color_principal = al_map_rgb(0, 255, 255);
+                    sprintf(mensaje_secundario, "Potencia máxima alcanzada");
                 break;
-
             case Arma_explosiva:
-                sprintf(mensaje_principal, "Explosivos Nivel %d!", arma->nivel);
                 if (arma->nivel == 2)
-                    sprintf(mensaje_secundario, "Radio de explosión ampliado");
-                else if (arma->nivel == 3)
-                    sprintf(mensaje_secundario, "Devastación Total!");
+                    sprintf(mensaje_secundario, "Mayor radio de explosión");
                 else
-                    sprintf(mensaje_secundario, "Daño explosivo aumentado");
-                color_principal = al_map_rgb(255, 100, 0);
+                    sprintf(mensaje_secundario, "Explosión devastadora");
                 break;
-
             case Arma_misil:
-                sprintf(mensaje_principal, "Misiles Nivel %d!", arma->nivel);
                 if (arma->nivel == 2)
-                    sprintf(mensaje_secundario, "Velocidad de seguimiento mejorada");
-                else if (arma->nivel == 3)
-                    sprintf(mensaje_secundario, "Precisión Letal!");
+                    sprintf(mensaje_secundario, "Mejor seguimiento");
                 else
-                    sprintf(mensaje_secundario, "Capacidad de búsqueda mejorada");
-                color_principal = al_map_rgb(255, 0, 255);
+                    sprintf(mensaje_secundario, "Seguimiento perfecto");
                 break;
-
             default:
-                sprintf(mensaje_principal, "Arma Mejorada!");
                 sprintf(mensaje_secundario, "Nivel %d alcanzado", arma->nivel);
-                color_principal = al_map_rgb(255, 255, 0);
                 break;
         }
 
         agregar_mensaje_cola(cola_mensajes, mensaje_principal, 3.0, color_principal, true);
         agregar_mensaje_cola(cola_mensajes, mensaje_secundario, 2.5, al_map_rgb(255, 255, 255), true);
-
-        if (arma->nivel == 3)
-        {
-            agregar_mensaje_cola(cola_mensajes, "NIVEL MÁXIMO!", 2.0, al_map_rgb(255, 215, 0), true);
-        }
         
         printf("Arma %s mejorada a nivel %d!\n", arma->nombre, arma->nivel);
     }
 }
 
 
-/**
- * @brief Dibuja la información de las armas en pantalla.
- * 
- * Muestra el arma actual, su nivel, progreso de mejora y lista de armas
- * desbloqueadas con sus respectivas teclas de activación.
- * 
- * @param nave Nave del jugador con información de armas.
- * @param fuente Fuente de texto para renderizar la información.
- */
 /**
  * @brief Dibuja la información de las armas en pantalla con HUD mejorado.
  * 
@@ -3334,31 +3306,53 @@ void verificar_mejora_arma(Nave *nave, TipoArma tipo_arma, ColaMensajes *cola_me
 void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
 {
     // ✅ POSICIÓN BASE PARA TODO EL HUD DE ARMAS
-    int hud_x = 600;
-    int hud_y = 460; // Subido más para dar espacio a la barra de progreso
+    int hud_x = 580;  // Movido más a la izquierda para evitar solapamiento
+    int hud_y = 450;  // Ajustado para dar más espacio
     
     SistemaArma arma_actual = nave.armas[nave.arma_seleccionada];
     
     // ✅ CUADRO DE ARMA ACTIVA - ARRIBA DE TODO
     int cuadro_x = hud_x;
     int cuadro_y = hud_y;
-    int cuadro_ancho = 180;
-    int cuadro_alto = 50; // Aumentado para dar espacio a la barra
+    int cuadro_ancho = 200;  // Aumentado
+    int cuadro_alto = 60;    // Aumentado para dar más espacio
     
-    al_draw_filled_rectangle(cuadro_x, cuadro_y, cuadro_x + cuadro_ancho, cuadro_y + cuadro_alto, al_map_rgba(0, 0, 0, 150));
-    al_draw_rectangle(cuadro_x, cuadro_y, cuadro_x + cuadro_ancho, cuadro_y + cuadro_alto, al_map_rgb(255, 215, 0), 2);
+    al_draw_filled_rectangle(cuadro_x, cuadro_y, cuadro_x + cuadro_ancho, cuadro_y + cuadro_alto, 
+                           al_map_rgba(0, 0, 0, 150));
+    al_draw_rectangle(cuadro_x, cuadro_y, cuadro_x + cuadro_ancho, cuadro_y + cuadro_alto, 
+                     al_map_rgb(255, 215, 0), 2);
     
-    // ✅ BARRA DE PROGRESO DEL ARMA ACTIVA - ARRIBA DEL NOMBRE
+    // ✅ NOMBRE CORTO DEL ARMA ACTIVA - EN LA PARTE SUPERIOR
+    char nombre_corto[15];
+    switch (nave.arma_seleccionada)
+    {
+        case 0: strcpy(nombre_corto, "NORMAL"); break;
+        case 1: strcpy(nombre_corto, "LÁSER"); break;
+        case 2: strcpy(nombre_corto, "EXPLOSIVO"); break;
+        case 3: strcpy(nombre_corto, "MISIL"); break;
+        default: strcpy(nombre_corto, "DESCONOCIDO"); break;
+    }
+    
+    al_draw_text(fuente, al_map_rgb(255, 255, 255), cuadro_x + 10, cuadro_y + 8, 
+                ALLEGRO_ALIGN_LEFT, nombre_corto);
+    
+    // ✅ NIVEL DEL ARMA ACTIVA - AL LADO DEL NOMBRE
+    char nivel_texto[10];
+    sprintf(nivel_texto, "LV%d", arma_actual.nivel);
+    al_draw_text(fuente, al_map_rgb(255, 215, 0), cuadro_x + 110, cuadro_y + 8, 
+                ALLEGRO_ALIGN_LEFT, nivel_texto);
+    
+    // ✅ BARRA DE PROGRESO DEL ARMA ACTIVA - DEBAJO DEL NOMBRE (CÓDIGO COMPLETO IMPLEMENTADO)
     if (arma_actual.nivel < 3 && arma_actual.kills_necesarias > 0)
     {
         float progreso = (float)arma_actual.kills_mejora / arma_actual.kills_necesarias;
         if (progreso > 1.0f) progreso = 1.0f;
         
-        // Barra de progreso en la parte superior del cuadro
+        // Barra de progreso en el medio del cuadro
         int barra_x = cuadro_x + 10;
-        int barra_y = cuadro_y + 8;
-        int barra_ancho = 160;
-        int barra_alto = 6;
+        int barra_y = cuadro_y + 28;  // Debajo del nombre
+        int barra_ancho = 180;
+        int barra_alto = 8;
         
         // Fondo de la barra
         al_draw_filled_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
@@ -3372,51 +3366,33 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
         al_draw_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
                         al_map_rgb(150, 150, 150), 1);
         
-        // Texto de progreso pequeño al lado derecho
+        // Texto de progreso debajo de la barra
         char prog_texto[20];
-        sprintf(prog_texto, "%d/%d", arma_actual.kills_mejora, arma_actual.kills_necesarias);
-        al_draw_text(fuente, al_map_rgb(200, 200, 200), cuadro_x + cuadro_ancho - 5, barra_y - 2, 
-                    ALLEGRO_ALIGN_RIGHT, prog_texto);
+        sprintf(prog_texto, "%d/%d kills", arma_actual.kills_mejora, arma_actual.kills_necesarias);
+        al_draw_text(fuente, al_map_rgb(200, 200, 200), cuadro_x + 10, barra_y + 12, 
+                    ALLEGRO_ALIGN_LEFT, prog_texto);
     }
     else if (arma_actual.nivel == 3)
     {
         // Barra completa para nivel máximo
         int barra_x = cuadro_x + 10;
-        int barra_y = cuadro_y + 8;
-        int barra_ancho = 160;
-        int barra_alto = 6;
+        int barra_y = cuadro_y + 28;
+        int barra_ancho = 180;
+        int barra_alto = 8;
         
         al_draw_filled_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
                                al_map_rgb(255, 215, 0));
         al_draw_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
                         al_map_rgb(255, 255, 255), 1);
         
-        al_draw_text(fuente, al_map_rgb(255, 215, 0), cuadro_x + cuadro_ancho - 5, barra_y - 2, 
-                    ALLEGRO_ALIGN_RIGHT, "MAX");
+        al_draw_text(fuente, al_map_rgb(255, 215, 0), cuadro_x + 10, barra_y + 12, 
+                    ALLEGRO_ALIGN_LEFT, "NIVEL MÁXIMO");
     }
-    
-    // ✅ NOMBRE CORTO DEL ARMA ACTIVA - DEBAJO DE LA BARRA
-    char nombre_corto[15];
-    switch (nave.arma_seleccionada)
-    {
-        case 0: strcpy(nombre_corto, "NORMAL"); break;
-        case 1: strcpy(nombre_corto, "LÁSER"); break;
-        case 2: strcpy(nombre_corto, "EXPLOSIVO"); break;
-        case 3: strcpy(nombre_corto, "MISIL"); break;
-        default: strcpy(nombre_corto, "DESCONOCIDO"); break;
-    }
-    
-    al_draw_text(fuente, al_map_rgb(255, 255, 255), cuadro_x + 10, cuadro_y + 20, ALLEGRO_ALIGN_LEFT, nombre_corto);
-    
-    // ✅ NIVEL DEL ARMA ACTIVA
-    char nivel_texto[10];
-    //sprintf(nivel_texto, "LV%d", arma_actual.nivel);
-    al_draw_text(fuente, al_map_rgb(255, 215, 0), cuadro_x + 100, cuadro_y + 20, ALLEGRO_ALIGN_LEFT, nivel_texto);
     
     // ✅ SLOTS DE ARMAS - DEBAJO DEL CUADRO PRINCIPAL
-    int slots_y = cuadro_y + cuadro_alto + 10; // 10 píxeles de separación
-    int slot_size = 40;
-    int slot_spacing = 5;
+    int slots_y = cuadro_y + cuadro_alto + 15; // 15 píxeles de separación
+    int slot_size = 45;  // Aumentado
+    int slot_spacing = 8; // Aumentado
     
     for (int i = 0; i < 4; i++)
     {
@@ -3453,12 +3429,12 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
         al_draw_filled_rectangle(slot_x, slots_y, slot_x + slot_size, slots_y + slot_size, color_fondo);
         al_draw_rectangle(slot_x, slots_y, slot_x + slot_size, slots_y + slot_size, color_borde, 2);
         
-        // ✅ NÚMERO DE TECLA
+        // ✅ NÚMERO DE TECLA - EN LA ESQUINA SUPERIOR IZQUIERDA
         char tecla[3];
         sprintf(tecla, "%d", i + 1);
-        al_draw_text(fuente, color_texto, slot_x + 5, slots_y + 5, ALLEGRO_ALIGN_LEFT, tecla);
+        al_draw_text(fuente, color_texto, slot_x + 5, slots_y + 3, ALLEGRO_ALIGN_LEFT, tecla);
         
-        // ✅ ICONO VISUAL DEL ARMA
+        // ✅ ICONO VISUAL DEL ARMA - EN EL CENTRO (CÓDIGO COMPLETO IMPLEMENTADO)
         if (arma.desbloqueado)
         {
             int centro_x = slot_x + slot_size/2;
@@ -3467,34 +3443,55 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
             switch (i)
             {
                 case 0: // Normal - punto simple
-                    al_draw_filled_circle(centro_x, centro_y, 3, color_texto);
+                    al_draw_filled_circle(centro_x, centro_y, 4, color_texto);
                     break;
                     
                 case 1: // Láser - línea horizontal
-                    al_draw_line(centro_x - 8, centro_y, centro_x + 8, centro_y, color_texto, 3);
+                    al_draw_line(centro_x - 10, centro_y, centro_x + 10, centro_y, color_texto, 4);
                     break;
                     
                 case 2: // Explosivo - cruz
-                    al_draw_line(centro_x - 6, centro_y, centro_x + 6, centro_y, color_texto, 2);
-                    al_draw_line(centro_x, centro_y - 6, centro_x, centro_y + 6, color_texto, 2);
+                    al_draw_line(centro_x - 8, centro_y, centro_x + 8, centro_y, color_texto, 3);
+                    al_draw_line(centro_x, centro_y - 8, centro_x, centro_y + 8, color_texto, 3);
                     break;
                     
                 case 3: // Misil - triángulo
-                    al_draw_filled_triangle(centro_x, centro_y - 6, centro_x - 5, centro_y + 4, 
-                                          centro_x + 5, centro_y + 4, color_texto);
+                    al_draw_filled_triangle(centro_x, centro_y - 8, centro_x - 6, centro_y + 6, 
+                                          centro_x + 6, centro_y + 6, color_texto);
                     break;
             }
         }
         
-        // ✅ INDICADORES DE NIVEL (puntos pequeños)
+        // ✅ INDICADORES DE NIVEL - USANDO LAS FIGURAS EXISTENTES CORRECTAMENTE (CÓDIGO COMPLETO IMPLEMENTADO)
         if (arma.desbloqueado)
         {
+            // Dibujar 3 puntos en la parte inferior para mostrar el nivel
             for (int nivel = 1; nivel <= 3; nivel++)
             {
-                ALLEGRO_COLOR color_punto = (nivel <= arma.nivel) ? 
-                    al_map_rgb(0, 255, 0) : al_map_rgb(60, 60, 60);
+                int punto_x = slot_x + 10 + ((nivel - 1) * 10);  // Distribuir en 3 columnas
+                int punto_y = slots_y + slot_size - 10;           // En la parte inferior
                 
-                al_draw_filled_circle(slot_x + 8 + (nivel * 8), slots_y + slot_size - 8, 2, color_punto);
+                if (nivel <= arma.nivel) 
+                {
+                    // Punto lleno para nivel alcanzado
+                    al_draw_filled_circle(punto_x, punto_y, 3, al_map_rgb(0, 255, 0));
+                    al_draw_circle(punto_x, punto_y, 3, al_map_rgb(255, 255, 255), 1);
+                } 
+                else 
+                {
+                    // Punto vacío para nivel no alcanzado
+                    al_draw_circle(punto_x, punto_y, 3, al_map_rgb(100, 100, 100), 1);
+                }
+            }
+        }
+        else
+        {
+            // Para armas bloqueadas, mostrar puntos grises
+            for (int nivel = 1; nivel <= 3; nivel++)
+            {
+                int punto_x = slot_x + 10 + ((nivel - 1) * 10);
+                int punto_y = slots_y + slot_size - 10;
+                al_draw_circle(punto_x, punto_y, 3, al_map_rgb(60, 60, 60), 1);
             }
         }
     }
@@ -3590,7 +3587,7 @@ void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
  * @param tilemap Mapa de tiles para detectar obstáculos.
  * @param contador_debug Contador para mensajes de debug.
  */
-void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int *puntaje, Nave nave, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], int *contador_debug, Powerup powerups[], int max_powerups, ColaMensajes *cola_mensaje)
+void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[], int num_enemigos, int *puntaje, Nave *nave, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], int *contador_debug, Powerup powerups[], int max_powerups, ColaMensajes *cola_mensaje)
 {
     double tiempo_actual = al_get_time();
     int i;
@@ -3602,11 +3599,12 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
     double var_tiempo;
     float punta_x;
     float punta_y;
+    int prob_powerup;
 
-    obtener_centro_nave(nave, &centro_x, &centro_y);
+    obtener_centro_nave(*nave, &centro_x, &centro_y);
 
-    punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
-    punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
+    punta_x = centro_x + cos(nave->angulo - ALLEGRO_PI / 2) * (nave->largo / 2.0f);
+    punta_y = centro_y + sin(nave->angulo - ALLEGRO_PI / 2) * (nave->largo / 2.0f);
 
     if (++(*contador_debug) % 300 == 0)
     {
@@ -3619,40 +3617,50 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
         {
             lasers[i].x_nave = punta_x;
             lasers[i].y_nave = punta_y;
-            lasers[i].angulo = nave.angulo - ALLEGRO_PI / 2;
+            lasers[i].angulo = nave->angulo - ALLEGRO_PI / 2;
 
             // Verifica el alcance real tomando en cuenta los obstaculos
             alcance_real = verificar_colision_laser_tilemap(lasers[i], tilemap);
 
             for (j = 0; j < num_enemigos; j++)
             {
-                if (enemigos[j].activo && laser_intersecta_enemigo_limitado(lasers[i], enemigos[j], alcance_real))
+                if (!enemigos[j].activo)
+                {
+                    continue;
+                }
+                
+                if (laser_intersecta_enemigo_limitado(lasers[i], enemigos[j], alcance_real))
                 {
                     var_tiempo = tiempo_actual - lasers[i].ultimo_dano;
 
-                    if (var_tiempo > 0.0f)
+                    if (var_tiempo > 0.1f)
                     {
-                        dano_aplicado = lasers[i].dano_por_segundo * var_tiempo;
+                        dano_aplicado = lasers[i].dano_por_segundo * 0.1;
                         enemigos[j].vida -= dano_aplicado;
-                        *puntaje += (int)(dano_aplicado * 0.5);
-                        printf("Láser causa %.2f de daño a enemigo tipo %d (Vida restante: %.2f)\n", dano_aplicado, enemigos[j].tipo, enemigos[j].vida);
 
-                        lasers[i].ultimo_dano = tiempo_actual;
-
-                        if (enemigos[j].vida <= 0.0f)
+                        if (enemigos[j].vida <= 0)
                         {
                             enemigos[j].activo = false;
-                            *puntaje += 10;
+                            (*puntaje) += 10;
 
                             actualizar_progreso_arma(&nave, Arma_laser);
-                            verificar_mejora_arma(&nave, Arma_laser, cola_mensaje);
+                            verificar_mejora_arma(nave, Arma_laser, cola_mensaje);
+
                             printf("Enemigo eliminado por láser\n");
 
-                            if (rand() % 100 < POWERUP_PROB)
+                            prob_powerup = rand() % 100;
+                            if (prob_powerup < POWERUP_PROB)
                             {
                                 crear_powerup_aleatorio(powerups, max_powerups, enemigos[j].x, enemigos[j].y);
-                                printf("Powerup creado en posición del enemigo eliminado\n");
                             }
+                        }
+                        
+                        lasers[i].ultimo_dano = tiempo_actual;
+
+                        if (++(*contador_debug) % 300 == 0)
+                        {
+                            printf("Láser causó %.1f daño a enemigo tipo %d (Vida restante: %.1f)\n", 
+                               dano_aplicado, enemigos[j].tipo, enemigos[j].vida);
                         }
                     }
                 }
