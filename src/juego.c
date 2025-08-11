@@ -5741,3 +5741,438 @@ void dibujar_info_escudo(Nave nave, ALLEGRO_FONT *fuente)
                     ALLEGRO_ALIGN_LEFT, "Sin escudo activo");
     }
 }
+
+
+/**
+ * @brief Inicializa la configuración de controles del juego.
+ * 
+ * @param config Puntero a la configuración de control.
+ */
+void init_configuracion_control(ConfiguracionControl *config)
+{
+    config->tipo_control = CONTROL_TECLADO;
+    config->joystick = NULL;
+    config->joystick_disponible = false;
+    config->numero_joystick = -1;
+    strcpy(config->nombre_joystick, "No detectado");
+    
+    // Detectar joysticks disponibles
+    detectar_joysticks(config);
+}
+
+/**
+ * @brief Detecta joysticks conectados al sistema.
+ * 
+ * @param config Puntero a la configuración de control.
+ * @return true si se encontró al menos un joystick, false en caso contrario.
+ */
+bool detectar_joysticks(ConfiguracionControl *config)
+{
+    al_reconfigure_joysticks(); // Actualizar lista de joysticks
+    int num_joysticks = al_get_num_joysticks();
+    
+    printf("Detectando joysticks... Encontrados: %d\n", num_joysticks);
+    
+    if (num_joysticks > 0)
+    {
+        config->joystick = al_get_joystick(0);
+        if (config->joystick)
+        {
+            config->joystick_disponible = true;
+            config->numero_joystick = 0;
+            
+            const char *nombre = al_get_joystick_name(config->joystick);
+            if (nombre)
+            {
+                strncpy(config->nombre_joystick, nombre, 99);
+                config->nombre_joystick[99] = '\0';
+            }
+            else
+            {
+                strcpy(config->nombre_joystick, "Controlador genérico");
+            }
+            
+            printf("Joystick detectado: %s\n", config->nombre_joystick);
+            return true;
+        }
+    }
+    
+    printf("No se encontraron joysticks compatibles.\n");
+    return false;
+}
+
+/**
+ * @brief Muestra el menú de selección de control.
+ * 
+ * @param fuente Fuente para el texto.
+ * @param config Configuración de control.
+ * @param cola_eventos Cola de eventos.
+ */
+void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *config, ALLEGRO_EVENT_QUEUE *cola_eventos)
+{
+    bool seleccionando = true;
+    int opcion_seleccionada = 0; // 0 = Teclado, 1 = Joystick
+    ALLEGRO_EVENT evento;
+    
+    // Registrar eventos de joystick si está disponible
+    if (config->joystick_disponible && config->joystick)
+    {
+        al_register_event_source(cola_eventos, al_get_joystick_event_source());
+    }
+    
+    while (seleccionando)
+    {
+        al_wait_for_event(cola_eventos, &evento);
+        
+        if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
+        {
+            seleccionando = false;
+            break;
+        }
+        
+        // Navegación con teclado
+        if (evento.type == ALLEGRO_EVENT_KEY_DOWN)
+        {
+            switch (evento.keyboard.keycode)
+            {
+                case ALLEGRO_KEY_UP:
+                case ALLEGRO_KEY_W:
+                    opcion_seleccionada = (opcion_seleccionada - 1 + 2) % 2;
+                    break;
+                    
+                case ALLEGRO_KEY_DOWN:
+                case ALLEGRO_KEY_S:
+                    opcion_seleccionada = (opcion_seleccionada + 1) % 2;
+                    break;
+                    
+                case ALLEGRO_KEY_ENTER:
+                case ALLEGRO_KEY_SPACE:
+                    if (opcion_seleccionada == 0)
+                    {
+                        config->tipo_control = CONTROL_TECLADO;
+                        printf("Control seleccionado: Teclado\n");
+                    }
+                    else if (opcion_seleccionada == 1 && config->joystick_disponible)
+                    {
+                        config->tipo_control = CONTROL_JOYSTICK;
+                        printf("Control seleccionado: Joystick (%s)\n", config->nombre_joystick);
+                    }
+                    seleccionando = false;
+                    break;
+                    
+                case ALLEGRO_KEY_ESCAPE:
+                    config->tipo_control = CONTROL_TECLADO; // Por defecto
+                    seleccionando = false;
+                    break;
+            }
+        }
+        
+        // Navegación con joystick
+        if (evento.type == ALLEGRO_EVENT_JOYSTICK_AXIS && config->joystick_disponible)
+        {
+            if (evento.joystick.axis == 1) // Stick izquierdo vertical
+            {
+                static double ultimo_cambio = 0;
+                double tiempo_actual = al_get_time();
+                
+                if (tiempo_actual - ultimo_cambio > 0.3) // Evitar cambios muy rápidos
+                {
+                    if (evento.joystick.pos < -DEADZONE_JOYSTICK)
+                    {
+                        opcion_seleccionada = (opcion_seleccionada - 1 + 2) % 2;
+                        ultimo_cambio = tiempo_actual;
+                    }
+                    else if (evento.joystick.pos > DEADZONE_JOYSTICK)
+                    {
+                        opcion_seleccionada = (opcion_seleccionada + 1) % 2;
+                        ultimo_cambio = tiempo_actual;
+                    }
+                }
+            }
+        }
+        
+        // Selección con botón de joystick
+        if (evento.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN && config->joystick_disponible)
+        {
+            if (evento.joystick.button == 0) // Botón A/X
+            {
+                if (opcion_seleccionada == 0)
+                {
+                    config->tipo_control = CONTROL_TECLADO;
+                    printf("Control seleccionado: Teclado\n");
+                }
+                else if (opcion_seleccionada == 1)
+                {
+                    config->tipo_control = CONTROL_JOYSTICK;
+                    printf("Control seleccionado: Joystick (%s)\n", config->nombre_joystick);
+                }
+                seleccionando = false;
+            }
+            else if (evento.joystick.button == 1) // Botón B/Circle (Cancelar)
+            {
+                config->tipo_control = CONTROL_TECLADO;
+                seleccionando = false;
+            }
+        }
+        
+        if (evento.type == ALLEGRO_EVENT_TIMER)
+        {
+            // Dibujar menú
+            al_clear_to_color(al_map_rgb(0, 0, 0));
+            
+            // Título
+            al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 150, ALLEGRO_ALIGN_CENTER, 
+                        "SELECCIONA EL TIPO DE CONTROL");
+            
+            // Opción Teclado
+            ALLEGRO_COLOR color_teclado = (opcion_seleccionada == 0) ? 
+                al_map_rgb(255, 255, 0) : al_map_rgb(255, 255, 255);
+            al_draw_text(fuente, color_teclado, 400, 250, ALLEGRO_ALIGN_CENTER, 
+                        "1. TECLADO");
+            
+            // Opción Joystick
+            ALLEGRO_COLOR color_joystick;
+            char texto_joystick[150];
+            
+            if (config->joystick_disponible)
+            {
+                color_joystick = (opcion_seleccionada == 1) ? 
+                    al_map_rgb(255, 255, 0) : al_map_rgb(255, 255, 255);
+                sprintf(texto_joystick, "2. CONTROLADOR (%s)", config->nombre_joystick);
+            }
+            else
+            {
+                color_joystick = al_map_rgb(100, 100, 100);
+                strcpy(texto_joystick, "2. CONTROLADOR (No detectado)");
+            }
+            
+            al_draw_text(fuente, color_joystick, 400, 300, ALLEGRO_ALIGN_CENTER, texto_joystick);
+            
+            // Instrucciones
+            al_draw_text(fuente, al_map_rgb(200, 200, 200), 400, 380, ALLEGRO_ALIGN_CENTER, 
+                        "Usa las flechas o stick para navegar");
+            al_draw_text(fuente, al_map_rgb(200, 200, 200), 400, 410, ALLEGRO_ALIGN_CENTER, 
+                        "Presiona ENTER, ESPACIO o botón A para seleccionar");
+            al_draw_text(fuente, al_map_rgb(200, 200, 200), 400, 440, ALLEGRO_ALIGN_CENTER, 
+                        "ESC o botón B para usar teclado por defecto");
+            
+            al_flip_display();
+        }
+    }
+}
+
+/**
+ * @brief Maneja los eventos de joystick para el movimiento de la nave.
+ * 
+ * @param evento Evento de joystick.
+ * @param nave Puntero a la nave.
+ * @param teclas Arreglo de estados de teclas (para compatibilidad).
+ */
+void manejar_eventos_joystick(ALLEGRO_EVENT evento, Nave* nave, bool teclas[])
+{
+    // Esta función procesa eventos de joystick, pero el movimiento real
+    // se maneja en actualizar_nave_joystick()
+    
+    if (evento.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN)
+    {
+        printf("Botón de joystick presionado: %d\n", evento.joystick.button);
+    }
+}
+
+/**
+ * @brief Actualiza el movimiento de la nave usando joystick.
+ * 
+ * @param nave Puntero a la nave.
+ * @param joystick Puntero al joystick.
+ * @param tilemap Mapa de tiles para colisiones.
+ */
+void actualizar_nave_joystick(Nave* nave, ALLEGRO_JOYSTICK *joystick, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
+{
+    ALLEGRO_JOYSTICK_STATE estado_joystick;
+    
+    if (!joystick) return;
+    
+    // ✅ OBTENER EL ESTADO ACTUAL DEL JOYSTICK CORRECTAMENTE
+    al_get_joystick_state(joystick, &estado_joystick);
+    
+    float nueva_x = nave->x;
+    float nueva_y = nave->y;
+    
+    if (nave->tipo == 0) // Movimiento directo
+    {
+        // ✅ STICK IZQUIERDO PARA MOVIMIENTO - USAR stick[0].axis[0] y stick[0].axis[1]
+        float stick_x = estado_joystick.stick[0].axis[0]; // Horizontal del stick izquierdo
+        float stick_y = estado_joystick.stick[0].axis[1]; // Vertical del stick izquierdo
+        
+        // Aplicar zona muerta
+        if (fabs(stick_x) > DEADZONE_JOYSTICK)
+        {
+            nueva_x += stick_x * 5.0f; // Velocidad de movimiento
+        }
+        
+        if (fabs(stick_y) > DEADZONE_JOYSTICK)
+        {
+            nueva_y += stick_y * 5.0f;
+        }
+        
+        // Límites de pantalla
+        if (nueva_x >= 0 && nueva_x <= 800 - nave->ancho)
+        {
+            nave->x = nueva_x;
+        }
+        
+        if (nueva_y >= 0 && nueva_y <= 600 - nave->largo)
+        {
+            nave->y = nueva_y;
+        }
+    }
+    else // Movimiento con rotación
+    {
+        const float velocidad_rotacion = 0.08f;
+        const float velocidad_movimiento = 4.0f;
+        
+        // ✅ STICK DERECHO PARA ROTACIÓN - stick[1] si existe, sino usar botones
+        float stick_rx = 0.0f;
+        if (al_get_joystick_num_sticks(joystick) > 1) 
+        {
+            stick_rx = estado_joystick.stick[1].axis[0]; // Stick derecho horizontal
+        }
+        
+        // Botones de hombro como alternativa para rotación
+        bool boton_L = false;
+        bool boton_R = false;
+        
+        if (al_get_joystick_num_buttons(joystick) > 5) 
+        {
+            boton_L = estado_joystick.button[4]; // L1/LB
+            boton_R = estado_joystick.button[5]; // R1/RB
+        }
+        
+        if (fabs(stick_rx) > DEADZONE_JOYSTICK)
+        {
+            nave->angulo += stick_rx * velocidad_rotacion;
+        }
+        else if (boton_L)
+        {
+            nave->angulo -= velocidad_rotacion;
+        }
+        else if (boton_R)
+        {
+            nave->angulo += velocidad_rotacion;
+        }
+        
+        // ✅ STICK IZQUIERDO PARA AVANZAR/RETROCEDER
+        float stick_y = estado_joystick.stick[0].axis[1];
+        
+        if (fabs(stick_y) > DEADZONE_JOYSTICK)
+        {
+            nueva_x = nave->x + cos(nave->angulo - ALLEGRO_PI/2) * (-stick_y * velocidad_movimiento);
+            nueva_y = nave->y + sin(nave->angulo - ALLEGRO_PI/2) * (-stick_y * velocidad_movimiento);
+        }
+        
+        // Verificar colisiones y límites
+        if (!verificar_colision_nave_muro(nueva_x, nueva_y, nave->ancho, nave->largo, tilemap))
+        {
+            if (nueva_x >= 0 && nueva_x <= 800 - nave->ancho &&
+                nueva_y >= 0 && nueva_y <= 600 - nave->largo)
+            {
+                nave->x = nueva_x;
+                nave->y = nueva_y;
+            }
+        }
+    }
+}
+
+
+/**
+ * @brief Verifica si se está presionando el botón de disparar en el joystick.
+ * 
+ * @param joystick Puntero al joystick.
+ * @return true si se está presionando el botón de disparo.
+ */
+bool obtener_boton_joystick_disparar(ALLEGRO_JOYSTICK *joystick)
+{
+    ALLEGRO_JOYSTICK_STATE estado_joystick;
+    
+    if (!joystick) return false;
+    
+    // ✅ OBTENER ESTADO CORRECTAMENTE
+    al_get_joystick_state(joystick, &estado_joystick);
+    
+    // ✅ BOTÓN A/X (botón 0) o GATILLO DERECHO (si hay suficientes botones)
+    bool boton_disparar = estado_joystick.button[0]; // Botón principal (A/X)
+    
+    // Verificar gatillo derecho si el controlador tiene suficientes botones/ejes
+    if (al_get_joystick_num_buttons(joystick) > 7) 
+    {
+        boton_disparar = boton_disparar || estado_joystick.button[7]; // RT como botón
+    }
+    
+    return boton_disparar;
+}
+
+/**
+ * @brief Maneja el cambio de armas con joystick.
+ * 
+ * @param nave Puntero a la nave.
+ * @param joystick Puntero al joystick.
+ */
+void cambiar_arma_joystick(Nave *nave, ALLEGRO_JOYSTICK *joystick)
+{
+    ALLEGRO_JOYSTICK_STATE estado_joystick; // ✅ VARIABLE LOCAL
+    static double ultimo_cambio = 0;
+    double tiempo_actual = al_get_time();
+    
+    if (!joystick) return;
+    
+    // ✅ OBTENER ESTADO CORRECTAMENTE
+    al_get_joystick_state(joystick, &estado_joystick);
+    
+    if (tiempo_actual - ultimo_cambio > 0.3) // Evitar cambios muy rápidos
+    {
+        // D-pad o botones Y, X, B para cambiar armas
+        if (estado_joystick.button[2]) // Botón Y/Triangle - Arma 1
+        {
+            cambiar_arma(nave, Arma_normal);
+            ultimo_cambio = tiempo_actual;
+        }
+        else if (estado_joystick.button[3]) // Botón X/Square - Arma 2
+        {
+            cambiar_arma(nave, Arma_laser);
+            ultimo_cambio = tiempo_actual;
+        }
+        else if (estado_joystick.button[1]) // Botón B/Circle - Arma 3
+        {
+            cambiar_arma(nave, Arma_explosiva);
+            ultimo_cambio = tiempo_actual;
+        }
+        else if (estado_joystick.button[0] && estado_joystick.button[1]) // A+B - Arma 4
+        {
+            cambiar_arma(nave, Arma_misil);
+            ultimo_cambio = tiempo_actual;
+        }
+    }
+}
+
+/**
+ * @brief Dibuja un indicador del tipo de control activo.
+ * 
+ * @param config Configuración de control.
+ * @param fuente Fuente para el texto.
+ */
+void dibujar_indicador_control(ConfiguracionControl config, ALLEGRO_FONT *fuente)
+{
+    char texto_control[100];
+    ALLEGRO_COLOR color = al_map_rgb(200, 200, 200);
+    
+    if (config.tipo_control == CONTROL_TECLADO)
+    {
+        strcpy(texto_control, "Control: Teclado");
+    }
+    else
+    {
+        sprintf(texto_control, "Control: %s", config.nombre_joystick);
+    }
+    
+    al_draw_text(fuente, color, 10, 580, ALLEGRO_ALIGN_LEFT, texto_control);
+}

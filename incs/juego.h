@@ -148,6 +148,12 @@
 #define TIEMPO_INVOCACION_ENEMIGOS 15.0
 
 /**
+ * @def DEADZONE_JOYSTICK
+ * @brief Zona muerta del joystick para evitar movimientos accidentales
+ */
+#define DEADZONE_JOYSTICK 0.2f
+
+/**
  * @enum TipoArma
  * @brief Enumeración que define los tipos de armas disponibles en el juego.
  */
@@ -167,6 +173,16 @@ typedef enum
     Ataque_ondas,
     Ataque_perseguidor
 } TipoAtaqueJefe;
+
+/**
+ * @enum TipoControl
+ * @brief Enumeración que define los tipos de control disponibles.
+ */
+typedef enum
+{
+    CONTROL_TECLADO = 0,
+    CONTROL_JOYSTICK = 1
+} TipoControl;
 
 /*Estructuras usadas en el juego*/
 
@@ -509,6 +525,19 @@ typedef struct
     ALLEGRO_BITMAP *imagen;
 } Jefe;
 
+/**
+ * @struct ConfiguracionControl
+ * @brief Estructura que maneja la configuración de controles del juego.
+ */
+typedef struct
+{
+    TipoControl tipo_control;
+    ALLEGRO_JOYSTICK *joystick;
+    bool joystick_disponible;
+    int numero_joystick;
+    char nombre_joystick[100];
+} ConfiguracionControl;
+
 
 /*Funciones*/
 Nave init_nave(float x, float y, float ancho, float largo, float vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave);
@@ -637,5 +666,13 @@ bool jefe_recibir_dano(Jefe* jefe, float dano, ColaMensajes* cola_mensajes);
 void actualizar_estado_nivel_sin_jefe(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual);
 void dibujar_boton_individual(Boton boton, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y);
 void dibujar_info_escudo(Nave nave, ALLEGRO_FONT *fuente);
+void init_configuracion_control(ConfiguracionControl *config);
+bool detectar_joysticks(ConfiguracionControl *config);
+void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *config, ALLEGRO_EVENT_QUEUE *cola_eventos);
+void manejar_eventos_joystick(ALLEGRO_EVENT evento, Nave* nave, bool teclas[]);
+void actualizar_nave_joystick(Nave* nave, ALLEGRO_JOYSTICK *joystick, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
+bool obtener_boton_joystick_disparar(ALLEGRO_JOYSTICK *joystick);
+void cambiar_arma_joystick(Nave *nave, ALLEGRO_JOYSTICK *joystick);
+void dibujar_indicador_control(ConfiguracionControl config, ALLEGRO_FONT *fuente);
 
 #endif

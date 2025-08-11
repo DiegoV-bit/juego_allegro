@@ -100,10 +100,30 @@ int main()
     bool esperando;
     ALLEGRO_EVENT victoria;
     int num_jugadores;
+    ConfiguracionControl config_control;
+
+    init_configuracion_control(&config_control);
 
     if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo, &imagen_menu) != 0)
     {
         return -1;
+    }
+
+    // ✅ MOSTRAR MENÚ DE SELECCIÓN DE CONTROL
+    if (config_control.joystick_disponible)
+    {
+        mostrar_menu_seleccion_control(fuente, &config_control, cola_eventos);
+    }
+    else
+    {
+        printf("Solo teclado disponible. Usando teclado por defecto.\n");
+        config_control.tipo_control = CONTROL_TECLADO;
+    }
+    
+    // ✅ REGISTRAR EVENTOS DE JOYSTICK SI ES NECESARIO
+    if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick)
+    {
+        al_register_event_source(cola_eventos, al_get_joystick_event_source());
     }
 
     if (!cargar_imagenes_enemigos(imagenes_enemigos))
@@ -390,6 +410,19 @@ int main()
                         }
                     }
 
+                    // ✅ NUEVOS EVENTOS DE JOYSTICK
+                    if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick)
+                    {
+                        if (evento.type == ALLEGRO_EVENT_JOYSTICK_AXIS || evento.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN || evento.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_UP)
+                        {
+                                if (!estado_nivel.mostrar_transicion)
+                                {
+                                    manejar_eventos_joystick(evento, &nave, teclas);
+                                    cambiar_arma_joystick(&nave, config_control.joystick);
+                                }
+                        }
+                    }
+
                     // Manejo de eventos de debug
                     if (evento.type == ALLEGRO_EVENT_KEY_DOWN && evento.keyboard.keycode == ALLEGRO_KEY_F1)
                     {
@@ -401,6 +434,55 @@ int main()
                 if (evento.type == ALLEGRO_EVENT_TIMER)
                 {
                     tiempo_cache = al_get_time();
+
+                    // ✅ DISPARO CON JOYSTICK
+                    if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick)
+                    {
+                        static bool boton_disparar_presionado = false;
+                        bool boton_actual = obtener_boton_joystick_disparar(config_control.joystick);
+                
+                        // Detectar cuando se presiona el botón (no mantener presionado)
+                        if (boton_actual && !boton_disparar_presionado)
+                        {
+                            if (nave.arma_actual == Arma_laser)
+                            {
+                                bool laser_activo = false;
+                                for (i = 0; i < 5; i++)
+                                {
+                                    if (lasers[i].activo)
+                                    {
+                                        laser_activo = true;
+                                        break;
+                                    }
+                                }
+
+                                if (!laser_activo)
+                                {
+                                    disparar_laser(lasers, 5, nave);
+                                    printf("Laser activado con joystick\n");
+                                }
+                            }
+                            else
+                            {
+                                disparar_segun_arma(nave, disparos, MAX_DISPAROS, lasers, 5, explosivos, 8, misil, 6, enemigos, num_enemigos_cargados);
+                            }
+                        }
+                
+                        // Para láser continuo: desactivar cuando se suelta el botón
+                        if (!boton_actual && boton_disparar_presionado && nave.arma_actual == Arma_laser)
+                        {
+                            for (i = 0; i < 5; i++)
+                            {
+                                if (lasers[i].activo)
+                                {
+                                    lasers[i].activo = false;
+                                }
+                            }
+                            printf("Laser desactivado con joystick\n");
+                        }
+                
+                        boton_disparar_presionado = boton_actual;
+                    }
 
                     actualizar_cola_mensajes(&cola_mensajes, tiempo_cache);
 
@@ -660,6 +742,12 @@ int main()
                         }
                     }
 
+                    // ✅ ACTUALIZAR JUEGO CON SOPORTE DE JOYSTICK
+                    if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick)
+                    {
+                        actualizar_nave_joystick(&nave, config_control.joystick, tilemap);
+                    }
+
                     actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &cola_mensajes, &estado_nivel, tiempo_cache, powerups, MAX_POWERUPS);
                     
                     if (hay_jefe_en_nivel && jefe_nivel.activo)
@@ -872,6 +960,9 @@ int main()
 
                         dibujar_info_armas(nave, fuente);
                         dibujar_info_escudo(nave, fuente);
+                        
+                        // ✅ MOSTRAR INDICADOR DE CONTROL
+                        dibujar_indicador_control(config_control, fuente);
 
                         dibujar_cola_mensajes(cola_mensajes, fuente);
                         

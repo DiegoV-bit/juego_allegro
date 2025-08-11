@@ -34,6 +34,27 @@ int init_allegro()
         return -1;
     }
 
+    if (!al_install_joystick())
+    {
+        fprintf(stderr, "Advertencia: No se pudo inicializar el joystick. Solo estará disponible el teclado.\n");
+    }
+    else
+    {
+        printf("Soporte para joystick inicializado correctamente.\n");
+        int num_joysticks = al_get_num_joysticks();
+        printf("Número de controladores detectados: %d\n", num_joysticks);
+        
+        if (num_joysticks > 0)
+        {
+            ALLEGRO_JOYSTICK *joystick = al_get_joystick(0);
+            if (joystick)
+            {
+                const char *nombre = al_get_joystick_name(joystick);
+                printf("Controlador 1: %s\n", nombre ? nombre : "Desconocido");
+            }
+        }
+    }
+
     if (!al_init_primitives_addon())
     {
         fprintf(stderr, "Error: No se pudo inicializar los primitivos.\n");
