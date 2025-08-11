@@ -851,6 +851,7 @@ int main()
                         dibujar_nivel_powerup(nave, fuente);
 
                         dibujar_info_armas(nave, fuente);
+                        dibujar_info_escudo(nave, fuente);
 
                         dibujar_cola_mensajes(cola_mensajes, fuente);
                         
@@ -858,13 +859,6 @@ int main()
                         char texto_nivel[50];
                         sprintf(texto_nivel, "Nivel: %d", estado_nivel.nivel_actual);
                         al_draw_text(fuente, al_map_rgb(255, 255, 255), 10, 120, ALLEGRO_ALIGN_LEFT, texto_nivel);
-
-                        if (escudo_activo(nave))
-                        {
-                            char texto_escudo[50];
-                            sprintf(texto_escudo, "Escudo: %d hits", nave.escudo.hits_restantes);
-                            al_draw_text(fuente, al_map_rgb(0, 255, 255), 10, 100, ALLEGRO_ALIGN_CENTER, texto_escudo);
-                        }
                     }
                     
                     al_flip_display();

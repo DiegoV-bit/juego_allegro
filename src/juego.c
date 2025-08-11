@@ -3322,11 +3322,20 @@ void verificar_mejora_arma(Nave *nave, TipoArma tipo_arma, ColaMensajes *cola_me
  * @param nave Nave del jugador con información de armas.
  * @param fuente Fuente de texto para renderizar la información.
  */
+/**
+ * @brief Dibuja la información de las armas en pantalla con HUD mejorado.
+ * 
+ * Muestra el arma actual, su nivel, progreso de mejora y lista de armas
+ * desbloqueadas con sus respectivas teclas de activación.
+ * 
+ * @param nave Nave del jugador con información de armas.
+ * @param fuente Fuente de texto para renderizar la información.
+ */
 void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
 {
     // ✅ POSICIÓN BASE PARA TODO EL HUD DE ARMAS
     int hud_x = 600;
-    int hud_y = 480; // Subido para dar espacio arriba de los slots
+    int hud_y = 460; // Subido más para dar espacio a la barra de progreso
     
     SistemaArma arma_actual = nave.armas[nave.arma_seleccionada];
     
@@ -3334,12 +3343,59 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
     int cuadro_x = hud_x;
     int cuadro_y = hud_y;
     int cuadro_ancho = 180;
-    int cuadro_alto = 40;
+    int cuadro_alto = 50; // Aumentado para dar espacio a la barra
     
     al_draw_filled_rectangle(cuadro_x, cuadro_y, cuadro_x + cuadro_ancho, cuadro_y + cuadro_alto, al_map_rgba(0, 0, 0, 150));
     al_draw_rectangle(cuadro_x, cuadro_y, cuadro_x + cuadro_ancho, cuadro_y + cuadro_alto, al_map_rgb(255, 215, 0), 2);
     
-    // ✅ NOMBRE CORTO DEL ARMA ACTIVA
+    // ✅ BARRA DE PROGRESO DEL ARMA ACTIVA - ARRIBA DEL NOMBRE
+    if (arma_actual.nivel < 3 && arma_actual.kills_necesarias > 0)
+    {
+        float progreso = (float)arma_actual.kills_mejora / arma_actual.kills_necesarias;
+        if (progreso > 1.0f) progreso = 1.0f;
+        
+        // Barra de progreso en la parte superior del cuadro
+        int barra_x = cuadro_x + 10;
+        int barra_y = cuadro_y + 8;
+        int barra_ancho = 160;
+        int barra_alto = 6;
+        
+        // Fondo de la barra
+        al_draw_filled_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
+                               al_map_rgba(60, 60, 60, 180));
+        
+        // Progreso de la barra
+        al_draw_filled_rectangle(barra_x, barra_y, barra_x + (barra_ancho * progreso), barra_y + barra_alto, 
+                               al_map_rgb(0, 255, 100));
+        
+        // Borde de la barra
+        al_draw_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
+                        al_map_rgb(150, 150, 150), 1);
+        
+        // Texto de progreso pequeño al lado derecho
+        char prog_texto[20];
+        sprintf(prog_texto, "%d/%d", arma_actual.kills_mejora, arma_actual.kills_necesarias);
+        al_draw_text(fuente, al_map_rgb(200, 200, 200), cuadro_x + cuadro_ancho - 5, barra_y - 2, 
+                    ALLEGRO_ALIGN_RIGHT, prog_texto);
+    }
+    else if (arma_actual.nivel == 3)
+    {
+        // Barra completa para nivel máximo
+        int barra_x = cuadro_x + 10;
+        int barra_y = cuadro_y + 8;
+        int barra_ancho = 160;
+        int barra_alto = 6;
+        
+        al_draw_filled_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
+                               al_map_rgb(255, 215, 0));
+        al_draw_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
+                        al_map_rgb(255, 255, 255), 1);
+        
+        al_draw_text(fuente, al_map_rgb(255, 215, 0), cuadro_x + cuadro_ancho - 5, barra_y - 2, 
+                    ALLEGRO_ALIGN_RIGHT, "MAX");
+    }
+    
+    // ✅ NOMBRE CORTO DEL ARMA ACTIVA - DEBAJO DE LA BARRA
     char nombre_corto[15];
     switch (nave.arma_seleccionada)
     {
@@ -3350,39 +3406,12 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
         default: strcpy(nombre_corto, "DESCONOCIDO"); break;
     }
     
-    al_draw_text(fuente, al_map_rgb(255, 255, 255), cuadro_x + 10, cuadro_y + 5, ALLEGRO_ALIGN_LEFT, nombre_corto);
+    al_draw_text(fuente, al_map_rgb(255, 255, 255), cuadro_x + 10, cuadro_y + 20, ALLEGRO_ALIGN_LEFT, nombre_corto);
     
     // ✅ NIVEL DEL ARMA ACTIVA
     char nivel_texto[10];
     //sprintf(nivel_texto, "LV%d", arma_actual.nivel);
-    al_draw_text(fuente, al_map_rgb(255, 215, 0), cuadro_x + 100, cuadro_y + 5, ALLEGRO_ALIGN_LEFT, nivel_texto);
-    
-    // ✅ BARRA DE PROGRESO DEL ARMA ACTIVA
-    if (arma_actual.nivel < 3 && arma_actual.kills_necesarias > 0)
-    {
-        float progreso = (float)arma_actual.kills_mejora / arma_actual.kills_necesarias;
-        if (progreso > 1.0f) progreso = 1.0f;
-        
-        // Barra de progreso
-        int barra_x = cuadro_x + 10;
-        int barra_y = cuadro_y + 25;
-        int barra_ancho = 150;
-        int barra_alto = 4;
-        
-        al_draw_filled_rectangle(barra_x, barra_y, barra_x + (barra_ancho * progreso), barra_y + barra_alto, 
-                               al_map_rgb(0, 255, 100));
-        al_draw_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
-                        al_map_rgb(150, 150, 150), 1);
-        
-        // Texto de progreso pequeño
-        char prog_texto[20];
-        sprintf(prog_texto, "%d/%d", arma_actual.kills_mejora, arma_actual.kills_necesarias);
-        al_draw_text(fuente, al_map_rgb(200, 200, 200), cuadro_x + 85, cuadro_y + 20, ALLEGRO_ALIGN_CENTER, prog_texto);
-    }
-    else if (arma_actual.nivel == 3)
-    {
-        al_draw_text(fuente, al_map_rgb(255, 215, 0), cuadro_x + 85, cuadro_y + 22, ALLEGRO_ALIGN_CENTER, "MAX");
-    }
+    al_draw_text(fuente, al_map_rgb(255, 215, 0), cuadro_x + 100, cuadro_y + 20, ALLEGRO_ALIGN_LEFT, nivel_texto);
     
     // ✅ SLOTS DE ARMAS - DEBAJO DEL CUADRO PRINCIPAL
     int slots_y = cuadro_y + cuadro_alto + 10; // 10 píxeles de separación
@@ -5482,4 +5511,88 @@ void dibujar_boton_individual(Boton boton, ALLEGRO_FONT* fuente, int cursor_x, i
                 boton.x + boton.ancho / 2, 
                 boton.y + boton.alto / 2 - al_get_font_line_height(fuente) / 2, 
                 ALLEGRO_ALIGN_CENTER, boton.texto);
+}
+
+
+/**
+ * @brief Dibuja la información del escudo en el HUD.
+ * 
+ * Muestra el estado del escudo, hits restantes y barra de resistencia
+ * de manera visual e informativa.
+ * 
+ * @param nave Nave del jugador con información del escudo.
+ * @param fuente Fuente de texto para renderizar la información.
+ */
+void dibujar_info_escudo(Nave nave, ALLEGRO_FONT *fuente)
+{
+    int escudo_x = 10;
+    int escudo_y = 500;
+    int cuadro_ancho = 200;
+    int cuadro_alto = 50;
+    
+    if (nave.escudo.activo && nave.escudo.hits_restantes > 0)
+    {
+        // ✅ FONDO DEL CUADRO DE ESCUDO
+        ALLEGRO_COLOR color_fondo = al_map_rgba(0, 100, 150, 120);
+        al_draw_filled_rectangle(escudo_x, escudo_y, escudo_x + cuadro_ancho, escudo_y + cuadro_alto, color_fondo);
+        al_draw_rectangle(escudo_x, escudo_y, escudo_x + cuadro_ancho, escudo_y + cuadro_alto, 
+                         al_map_rgb(0, 255, 255), 2);
+        
+        // ✅ TÍTULO DEL ESCUDO
+        al_draw_text(fuente, al_map_rgb(0, 255, 255), escudo_x + 10, escudo_y + 64, 
+                    ALLEGRO_ALIGN_LEFT, "ESCUDO ACTIVO");
+        
+        // ✅ BARRA DE RESISTENCIA VISUAL
+        int barra_x = escudo_x + 10;
+        int barra_y = escudo_y + 25;
+        int barra_ancho = cuadro_ancho - 20;
+        int barra_alto = 8;
+        
+        float porcentaje_escudo = (float)nave.escudo.hits_restantes / nave.escudo.hits_max;
+        
+        // Color de la barra según la resistencia restante
+        ALLEGRO_COLOR color_barra;
+        if (porcentaje_escudo > 0.66f)
+            color_barra = al_map_rgb(0, 255, 100);      // Verde - escudo fuerte
+        else if (porcentaje_escudo > 0.33f)
+            color_barra = al_map_rgb(255, 255, 0);      // Amarillo - escudo medio
+        else
+            color_barra = al_map_rgb(255, 100, 0);      // Naranja - escudo débil
+        
+        // Fondo de la barra
+        al_draw_filled_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
+                               al_map_rgba(60, 60, 60, 150));
+        
+        // Progreso de la barra
+        al_draw_filled_rectangle(barra_x, barra_y, barra_x + (barra_ancho * porcentaje_escudo), barra_y + barra_alto, 
+                               color_barra);
+        
+        // Borde de la barra
+        al_draw_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
+                        al_map_rgb(150, 150, 150), 1);
+        
+        // ✅ INDICADORES VISUALES DE HITS (puntos individuales)
+        for (int i = 0; i < nave.escudo.hits_max; i++)
+        {
+            int punto_x = barra_x + 5 + (i * 20);
+            int punto_y = barra_y + barra_alto + 8;
+            
+            ALLEGRO_COLOR color_punto = (i < nave.escudo.hits_restantes) ? 
+                al_map_rgb(0, 255, 255) : al_map_rgba(100, 100, 100, 100);
+            
+            al_draw_filled_circle(punto_x, punto_y, 4, color_punto);
+            al_draw_circle(punto_x, punto_y, 4, al_map_rgb(200, 200, 200), 1);
+        }
+    }
+    else
+    {
+        // ✅ MOSTRAR ESCUDO INACTIVO (más sutil)
+        ALLEGRO_COLOR color_fondo_inactivo = al_map_rgba(60, 60, 60, 80);
+        al_draw_filled_rectangle(escudo_x, escudo_y, escudo_x + cuadro_ancho, escudo_y + 35, color_fondo_inactivo);
+        al_draw_rectangle(escudo_x, escudo_y, escudo_x + cuadro_ancho, escudo_y + 35, 
+                         al_map_rgb(100, 100, 100), 1);
+        
+        al_draw_text(fuente, al_map_rgb(150, 150, 150), escudo_x + 10, escudo_y + 48, 
+                    ALLEGRO_ALIGN_LEFT, "Sin escudo activo");
+    }
 }

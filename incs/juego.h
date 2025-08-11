@@ -636,5 +636,6 @@ void jefe_invocar_enemigos(Jefe* jefe, Enemigo enemigos[], int* num_enemigos, AL
 bool jefe_recibir_dano(Jefe* jefe, float dano, ColaMensajes* cola_mensajes);
 void actualizar_estado_nivel_sin_jefe(EstadoJuego* estado, Enemigo enemigos[], int num_enemigos, double tiempo_actual);
 void dibujar_boton_individual(Boton boton, ALLEGRO_FONT* fuente, int cursor_x, int cursor_y);
+void dibujar_info_escudo(Nave nave, ALLEGRO_FONT *fuente);
 
 #endif
