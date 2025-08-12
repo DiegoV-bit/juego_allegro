@@ -5756,8 +5756,9 @@ void init_configuracion_control(ConfiguracionControl *config)
     config->numero_joystick = -1;
     strcpy(config->nombre_joystick, "No detectado");
     
-    // Detectar joysticks disponibles
-    detectar_joysticks(config);
+    // ✅ DETECTAR JOYSTICKS AL INICIALIZAR (AHORA ALLEGRO YA ESTÁ LISTO)
+    bool joystick_detectado = detectar_joysticks(config);
+    printf("Configuración inicial: Joystick %s\n", joystick_detectado ? "detectado" : "no detectado");
 }
 
 /**
@@ -5768,7 +5769,7 @@ void init_configuracion_control(ConfiguracionControl *config)
  */
 bool detectar_joysticks(ConfiguracionControl *config)
 {
-    al_reconfigure_joysticks(); // Actualizar lista de joysticks
+    al_reconfigure_joysticks(); // ✅ Actualizar lista de joysticks
     int num_joysticks = al_get_num_joysticks();
     
     printf("Detectando joysticks... Encontrados: %d\n", num_joysticks);
@@ -5797,12 +5798,13 @@ bool detectar_joysticks(ConfiguracionControl *config)
         }
     }
     
+    config->joystick_disponible = false; // ✅ MARCAR COMO NO DISPONIBLE
     printf("No se encontraron joysticks compatibles.\n");
     return false;
 }
 
 /**
- * @brief Muestra el menú de selección de control.
+ * @brief Muestra el menú de selección de control optimizado.
  * 
  * @param fuente Fuente para el texto.
  * @param config Configuración de control.
@@ -5813,12 +5815,45 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
     bool seleccionando = true;
     int opcion_seleccionada = 0; // 0 = Teclado, 1 = Joystick
     ALLEGRO_EVENT evento;
+    bool necesita_redibujo = true;
+    
+    printf("Iniciando menú de selección de control...\n");
+    
+    // ✅ CREAR TIMER DEDICADO PARA EL MENÚ
+    ALLEGRO_TIMER *timer_menu = al_create_timer(1.0/60.0); // 60 FPS
+    if (!timer_menu)
+    {
+        printf("Error creando timer del menú\n");
+        return;
+    }
+    
+    // ✅ REGISTRAR TIMER EN LA COLA DE EVENTOS
+    al_register_event_source(cola_eventos, al_get_timer_event_source(timer_menu));
+    al_start_timer(timer_menu);
     
     // Registrar eventos de joystick si está disponible
     if (config->joystick_disponible && config->joystick)
     {
         al_register_event_source(cola_eventos, al_get_joystick_event_source());
+        printf("Eventos de joystick registrados\n");
     }
+    
+    // ✅ VARIABLES DE CONTROL DE ENTRADA
+    double ultimo_input_joystick = 0;
+    const double delay_input = 0.3; // 300ms entre inputs
+    
+    // ✅ DIBUJO INICIAL
+    al_clear_to_color(al_map_rgb(0, 0, 0));
+    al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 150, ALLEGRO_ALIGN_CENTER, "SELECCIONA EL TIPO DE CONTROL");
+    
+    if (config->joystick_disponible)
+    {
+        char info_joystick[150];
+        sprintf(info_joystick, "Controlador detectado: %s", config->nombre_joystick);
+        al_draw_text(fuente, al_map_rgb(0, 255, 0), 400, 180, ALLEGRO_ALIGN_CENTER, info_joystick);
+    }
+    
+    al_flip_display();
     
     while (seleccionando)
     {
@@ -5830,19 +5865,21 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
             break;
         }
         
-        // Navegación con teclado
+        // ✅ NAVEGACIÓN CON TECLADO (OPTIMIZADA)
         if (evento.type == ALLEGRO_EVENT_KEY_DOWN)
         {
             switch (evento.keyboard.keycode)
             {
                 case ALLEGRO_KEY_UP:
                 case ALLEGRO_KEY_W:
-                    opcion_seleccionada = (opcion_seleccionada - 1 + 2) % 2;
+                    opcion_seleccionada = 0;
+                    necesita_redibujo = true;
                     break;
                     
                 case ALLEGRO_KEY_DOWN:
                 case ALLEGRO_KEY_S:
-                    opcion_seleccionada = (opcion_seleccionada + 1) % 2;
+                    opcion_seleccionada = config->joystick_disponible ? 1 : 0;
+                    necesita_redibujo = true;
                     break;
                     
                 case ALLEGRO_KEY_ENTER:
@@ -5867,31 +5904,29 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
             }
         }
         
-        // Navegación con joystick
+        // ✅ NAVEGACIÓN CON JOYSTICK (OPTIMIZADA CON THROTTLING)
         if (evento.type == ALLEGRO_EVENT_JOYSTICK_AXIS && config->joystick_disponible)
         {
-            if (evento.joystick.axis == 1) // Stick izquierdo vertical
+            double tiempo_actual = al_get_time();
+            
+            if (evento.joystick.axis == 1 && tiempo_actual - ultimo_input_joystick > delay_input)
             {
-                static double ultimo_cambio = 0;
-                double tiempo_actual = al_get_time();
-                
-                if (tiempo_actual - ultimo_cambio > 0.3) // Evitar cambios muy rápidos
+                if (evento.joystick.pos < -DEADZONE_JOYSTICK)
                 {
-                    if (evento.joystick.pos < -DEADZONE_JOYSTICK)
-                    {
-                        opcion_seleccionada = (opcion_seleccionada - 1 + 2) % 2;
-                        ultimo_cambio = tiempo_actual;
-                    }
-                    else if (evento.joystick.pos > DEADZONE_JOYSTICK)
-                    {
-                        opcion_seleccionada = (opcion_seleccionada + 1) % 2;
-                        ultimo_cambio = tiempo_actual;
-                    }
+                    opcion_seleccionada = 0;
+                    ultimo_input_joystick = tiempo_actual;
+                    necesita_redibujo = true;
+                }
+                else if (evento.joystick.pos > DEADZONE_JOYSTICK)
+                {
+                    opcion_seleccionada = config->joystick_disponible ? 1 : 0;
+                    ultimo_input_joystick = tiempo_actual;
+                    necesita_redibujo = true;
                 }
             }
         }
         
-        // Selección con botón de joystick
+        // ✅ SELECCIÓN CON BOTÓN DE JOYSTICK (OPTIMIZADA)
         if (evento.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN && config->joystick_disponible)
         {
             if (evento.joystick.button == 0) // Botón A/X
@@ -5915,14 +5950,23 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
             }
         }
         
-        if (evento.type == ALLEGRO_EVENT_TIMER)
+        // ✅ REDIBUJADO SOLO CUANDO ES NECESARIO
+        if (evento.type == ALLEGRO_EVENT_TIMER && necesita_redibujo)
         {
-            // Dibujar menú
+            necesita_redibujo = false;
+            
             al_clear_to_color(al_map_rgb(0, 0, 0));
             
             // Título
-            al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 150, ALLEGRO_ALIGN_CENTER, 
-                        "SELECCIONA EL TIPO DE CONTROL");
+            al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 150, ALLEGRO_ALIGN_CENTER, "SELECCIONA EL TIPO DE CONTROL");
+            
+            // Información del joystick detectado
+            if (config->joystick_disponible)
+            {
+                char info_joystick[150];
+                sprintf(info_joystick, "Controlador detectado: %s", config->nombre_joystick);
+                al_draw_text(fuente, al_map_rgb(0, 255, 0), 400, 180, ALLEGRO_ALIGN_CENTER, info_joystick);
+            }
             
             // Opción Teclado
             ALLEGRO_COLOR color_teclado = (opcion_seleccionada == 0) ? 
@@ -5948,6 +5992,16 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
             
             al_draw_text(fuente, color_joystick, 400, 300, ALLEGRO_ALIGN_CENTER, texto_joystick);
             
+            // Indicador de selección
+            if (opcion_seleccionada == 0)
+            {
+                al_draw_text(fuente, al_map_rgb(255, 255, 0), 350, 250, ALLEGRO_ALIGN_CENTER, ">");
+            }
+            else if (config->joystick_disponible && opcion_seleccionada == 1)
+            {
+                al_draw_text(fuente, al_map_rgb(255, 255, 0), 350, 300, ALLEGRO_ALIGN_CENTER, ">");
+            }
+            
             // Instrucciones
             al_draw_text(fuente, al_map_rgb(200, 200, 200), 400, 380, ALLEGRO_ALIGN_CENTER, 
                         "Usa las flechas o stick para navegar");
@@ -5959,6 +6013,13 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
             al_flip_display();
         }
     }
+    
+    // ✅ LIMPIEZA DE RECURSOS
+    al_stop_timer(timer_menu);
+    al_unregister_event_source(cola_eventos, al_get_timer_event_source(timer_menu));
+    al_destroy_timer(timer_menu);
+    
+    printf("Menú de selección cerrado. Control elegido: %s\n", config->tipo_control == CONTROL_JOYSTICK ? "Joystick" : "Teclado");
 }
 
 /**

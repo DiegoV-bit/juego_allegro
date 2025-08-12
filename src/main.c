@@ -102,22 +102,70 @@ int main()
     int num_jugadores;
     ConfiguracionControl config_control;
 
-    init_configuracion_control(&config_control);
-
     if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo, &imagen_menu) != 0)
     {
         return -1;
     }
 
+    init_configuracion_control(&config_control);
+
+    printf("Estado del joystick: %s\n", config_control.joystick_disponible ? "Disponible" : "No disponible");
+
     // ✅ MOSTRAR MENÚ DE SELECCIÓN DE CONTROL
     if (config_control.joystick_disponible)
     {
+        printf("Mostrando menú de selección de control...\n");
         mostrar_menu_seleccion_control(fuente, &config_control, cola_eventos);
     }
     else
     {
         printf("Solo teclado disponible. Usando teclado por defecto.\n");
         config_control.tipo_control = CONTROL_TECLADO;
+
+        // ✅ CREAR TIMER PARA ESTA PANTALLA TAMBIÉN
+        ALLEGRO_TIMER *timer_aviso = al_create_timer(1.0/60.0);
+        al_register_event_source(cola_eventos, al_get_timer_event_source(timer_aviso));
+        al_start_timer(timer_aviso);
+
+        al_clear_to_color(al_map_rgb(0, 0, 0));
+        al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 250, ALLEGRO_ALIGN_CENTER, 
+                    "No se detectaron controladores");
+        al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 300, ALLEGRO_ALIGN_CENTER, 
+                    "Usando teclado como control predeterminado");
+        al_draw_text(fuente, al_map_rgb(200, 200, 200), 400, 350, ALLEGRO_ALIGN_CENTER, 
+                    "Presiona cualquier tecla para continuar...");
+        al_flip_display();
+        
+        bool esperando = true;
+        bool necesita_redibujado = true;
+        while (esperando)
+        {
+            ALLEGRO_EVENT evento_temp;
+            al_wait_for_event(cola_eventos, &evento_temp);
+            if (evento_temp.type == ALLEGRO_EVENT_KEY_DOWN || evento_temp.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
+            {
+                esperando = false;
+            }
+
+            // ✅ REDIBUJADO OPTIMIZADO
+            if (evento_temp.type == ALLEGRO_EVENT_TIMER && necesita_redibujado)
+            {
+                necesita_redibujado = false;
+            
+                al_clear_to_color(al_map_rgb(0, 0, 0));
+                al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 250, ALLEGRO_ALIGN_CENTER, 
+                        "No se detectaron controladores");
+                al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 300, ALLEGRO_ALIGN_CENTER, 
+                        "Usando teclado como control predeterminado");
+                al_draw_text(fuente, al_map_rgb(200, 200, 200), 400, 350, ALLEGRO_ALIGN_CENTER, 
+                        "Presiona cualquier tecla para continuar...");
+                al_flip_display();
+            }
+        }
+
+        al_stop_timer(timer_aviso);
+        al_unregister_event_source(cola_eventos, al_get_timer_event_source(timer_aviso));
+        al_destroy_timer(timer_aviso);
     }
     
     // ✅ REGISTRAR EVENTOS DE JOYSTICK SI ES NECESARIO
@@ -197,8 +245,120 @@ int main()
                 cursor_y = evento.mouse.y;
             }
 
+            // ✅ AGREGAR NAVEGACIÓN CON TECLADO Y JOYSTICK AL MENÚ PRINCIPAL
+            if (evento.type == ALLEGRO_EVENT_KEY_DOWN)
+            {
+                static int opcion_menu = 0;
+        
+                switch (evento.keyboard.keycode)
+                {
+                case ALLEGRO_KEY_UP:
+                case ALLEGRO_KEY_W:
+                    opcion_menu = (opcion_menu - 1 + 3) % 3;
+                    cursor_x = botones[opcion_menu].x + botones[opcion_menu].ancho / 2;
+                    cursor_y = botones[opcion_menu].y + botones[opcion_menu].alto / 2;
+                    break;
+                
+                case ALLEGRO_KEY_DOWN:
+                case ALLEGRO_KEY_S:
+                    opcion_menu = (opcion_menu + 1) % 3;
+                    cursor_x = botones[opcion_menu].x + botones[opcion_menu].ancho / 2;
+                    cursor_y = botones[opcion_menu].y + botones[opcion_menu].alto / 2;
+                    break;
+                
+                case ALLEGRO_KEY_ENTER:
+                case ALLEGRO_KEY_SPACE:
+                    if (opcion_menu == 0)
+                    {
+                        en_menu = false;
+                        jugando = true;
+                    }
+                    else if (opcion_menu == 1)
+                    {
+                        en_menu = false;
+                        mostrarRanking = true;
+                    }
+                    else if (opcion_menu == 2)
+                    {
+                        en_menu = false;
+                        jugando = false;
+                        mostrarRanking = false;
+                    }
+                    break;
+                
+                case ALLEGRO_KEY_ESCAPE:
+                    en_menu = false;
+                    jugando = false;
+                    mostrarRanking = false;
+                    break;
+                }
+            }
+
+            // ✅ SOPORTE PARA JOYSTICK EN EL MENÚ PRINCIPAL
+            if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick)
+            {
+                static int opcion_menu_joy = 0;
+                static double ultimo_input_menu = 0;
+                const double delay_menu = 0.3;
+        
+                if (evento.type == ALLEGRO_EVENT_JOYSTICK_AXIS)
+                {
+                    double tiempo_actual = al_get_time();
+            
+                    if (evento.joystick.axis == 1 && tiempo_actual - ultimo_input_menu > delay_menu)
+                    {
+                        if (evento.joystick.pos < -DEADZONE_JOYSTICK)
+                        {
+                            opcion_menu_joy = (opcion_menu_joy - 1 + 3) % 3;
+                            cursor_x = botones[opcion_menu_joy].x + botones[opcion_menu_joy].ancho / 2;
+                            cursor_y = botones[opcion_menu_joy].y + botones[opcion_menu_joy].alto / 2;
+                            ultimo_input_menu = tiempo_actual;
+                        }
+                        else if (evento.joystick.pos > DEADZONE_JOYSTICK)
+                        {
+                            opcion_menu_joy = (opcion_menu_joy + 1) % 3;
+                            cursor_x = botones[opcion_menu_joy].x + botones[opcion_menu_joy].ancho / 2;
+                            cursor_y = botones[opcion_menu_joy].y + botones[opcion_menu_joy].alto / 2;
+                            ultimo_input_menu = tiempo_actual;
+                        }
+                    }
+                }
+        
+                if (evento.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN)
+                {
+                    if (evento.joystick.button == 0) // Botón A/X
+                    {
+                        if (opcion_menu_joy == 0)
+                        {
+                            en_menu = false;
+                            jugando = true;
+                        }
+                        else if (opcion_menu_joy == 1)
+                        {
+                            en_menu = false;
+                            mostrarRanking = true;
+                        }
+                        else if (opcion_menu_joy == 2)
+                        {
+                            en_menu = false;
+                            jugando = false;
+                            mostrarRanking = false;
+                        }
+                    }
+                    else if (evento.joystick.button == 1) // Botón B/Circle
+                    {
+                        en_menu = false;
+                        jugando = false;
+                        mostrarRanking = false;
+                    }
+                }
+            }
+
             if (evento.type == ALLEGRO_EVENT_TIMER)
             {
+                // ✅ USAR BACKBUFFER PARA MEJOR RENDIMIENTO
+                al_set_target_backbuffer(al_get_current_display());
+
                 if (imagen_menu)
                 {
                     al_draw_scaled_bitmap(imagen_menu, 0, 0, al_get_bitmap_width(imagen_menu), al_get_bitmap_height(imagen_menu), 0, 0, 800, 600, 0);
@@ -209,6 +369,17 @@ int main()
                 }
                 
                 dibujar_botones(botones, 3, fuente, cursor_x, cursor_y);
+
+                // ✅ MOSTRAR CONTROLES DISPONIBLES
+                if (config_control.joystick_disponible)
+                {
+                    al_draw_text(fuente, al_map_rgb(255, 255, 255), 10, 570, ALLEGRO_ALIGN_LEFT, "Usa flechas/stick para navegar, Enter/A para seleccionar");
+                }
+                else
+                {
+                    al_draw_text(fuente, al_map_rgb(255, 255, 255), 10, 570, ALLEGRO_ALIGN_LEFT, "Usa flechas para navegar, Enter para seleccionar");
+                }
+
                 al_flip_display();
             }
         }
