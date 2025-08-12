@@ -3417,7 +3417,7 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
     al_draw_filled_rectangle(cuadro_x, cuadro_y, cuadro_x + cuadro_ancho, cuadro_y + cuadro_alto, al_map_rgba(0, 0, 0, 150));
     al_draw_rectangle(cuadro_x, cuadro_y, cuadro_x + cuadro_ancho, cuadro_y + cuadro_alto, al_map_rgb(255, 215, 0), 2);
     
-    // ✅ NOMBRE CORTO DEL ARMA ACTIVA - EN LA PARTE SUPERIOR
+    // Nombre corto del arma activa
     switch (nave.arma_seleccionada)
     {
         case 0: strcpy(nombre_corto, "NORMAL"); break;
@@ -3430,12 +3430,12 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
     al_draw_text(fuente, al_map_rgb(255, 255, 255), cuadro_x + 10, cuadro_y + 8, 
                 ALLEGRO_ALIGN_LEFT, nombre_corto);
     
-    // ✅ NIVEL DEL ARMA ACTIVA - AL LADO DEL NOMBRE
+    // Nivel del arma activa
     sprintf(nivel_texto, "LV%d", arma_actual.nivel);
     al_draw_text(fuente, al_map_rgb(255, 215, 0), cuadro_x + 110, cuadro_y + 8, 
                 ALLEGRO_ALIGN_LEFT, nivel_texto);
     
-    // ✅ BARRA DE PROGRESO DEL ARMA ACTIVA - DEBAJO DEL NOMBRE (CÓDIGO COMPLETO IMPLEMENTADO)
+    // Barra de progreso de mejora
     if (arma_actual.nivel < 3 && arma_actual.kills_necesarias > 0)
     {
         progreso = (float)arma_actual.kills_mejora / arma_actual.kills_necesarias;
@@ -3481,7 +3481,7 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
                     ALLEGRO_ALIGN_LEFT, "NIVEL MÁXIMO");
     }
     
-    // ✅ SLOTS DE ARMAS - DEBAJO DEL CUADRO PRINCIPAL
+    // Slot de armas - Debajo del cuadro principal
     slots_y = cuadro_y + cuadro_alto + 15; // 15 píxeles de separación
     slot_size = 45;  // Aumentado
     slot_spacing = 8; // Aumentado
@@ -3492,7 +3492,7 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
         
         arma = nave.armas[i];
         
-        // ✅ COLORES SEGÚN ESTADO DEL ARMA
+        // Colores según estado del arma
         if (!arma.desbloqueado)
         {
             // Arma bloqueada - gris oscuro
@@ -3515,15 +3515,15 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
             color_texto = al_map_rgb(200, 200, 255);
         }
         
-        // ✅ DIBUJAR SLOT
+        // Dibujar slot de arma
         al_draw_filled_rectangle(slot_x, slots_y, slot_x + slot_size, slots_y + slot_size, color_fondo);
         al_draw_rectangle(slot_x, slots_y, slot_x + slot_size, slots_y + slot_size, color_borde, 2);
         
-        // ✅ NÚMERO DE TECLA - EN LA ESQUINA SUPERIOR IZQUIERDA
+        // Numero de tecla para seleccionar el arma
         sprintf(tecla, "%d", i + 1);
         al_draw_text(fuente, color_texto, slot_x + 5, slots_y + 3, ALLEGRO_ALIGN_LEFT, tecla);
         
-        // ✅ ICONO VISUAL DEL ARMA - EN EL CENTRO (CÓDIGO COMPLETO IMPLEMENTADO)
+        // Icono del arma
         if (arma.desbloqueado)
         {
             centro_x = slot_x + slot_size/2;
@@ -3551,7 +3551,7 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
             }
         }
         
-        // ✅ INDICADORES DE NIVEL - USANDO LAS FIGURAS EXISTENTES CORRECTAMENTE (CÓDIGO COMPLETO IMPLEMENTADO)
+        // Indicadores de nivel del arma
         if (arma.desbloqueado)
         {
             // Dibujar 3 puntos en la parte inferior para mostrar el nivel
@@ -3971,7 +3971,7 @@ void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave 
             punta_x = centro_x + cos(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
             punta_y = centro_y + sin(nave.angulo - ALLEGRO_PI / 2) * (nave.largo / 2.0f);
             
-            // ✅ INICIALIZAR COMPLETAMENTE EL EXPLOSIVO
+            // Inicializacion del explosivo
             explosivos[i].x = punta_x;
             explosivos[i].y = punta_y;
             explosivos[i].ancho = 8;
@@ -3980,7 +3980,7 @@ void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave 
             explosivos[i].exploto = false;
             explosivos[i].dano_aplicado = false;
             
-            // ✅ VELOCIDAD IGUAL A DISPARO NORMAL (450 píxeles por segundo)
+            // El disparo explosivo tiene la misma velocidad que un disparo normal
             velocidad = 450.0f; // Misma velocidad que disparo normal
             explosivos[i].vx = cos(nave.angulo - ALLEGRO_PI / 2) * velocidad;
             explosivos[i].vy = sin(nave.angulo - ALLEGRO_PI / 2) * velocidad;
@@ -3994,7 +3994,7 @@ void disparar_explosivo(DisparoExplosivo explosivos[], int max_explosivos, Nave 
             printf("Explosivo disparado: velocidad=450, radio=%d, daño_directo=%d, daño_área=%d\n", 
                    explosivos[i].radio_explosion, explosivos[i].dano_directo, explosivos[i].dano_area);
             
-            // ✅ ACTUALIZAR TIEMPO DE ÚLTIMO USO
+            // Actualizar el último uso del arma explosiva
             nave.armas[Arma_explosiva].ultimo_uso = tiempo_actual;
             return;
         }
@@ -4036,14 +4036,14 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
     {
         if (!explosivos[i].activo) continue;
         
-        // ✅ SI NO HA EXPLOTADO AÚN, MOVER EL PROYECTIL
+        // Si no ha explotado el proyectil, se sigue moviendo
         if (!explosivos[i].exploto)
         {
             // Mover el proyectil
             explosivos[i].x += explosivos[i].vx * (1.0f / 60.0f); // Asumiendo 60 FPS
             explosivos[i].y += explosivos[i].vy * (1.0f / 60.0f);
             
-            // ✅ VERIFICAR COLISIÓN CON ENEMIGOS
+            // Verificar colisiones con enemigos
             for (j = 0; j < num_enemigos; j++)
             {
                 if (enemigos[j].activo && detectar_colision_generica(
@@ -4052,7 +4052,7 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
                 {
                     printf("Explosivo impactó enemigo tipo %d\n", enemigos[j].tipo);
                     
-                    // ✅ ACTIVAR EXPLOSIÓN
+                    // Activar explosion
                     explosivos[i].exploto = true;
                     explosivos[i].tiempo_vida = tiempo_actual; // Marcar tiempo de explosión
                     explosivos[i].dano_aplicado = false; // Resetear para aplicar daño de área
@@ -4106,7 +4106,7 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
             
             colision_detectada:
             
-            // ✅ VERIFICAR SI SALIÓ DE LA PANTALLA
+            // Verificar si el explosivo salió de la pantalla
             if (explosivos[i].x < -20 || explosivos[i].x > 820 || 
                 explosivos[i].y < -20 || explosivos[i].y > 620)
             {
@@ -4115,7 +4115,7 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
                 continue;
             }
             
-            // ✅ VERIFICAR TIEMPO DE VIDA MÁXIMO
+            // Verificar el tiempo de vida del explosivo
             if (tiempo_actual > explosivos[i].tiempo_vida)
             {
                 printf("Explosivo explotó por tiempo límite\n");
@@ -4124,11 +4124,11 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
                 explosivos[i].dano_aplicado = false;
             }
         }
-        else // ✅ SI YA EXPLOTÓ, MANEJAR LA ANIMACIÓN
+        else // Si explota manejar la animacion correspondiente
         {
             tiempo_explosion = tiempo_actual - explosivos[i].tiempo_vida;
             
-            // ✅ APLICAR DAÑO DE ÁREA UNA SOLA VEZ
+            // Aplicar el dano de area una sola vez
             if (!explosivos[i].dano_aplicado)
             {
                 printf("Aplicando daño de explosión en área\n");
@@ -4142,7 +4142,7 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
                         
                         if (distancia <= explosivos[i].radio_explosion)
                         {
-                            // ✅ VERIFICAR LÍNEA DE VISTA PARA EXPLOSIONES
+                            // Verificar linea vista para evitar obstáculos
                             if (verificar_linea_vista_explosion(explosivos[i].x, explosivos[i].y, enemigos[j].x + enemigos[j].ancho/2, enemigos[j].y + enemigos[j].alto/2, tilemap))
                             {
                                 factor_distancia = 1.0f - (distancia / explosivos[i].radio_explosion);
@@ -4156,7 +4156,7 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
                                     enemigos[j].activo = false;
                                     (*puntaje) += 15;
                                     
-                                    // VERIFICAR MEJORA DEL ARMA EXPLOSIVA
+                                    // Verificar mejora para el arma explosiva
                                     actualizar_progreso_arma(nave, Arma_explosiva);
                                     verificar_mejora_arma(nave, Arma_explosiva, cola_mensajes);
                                     
@@ -4192,14 +4192,13 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
                                 }
                             }
                         }
-                        // ✅ LOS BLOQUES SÓLIDOS (tipo 1) NO RECIBEN DAÑO DE ÁREA
                     }
                 }
                 
                 explosivos[i].dano_aplicado = true;
             }
             
-            // ✅ DESACTIVAR DESPUÉS DE LA ANIMACIÓN (0.5 segundos)
+            // Desactivar despues de la animacion (0.5 segundos)
             if (tiempo_explosion > 0.5)
             {
                 explosivos[i].activo = false;
@@ -4249,7 +4248,8 @@ void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
     {
         if (!explosivos[i].activo) continue;
         
-        // ✅ SI NO HA EXPLOTADO, DIBUJAR PROYECTIL
+        // Si no ha explotado, dibujar el proyectil
+         // y su estela
         if (!explosivos[i].exploto)
         {
             color_proyectil = al_map_rgb(255, 100, 0); // Naranja
@@ -4260,18 +4260,18 @@ void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
             // Estela del proyectil
             al_draw_filled_circle(explosivos[i].x + explosivos[i].ancho/2 - explosivos[i].vx * 0.01f, explosivos[i].y + explosivos[i].alto/2 - explosivos[i].vy * 0.01f, 2, al_map_rgba(255, 50, 0, 128));
         }
-        else // ✅ SI HA EXPLOTADO, DIBUJAR ANIMACIÓN DE EXPLOSIÓN
+        else // Si exploto manejar la animación de explosion
         {
             tiempo_explosion = tiempo_actual - explosivos[i].tiempo_vida;
             progreso = (float)(tiempo_explosion / 0.5); // 0.5 segundos de duración
             
             if (progreso > 1.0f) progreso = 1.0f;
             
-            // ✅ ANIMACIÓN DE EXPANSIÓN Y DESVANECIMIENTO
+            // Animacion de expansion y explosion
             radio_actual = explosivos[i].radio_explosion * progreso;
             alpha = 1.0f - progreso; // Se desvanece con el tiempo
             
-            // ✅ MÚLTIPLES CÍRCULOS PARA EFECTO REALISTA
+            // Se dibujan multiples circulos para el efecto de explosión
             num_circulos = 5;
             for (c = 0; c < num_circulos; c++)
             {
@@ -4304,7 +4304,7 @@ void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
                 }
             }
             
-            // ✅ PARTÍCULAS DE EXPLOSIÓN
+            // Particulas de la explosión
             num_particulas = 8 + (int)(progreso * 12); // Más partículas conforme avanza
             
             for (p = 0; p < num_particulas; p++)
@@ -4321,7 +4321,7 @@ void dibujar_explosivos(DisparoExplosivo explosivos[], int max_explosivos)
                 al_draw_filled_circle(px, py, size, color_particula);
             }
             
-            // ✅ EFECTO DE DESTELLO EN EL CENTRO
+            // Efecto de destello en los primeros momentos
             if (progreso < 0.3f) // Solo durante los primeros momentos
             {
                 alpha_destello = (0.3f - progreso) / 0.3f;
@@ -5661,7 +5661,7 @@ void dibujar_boton_individual(Boton boton, ALLEGRO_FONT* fuente, int cursor_x, i
     ALLEGRO_COLOR color_texto;
     float grosor_borde = 2.0f;
     
-    // ✅ VERIFICAR SI EL CURSOR ESTÁ SOBRE EL BOTÓN
+    // Verificar si el cursor está sobre el botón
     if (cursor_sobre_boton(boton, cursor_x, cursor_y))
     {
         // Botón con hover - más brillante
@@ -5676,13 +5676,13 @@ void dibujar_boton_individual(Boton boton, ALLEGRO_FONT* fuente, int cursor_x, i
         color_texto = al_map_rgb(255, 255, 255);    // Texto blanco
     }
     
-    // ✅ SOLO DIBUJAR EL BORDE (SIN FONDO NEGRO)
+    // Solo dibujar el borde si el botón es visible
     al_draw_rectangle(boton.x, boton.y, 
                      boton.x + boton.ancho, 
                      boton.y + boton.alto, 
                      color_borde, grosor_borde);
     
-    // ✅ DIBUJAR EL TEXTO CENTRADO
+    // DIBUJAR EL TEXTO CENTRADO
     al_draw_text(fuente, color_texto, 
                 boton.x + boton.ancho / 2, 
                 boton.y + boton.alto / 2 - al_get_font_line_height(fuente) / 2, 
@@ -5719,17 +5719,17 @@ void dibujar_info_escudo(Nave nave, ALLEGRO_FONT *fuente)
     
     if (nave.escudo.activo && nave.escudo.hits_restantes > 0)
     {
-        // ✅ FONDO DEL CUADRO DE ESCUDO
+        // Fondo del cuadro del escudo
         ALLEGRO_COLOR color_fondo = al_map_rgba(0, 100, 150, 120);
         al_draw_filled_rectangle(escudo_x, escudo_y, escudo_x + cuadro_ancho, escudo_y + cuadro_alto, color_fondo);
         al_draw_rectangle(escudo_x, escudo_y, escudo_x + cuadro_ancho, escudo_y + cuadro_alto, 
                          al_map_rgb(0, 255, 255), 2);
         
-        // ✅ TÍTULO DEL ESCUDO
+        // TÍTULO DEL ESCUDO
         al_draw_text(fuente, al_map_rgb(0, 255, 255), escudo_x + 10, escudo_y + 64, 
                     ALLEGRO_ALIGN_LEFT, "ESCUDO ACTIVO");
         
-        // ✅ BARRA DE RESISTENCIA VISUAL
+        // BARRA DE RESISTENCIA VISUAL
         barra_x = escudo_x + 10;
         barra_y = escudo_y + 25;
         barra_ancho = cuadro_ancho - 20;
@@ -5757,7 +5757,7 @@ void dibujar_info_escudo(Nave nave, ALLEGRO_FONT *fuente)
         al_draw_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
                         al_map_rgb(150, 150, 150), 1);
         
-        // ✅ INDICADORES VISUALES DE HITS (puntos individuales)
+        // INDICADORES VISUALES DE HITS (puntos individuales)
         for (i = 0; i < nave.escudo.hits_max; i++)
         {
             punto_x = barra_x + 5 + (i * 20);
@@ -5771,7 +5771,7 @@ void dibujar_info_escudo(Nave nave, ALLEGRO_FONT *fuente)
     }
     else
     {
-        // ✅ MOSTRAR ESCUDO INACTIVO (más sutil)
+        // Mostrar escudo inactivo
         color_fondo_inactivo = al_map_rgba(60, 60, 60, 80);
         al_draw_filled_rectangle(escudo_x, escudo_y, escudo_x + cuadro_ancho, escudo_y + 35, color_fondo_inactivo);
         al_draw_rectangle(escudo_x, escudo_y, escudo_x + cuadro_ancho, escudo_y + 35, 
@@ -5796,7 +5796,7 @@ void init_configuracion_control(ConfiguracionControl *config)
     config->numero_joystick = -1;
     strcpy(config->nombre_joystick, "No detectado");
     
-    // ✅ DETECTAR JOYSTICKS AL INICIALIZAR (AHORA ALLEGRO YA ESTÁ LISTO)
+    // Detectar joysticks al iniciar
     bool joystick_detectado = detectar_joysticks(config);
     printf("Configuración inicial: Joystick %s\n", joystick_detectado ? "detectado" : "no detectado");
 }
@@ -5809,7 +5809,7 @@ void init_configuracion_control(ConfiguracionControl *config)
  */
 bool detectar_joysticks(ConfiguracionControl *config)
 {
-    al_reconfigure_joysticks(); // ✅ Actualizar lista de joysticks
+    al_reconfigure_joysticks(); // actualiza la lista de joysticks conectados
     int num_joysticks = al_get_num_joysticks();
     
     printf("Detectando joysticks... Encontrados: %d\n", num_joysticks);
@@ -5838,7 +5838,7 @@ bool detectar_joysticks(ConfiguracionControl *config)
         }
     }
     
-    config->joystick_disponible = false; // ✅ MARCAR COMO NO DISPONIBLE
+    config->joystick_disponible = false;
     printf("No se encontraron joysticks compatibles.\n");
     return false;
 }
@@ -5856,18 +5856,24 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
     int opcion_seleccionada = 0; // 0 = Teclado, 1 = Joystick
     ALLEGRO_EVENT evento;
     bool necesita_redibujo = true;
+    ALLEGRO_COLOR color_joystick;
+    char texto_joystick[150];
+    ALLEGRO_TIMER *timer_menu = al_create_timer(1.0/60.0);
+    double ultimo_input_joystick = 0;
+    const double delay_input = 0.3; // 300ms entre inputs
+    char info_joystick[150];
+    double tiempo_actual;
+    ALLEGRO_COLOR color_teclado;
     
     printf("Iniciando menú de selección de control...\n");
     
-    // ✅ CREAR TIMER DEDICADO PARA EL MENÚ
-    ALLEGRO_TIMER *timer_menu = al_create_timer(1.0/60.0); // 60 FPS
+    // Timer especifico del menu
     if (!timer_menu)
     {
         printf("Error creando timer del menú\n");
         return;
     }
     
-    // ✅ REGISTRAR TIMER EN LA COLA DE EVENTOS
     al_register_event_source(cola_eventos, al_get_timer_event_source(timer_menu));
     al_start_timer(timer_menu);
     
@@ -5878,17 +5884,11 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
         printf("Eventos de joystick registrados\n");
     }
     
-    // ✅ VARIABLES DE CONTROL DE ENTRADA
-    double ultimo_input_joystick = 0;
-    const double delay_input = 0.3; // 300ms entre inputs
-    
-    // ✅ DIBUJO INICIAL
     al_clear_to_color(al_map_rgb(0, 0, 0));
     al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 150, ALLEGRO_ALIGN_CENTER, "SELECCIONA EL TIPO DE CONTROL");
     
     if (config->joystick_disponible)
     {
-        char info_joystick[150];
         sprintf(info_joystick, "Controlador detectado: %s", config->nombre_joystick);
         al_draw_text(fuente, al_map_rgb(0, 255, 0), 400, 180, ALLEGRO_ALIGN_CENTER, info_joystick);
     }
@@ -5905,7 +5905,7 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
             break;
         }
         
-        // ✅ NAVEGACIÓN CON TECLADO (OPTIMIZADA)
+        // Navegación con teclado
         if (evento.type == ALLEGRO_EVENT_KEY_DOWN)
         {
             switch (evento.keyboard.keycode)
@@ -5944,10 +5944,10 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
             }
         }
         
-        // ✅ NAVEGACIÓN CON JOYSTICK (OPTIMIZADA CON THROTTLING)
+        // Navegacion con el joystick
         if (evento.type == ALLEGRO_EVENT_JOYSTICK_AXIS && config->joystick_disponible)
         {
-            double tiempo_actual = al_get_time();
+            tiempo_actual = al_get_time();
             
             if (evento.joystick.axis == 1 && tiempo_actual - ultimo_input_joystick > delay_input)
             {
@@ -5966,7 +5966,7 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
             }
         }
         
-        // ✅ SELECCIÓN CON BOTÓN DE JOYSTICK (OPTIMIZADA)
+        // Seleccion de botón del joystick
         if (evento.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN && config->joystick_disponible)
         {
             if (evento.joystick.button == 0) // Botón A/X
@@ -5990,7 +5990,7 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
             }
         }
         
-        // ✅ REDIBUJADO SOLO CUANDO ES NECESARIO
+        // Se redibuja si es necesario
         if (evento.type == ALLEGRO_EVENT_TIMER && necesita_redibujo)
         {
             necesita_redibujo = false;
@@ -6003,21 +6003,15 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
             // Información del joystick detectado
             if (config->joystick_disponible)
             {
-                char info_joystick[150];
                 sprintf(info_joystick, "Controlador detectado: %s", config->nombre_joystick);
                 al_draw_text(fuente, al_map_rgb(0, 255, 0), 400, 180, ALLEGRO_ALIGN_CENTER, info_joystick);
             }
             
             // Opción Teclado
-            ALLEGRO_COLOR color_teclado = (opcion_seleccionada == 0) ? 
-                al_map_rgb(255, 255, 0) : al_map_rgb(255, 255, 255);
-            al_draw_text(fuente, color_teclado, 400, 250, ALLEGRO_ALIGN_CENTER, 
-                        "1. TECLADO");
+            color_teclado = (opcion_seleccionada == 0) ? al_map_rgb(255, 255, 0) : al_map_rgb(255, 255, 255);
+            al_draw_text(fuente, color_teclado, 400, 250, ALLEGRO_ALIGN_CENTER, "1. TECLADO");
             
             // Opción Joystick
-            ALLEGRO_COLOR color_joystick;
-            char texto_joystick[150];
-            
             if (config->joystick_disponible)
             {
                 color_joystick = (opcion_seleccionada == 1) ? 
@@ -6054,7 +6048,7 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
         }
     }
     
-    // ✅ LIMPIEZA DE RECURSOS
+    // Limpieza de recursos
     al_stop_timer(timer_menu);
     al_unregister_event_source(cola_eventos, al_get_timer_event_source(timer_menu));
     al_destroy_timer(timer_menu);
@@ -6090,20 +6084,25 @@ void manejar_eventos_joystick(ALLEGRO_EVENT evento, Nave* nave, bool teclas[])
 void actualizar_nave_joystick(Nave* nave, ALLEGRO_JOYSTICK *joystick, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {
     ALLEGRO_JOYSTICK_STATE estado_joystick;
+    float stick_x, stick_y;
+    float nueva_x, nueva_y;
+    const float velocidad_movimiento;
+    const float velocidad_rotacion;
+    float stick_rx;
+    bool boton_L, boton_R;
     
     if (!joystick) return;
     
-    // ✅ OBTENER EL ESTADO ACTUAL DEL JOYSTICK CORRECTAMENTE
     al_get_joystick_state(joystick, &estado_joystick);
     
-    float nueva_x = nave->x;
-    float nueva_y = nave->y;
+    nueva_x = nave->x;
+    nueva_y = nave->y;
     
     if (nave->tipo == 0) // Movimiento Space Invaders
     {
-        // ✅ STICK IZQUIERDO PARA MOVIMIENTO: ARRIBA, IZQUIERDA, DERECHA (NO ABAJO)
-        float stick_x = estado_joystick.stick[0].axis[0]; // Horizontal del stick izquierdo
-        float stick_y = estado_joystick.stick[0].axis[1]; // Vertical del stick izquierdo
+        // Stick izquierdo para movimiento horizontal
+        stick_x = estado_joystick.stick[0].axis[0]; // Horizontal del stick izquierdo
+        stick_y = estado_joystick.stick[0].axis[1]; // Vertical del stick izquierdo
         
         // Movimiento horizontal (izquierda/derecha)
         if (fabs(stick_x) > DEADZONE_JOYSTICK)
@@ -6127,12 +6126,12 @@ void actualizar_nave_joystick(Nave* nave, ALLEGRO_JOYSTICK *joystick, Tile tilem
         const float velocidad_rotacion = 0.08f;
         const float velocidad_movimiento = 4.0f;
         
-        // ✅ STICK DERECHO PARA ROTACIÓN (CORRECCIÓN PRINCIPAL)
-        float stick_rx = estado_joystick.stick[1].axis[0]; // ✅ STICK DERECHO HORIZONTAL (era el error)
+        // Stic
+        stick_rx = estado_joystick.stick[1].axis[0];
         
         // Botones de hombro como alternativa para rotación
-        bool boton_L = false;
-        bool boton_R = false;
+        boton_L = false;
+        boton_R = false;
         
         // Verificar si hay suficientes botones antes de acceder
         if (al_get_joystick_num_buttons(joystick) > 4)
@@ -6144,7 +6143,7 @@ void actualizar_nave_joystick(Nave* nave, ALLEGRO_JOYSTICK *joystick, Tile tilem
             boton_R = estado_joystick.button[5]; // R1/RB
         }
         
-        // ✅ ROTACIÓN CON STICK DERECHO (PRIORIDAD ALTA)
+        // Rotación con stick derecho
         if (fabs(stick_rx) > DEADZONE_JOYSTICK)
         {
             nave->angulo += stick_rx * velocidad_rotacion;
@@ -6162,8 +6161,8 @@ void actualizar_nave_joystick(Nave* nave, ALLEGRO_JOYSTICK *joystick, Tile tilem
             printf("Rotando con R1\n"); // Debug
         }
         
-        // ✅ STICK IZQUIERDO PARA MOVIMIENTO (SOLO HACIA ADELANTE)
-        float stick_y = estado_joystick.stick[0].axis[1]; // Stick izquierdo vertical
+        // Stick izquierdo para movimiento hacia adelante
+        stick_y = estado_joystick.stick[0].axis[1]; // Stick izquierdo vertical
         
         // Solo permitir movimiento hacia adelante (valores negativos)
         if (stick_y < -DEADZONE_JOYSTICK)
@@ -6196,13 +6195,13 @@ void actualizar_nave_joystick(Nave* nave, ALLEGRO_JOYSTICK *joystick, Tile tilem
 bool obtener_boton_joystick_disparar(ALLEGRO_JOYSTICK *joystick)
 {
     ALLEGRO_JOYSTICK_STATE estado_joystick;
+    bool boton_x;
     
     if (!joystick) return false;
     
     al_get_joystick_state(joystick, &estado_joystick);
     
-    // ✅ BOTÓN X/CUADRADO (botón 2 en PlayStation, botón 0 en Xbox)
-    bool boton_x = false;
+    boton_x = false;
     
     // Verificar botón X/Cuadrado según el tipo de controlador
     if (al_get_joystick_num_buttons(joystick) > 2)
@@ -6229,22 +6228,24 @@ void cambiar_arma_joystick(Nave *nave, ALLEGRO_JOYSTICK *joystick)
     static double ultimo_cambio = 0;
     static int ultimo_dpad_estado = 0; // Para detectar transiciones
     double tiempo_actual = al_get_time();
+    bool cambio_realizado;
+    int dpad_estado_actual;
+    int num_ejes;
+    int num_botones;
     
     if (!joystick) return;
     
     al_get_joystick_state(joystick, &estado_joystick);
     
-    // ✅ THROTTLING: Evitar cambios muy rápidos
     if (tiempo_actual - ultimo_cambio < 0.5) return; // 500ms entre cambios
     
-    bool cambio_realizado = false;
-    int dpad_estado_actual = 0;
+    cambio_realizado = false;
+    dpad_estado_actual = 0;
     
-    // ✅ MÉTODO UNIFICADO: D-PAD COMO EJES (PlayStation) O BOTONES (Xbox)
-    int num_ejes = al_get_joystick_num_sticks(joystick);
-    int num_botones = al_get_joystick_num_buttons(joystick);
+    num_ejes = al_get_joystick_num_sticks(joystick);
+    num_botones = al_get_joystick_num_buttons(joystick);
     
-    printf("🎮 Controlador: %d sticks, %d botones\n", num_ejes, num_botones);
+    printf("Controlador: %d sticks, %d botones\n", num_ejes, num_botones);
     
     // Intentar D-pad como ejes adicionales (PlayStation)
     if (num_ejes >= 2 && al_get_joystick_num_axes(joystick, 0) >= 8)
@@ -6277,7 +6278,7 @@ void cambiar_arma_joystick(Nave *nave, ALLEGRO_JOYSTICK *joystick)
         else if (estado_joystick.button[2]) dpad_estado_actual = 4; // Square/X -> Misil
     }
     
-    // ✅ DETECTAR TRANSICIÓN: Solo cambiar cuando se presiona (no mantener presionado)
+    // DETECTAR TRANSICIÓN: Solo cambiar cuando se presiona (no mantener presionado)
     if (dpad_estado_actual != 0 && dpad_estado_actual != ultimo_dpad_estado)
     {
         switch (dpad_estado_actual)
@@ -6285,25 +6286,25 @@ void cambiar_arma_joystick(Nave *nave, ALLEGRO_JOYSTICK *joystick)
             case 1: // Arriba
                 cambiar_arma(nave, Arma_normal);
                 cambio_realizado = true;
-                printf("✅ Arma cambiada a Normal (D-pad Arriba)\n");
+                printf("Arma cambiada a Normal (D-pad Arriba)\n");
                 break;
                 
             case 2: // Derecha
                 cambiar_arma(nave, Arma_laser);
                 cambio_realizado = true;
-                printf("✅ Arma cambiada a Láser (D-pad Derecha)\n");
+                printf("Arma cambiada a Láser (D-pad Derecha)\n");
                 break;
                 
             case 3: // Abajo
                 cambiar_arma(nave, Arma_explosiva);
                 cambio_realizado = true;
-                printf("✅ Arma cambiada a Explosiva (D-pad Abajo)\n");
+                printf("Arma cambiada a Explosiva (D-pad Abajo)\n");
                 break;
                 
             case 4: // Izquierda
                 cambiar_arma(nave, Arma_misil);
                 cambio_realizado = true;
-                printf("✅ Arma cambiada a Misil (D-pad Izquierda)\n");
+                printf("Arma cambiada a Misil (D-pad Izquierda)\n");
                 break;
         }
     }
@@ -6314,9 +6315,7 @@ void cambiar_arma_joystick(Nave *nave, ALLEGRO_JOYSTICK *joystick)
     if (cambio_realizado)
     {
         ultimo_cambio = tiempo_actual;
-        printf("🔫 Arma actual: %s (Nivel %d)\n", 
-               nave->armas[nave->arma_seleccionada].nombre, 
-               nave->armas[nave->arma_seleccionada].nivel);
+        printf("Arma actual: %s (Nivel %d)\n", nave->armas[nave->arma_seleccionada].nombre, nave->armas[nave->arma_seleccionada].nivel);
     }
 }
 
@@ -6349,22 +6348,24 @@ void dibujar_indicador_control(ConfiguracionControl config, ALLEGRO_FONT *fuente
  */
 void debug_joystick_estado(ALLEGRO_JOYSTICK *joystick)
 {
-    if (!joystick) return;
-    
     ALLEGRO_JOYSTICK_STATE estado;
     al_get_joystick_state(joystick, &estado);
     
     static double ultimo_debug = 0;
     double tiempo_actual = al_get_time();
+
+    int i;
+
+    if (!joystick) return;
     
     if (tiempo_actual - ultimo_debug > 1.0) // Cada segundo
     {
-        printf("🎮 DEBUG JOYSTICK:\n");
+        printf("DEBUG JOYSTICK:\n");
         printf("   Sticks: %d\n", al_get_joystick_num_sticks(joystick));
         printf("   Botones: %d\n", al_get_joystick_num_buttons(joystick));
         
         // Mostrar botones presionados
-        for (int i = 0; i < al_get_joystick_num_buttons(joystick) && i < 16; i++)
+        for (i = 0; i < al_get_joystick_num_buttons(joystick) && i < 16; i++)
         {
             if (estado.button[i])
             {
