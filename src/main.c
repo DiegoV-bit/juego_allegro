@@ -480,12 +480,27 @@ int main()
                 {
                     printf("Nivel %d: Sin jefes encontrados\n", estado_nivel.nivel_actual);
                 }
-                
             }
             else
             {
                 printf("Nivel %d: No debería tener jefes\n", estado_nivel.nivel_actual);
             }
+
+            for (i = 0; i < num_enemigos_cargados && i < NUM_ENEMIGOS; i++)
+            {
+                enemigos[i] = enemigos_mapa[i];
+                asignar_imagen_enemigo(&enemigos[i], imagenes_enemigos); // Asegurar que usen el sprite correcto
+                printf("Enemigo normal %d copiado: tipo %d\n", i, enemigos[i].tipo);
+            }
+            
+            for (i = num_enemigos_cargados; i < NUM_ENEMIGOS; i++)
+            {
+                enemigos[i].activo = false;
+            }
+            
+            printf("=== RESUMEN NIVEL %d ===\n", estado_nivel.nivel_actual);
+            printf("Jefe activo: %s\n", hay_jefe_en_nivel ? "SI" : "NO");
+            printf("Enemigos normales: %d\n", num_enemigos_cargados);
             
             init_disparos(disparos_enemigos, NUM_DISPAROS_ENEMIGOS);
 
@@ -824,6 +839,26 @@ int main()
                             {
                                 printf("Nivel %d: Sin jefes en recarga\n", estado_nivel.nivel_actual);
                             }
+
+                            enemigos_a_copiar = (num_enemigos_cargados < NUM_ENEMIGOS) ? num_enemigos_cargados : NUM_ENEMIGOS;
+
+                            for (k = 0; k < enemigos_a_copiar; k++)
+                            {
+                                enemigos[k] = enemigos_mapa[k];
+                                asignar_imagen_enemigo(&enemigos[k], imagenes_enemigos);
+                                enemigos[k].activo = true;
+                                printf("Enemigo normal %d recargado: tipo %d\n", k, enemigos[k].tipo);
+                            }
+
+                            // Inicializar el resto como inactivos
+                            for (k = enemigos_a_copiar; k < NUM_ENEMIGOS; k++)
+                            {
+                                enemigos[k].activo = false;
+                            }
+
+                            printf("=== RECARGA NIVEL %d COMPLETADA ===\n", estado_nivel.nivel_actual);
+                            printf("Jefe activo: %s\n", hay_jefe_en_nivel ? "SI" : "NO");
+                            printf("Enemigos normales activos: %d\n", enemigos_a_copiar);
                         }
                         else 
                         {
