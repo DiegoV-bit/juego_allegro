@@ -5348,72 +5348,110 @@ void jefe_atacar(Jefe *jefe, Nave nave, double tiempo_actual)
 
 
 /**
- * @brief Dibuja el jefe con efectos visuales.
+ * @brief Dibuja un jefe con su sprite específico y efectos visuales.
  * 
  * @param jefe Jefe a dibujar.
  */
 void dibujar_jefe(Jefe jefe)
 {
-    if (!jefe.activo) return;
+    if (!jefe.activo || !jefe.imagen) return;
+
+    float porcentaje_vida = jefe.vida / jefe.vida_max;
+    float centro_x = jefe.x + jefe.ancho / 2;
+    float centro_y = jefe.y + jefe.alto / 2;
     
-    float intensidad;
-    ALLEGRO_COLOR aura;
-    ALLEGRO_COLOR color_centro;
+    // Calcular escalado para que el sprite se ajuste al tamaño del jefe
+    float escala_x = jefe.ancho / (float)al_get_bitmap_width(jefe.imagen);
+    float escala_y = jefe.alto / (float)al_get_bitmap_height(jefe.imagen);
     
-    // Efecto de pulsación
-    intensidad = 0.8f + 0.2f * sin(jefe.tiempo_animacion * 10);
-    
-    if (jefe.en_furia)
+    // Efecto de parpadeo cuando está herido
+    bool mostrar_sprite = true;
+    if (porcentaje_vida < 0.3f)
     {
-        aura = al_map_rgba(255, 0, 0, (int)(intensidad * 100));
-        color_centro = al_map_rgba(255, 100, 100, 200);
+        // Parpadeo más rápido cuando tiene poca vida
+        int frame = (int)(al_get_time() * 20) % 4;
+        mostrar_sprite = (frame < 3);
     }
-    else
+    else if (porcentaje_vida < 0.6f)
     {
-        aura = al_map_rgba(150, 0, 150, (int)(intensidad * 80));
-        color_centro = al_map_rgba(200, 100, 200, 180);
+        // Parpadeo más lento
+        int frame = (int)(al_get_time() * 10) % 6;
+        mostrar_sprite = (frame < 5);
     }
-    
-    // Dibujar aura
-    al_draw_filled_circle(jefe.x + jefe.ancho/2, jefe.y + jefe.alto/2, 
-                         (jefe.ancho + jefe.alto)/3 + 10, aura);
-    
-    // Dibujar cuerpo principal
-    if (jefe.imagen)
+
+    if (mostrar_sprite)
     {
-        float escala_x = jefe.ancho / al_get_bitmap_width(jefe.imagen);
-        float escala_y = jefe.alto / al_get_bitmap_height(jefe.imagen);
+        // Dibujar sprite del jefe escalado
+        al_draw_scaled_bitmap(
+            jefe.imagen,
+            0, 0,
+            al_get_bitmap_width(jefe.imagen),
+            al_get_bitmap_height(jefe.imagen),
+            jefe.x, jefe.y,
+            jefe.ancho, jefe.alto,
+            0
+        );
         
-        al_draw_scaled_bitmap(jefe.imagen, 0, 0,
-                             al_get_bitmap_width(jefe.imagen),
-                             al_get_bitmap_height(jefe.imagen),
-                             jefe.x, jefe.y, jefe.ancho, jefe.alto, 0);
+        // Efecto de furia (contorno rojo)
+        if (jefe.en_furia)
+        {
+            al_draw_rectangle(jefe.x - 2, jefe.y - 2, 
+                            jefe.x + jefe.ancho + 2, jefe.y + jefe.alto + 2,
+                            al_map_rgb(255, 0, 0), 3);
+        }
     }
-    else
-    {
-        al_draw_filled_rectangle(jefe.x, jefe.y, jefe.x + jefe.ancho, jefe.y + jefe.alto, color_centro);
-    }
-    
-    // Borde
-    al_draw_rectangle(jefe.x, jefe.y, jefe.x + jefe.ancho, jefe.y + jefe.alto, 
-                      al_map_rgb(255, 255, 255), 3);
-    
+
     // Barra de vida del jefe
-    float vida_porcentaje = jefe.vida / jefe.vida_max;
     float barra_ancho = jefe.ancho;
     float barra_alto = 8;
     float barra_x = jefe.x;
     float barra_y = jefe.y - 15;
     
-    ALLEGRO_COLOR color_vida = vida_porcentaje > 0.5f ? 
-        al_map_rgb(255, 255, 0) : al_map_rgb(255, 0, 0);
+    // Fondo de la barra
+    al_draw_filled_rectangle(barra_x, barra_y, 
+                           barra_x + barra_ancho, barra_y + barra_alto,
+                           al_map_rgb(100, 100, 100));
     
-    al_draw_filled_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
-                            al_map_rgba(100, 0, 0, 150));
-    al_draw_filled_rectangle(barra_x, barra_y, barra_x + (barra_ancho * vida_porcentaje), 
-                            barra_y + barra_alto, color_vida);
-    al_draw_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, 
-                      al_map_rgb(255, 255, 255), 1);
+    // Barra de vida con color según el porcentaje
+    ALLEGRO_COLOR color_vida;
+    if (porcentaje_vida > 0.6f)
+        color_vida = al_map_rgb(0, 255, 0);   // Verde
+    else if (porcentaje_vida > 0.3f)
+        color_vida = al_map_rgb(255, 255, 0); // Amarillo
+    else
+        color_vida = al_map_rgb(255, 0, 0);   // Rojo
+    
+    al_draw_filled_rectangle(barra_x, barra_y,
+                           barra_x + (barra_ancho * porcentaje_vida), barra_y + barra_alto,
+                           color_vida);
+    
+    // Borde de la barra
+    al_draw_rectangle(barra_x, barra_y,
+                     barra_x + barra_ancho, barra_y + barra_alto,
+                     al_map_rgb(255, 255, 255), 1);
+
+    // Efectos especiales según el tipo
+    if (jefe.tipo == 0) // Destructor
+    {
+        // Efecto de chispas
+        if ((int)(al_get_time() * 60) % 20 == 0)
+        {
+            int i;
+            for (i = 0; i < 3; i++)
+            {
+                float spark_x = centro_x + (rand() % 40) - 20;
+                float spark_y = centro_y + (rand() % 40) - 20;
+                al_draw_filled_circle(spark_x, spark_y, 2, al_map_rgb(255, 255, 0));
+            }
+        }
+    }
+    else if (jefe.tipo == 1) // Supremo
+    {
+        // Efecto de aura
+        float radio_aura = 50 + sin(al_get_time() * 3) * 10;
+        al_draw_circle(centro_x, centro_y, radio_aura, 
+                      al_map_rgba(0, 0, 255, 50), 2);
+    }
 }
 
 
@@ -6341,5 +6379,112 @@ void debug_joystick_estado(ALLEGRO_JOYSTICK *joystick)
         }
         
         ultimo_debug = tiempo_actual;
+    }
+}
+
+
+/**
+ * @brief Carga las imágenes específicas para cada tipo de jefe.
+ * 
+ * @param imagenes_jefes Array de punteros a las imágenes de cada tipo de jefe.
+ * @return bool true si se cargaron correctamente, false en caso contrario.
+ */
+bool cargar_imagenes_jefes(ALLEGRO_BITMAP *imagenes_jefes[NUM_TIPOS_JEFES])
+{
+    const char *rutas_imagenes[] = {
+        "imagenes/Jefes/jefe_destructor.png",  // Tipo 0: Destructor
+        "imagenes/Jefes/jefe_supremo.png"      // Tipo 1: Supremo
+    };
+
+    // Colores para placeholders si no se encuentran las imágenes
+    ALLEGRO_COLOR colores[] = {
+        al_map_rgb(150, 0, 150),  // Púrpura para Destructor
+        al_map_rgb(255, 0, 0)     // Rojo para Supremo
+    };
+
+    int i;
+
+    for (i = 0; i < NUM_TIPOS_JEFES; i++)
+    {
+        imagenes_jefes[i] = al_load_bitmap(rutas_imagenes[i]);
+        
+        if (!imagenes_jefes[i])
+        {
+            printf("Advertencia: No se pudo cargar %s, creando placeholder\n", rutas_imagenes[i]);
+            
+            // Crear placeholder específico para cada tipo
+            imagenes_jefes[i] = al_create_bitmap(120, 80);
+            if (!imagenes_jefes[i])
+            {
+                printf("Error: No se pudo crear placeholder para jefe tipo %d\n", i);
+                return false;
+            }
+            
+            al_set_target_bitmap(imagenes_jefes[i]);
+            al_clear_to_color(colores[i]);
+            
+            // Dibujar forma distintiva según el tipo
+            if (i == 0) // Destructor
+            {
+                al_draw_rectangle(0, 0, 119, 79, al_map_rgb(255, 255, 255), 3);
+                al_draw_line(0, 0, 119, 79, al_map_rgb(255, 255, 255), 2);
+                al_draw_line(119, 0, 0, 79, al_map_rgb(255, 255, 255), 2);
+            }
+            else if (i == 1) // Supremo
+            {
+                al_draw_rectangle(0, 0, 119, 79, al_map_rgb(255, 255, 255), 3);
+                al_draw_filled_circle(60, 40, 20, al_map_rgb(255, 255, 0));
+                al_draw_circle(60, 40, 30, al_map_rgb(255, 255, 255), 2);
+            }
+            
+            al_set_target_backbuffer(al_get_current_display());
+            printf("Placeholder creado para jefe tipo %d\n", i);
+        }
+        else
+        {
+            printf("Imagen de jefe tipo %d cargada: %s\n", i, rutas_imagenes[i]);
+        }
+    }
+
+    return true;
+}
+
+/**
+ * @brief Libera la memoria de las imágenes de jefes.
+ * 
+ * @param imagenes_jefes Array con las imágenes de cada tipo de jefe.
+ */
+void liberar_imagenes_jefes(ALLEGRO_BITMAP *imagenes_jefes[NUM_TIPOS_JEFES])
+{
+    int i;
+
+    for (i = 0; i < NUM_TIPOS_JEFES; i++)
+    {
+        if (imagenes_jefes[i])
+        {
+            al_destroy_bitmap(imagenes_jefes[i]);
+            imagenes_jefes[i] = NULL;
+        }
+    }
+    printf("Imágenes de jefes liberadas correctamente\n");
+}
+
+/**
+ * @brief Asigna la imagen correcta al jefe según su tipo.
+ * 
+ * @param jefe Puntero al jefe.
+ * @param imagenes_jefes Array con las imágenes de cada tipo de jefe.
+ */
+void asignar_imagen_jefe(Jefe *jefe, ALLEGRO_BITMAP *imagenes_jefes[NUM_TIPOS_JEFES])
+{
+    if (jefe->tipo >= 0 && jefe->tipo < NUM_TIPOS_JEFES)
+    {
+        jefe->imagen = imagenes_jefes[jefe->tipo];
+        printf("Imagen asignada al jefe tipo %d\n", jefe->tipo);
+    }
+    else
+    {
+        printf("Error: Tipo de jefe inválido (%d)\n", jefe->tipo);
+        jefe->imagen = NULL;
     }
 }

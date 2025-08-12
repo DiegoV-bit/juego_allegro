@@ -33,6 +33,7 @@ int main()
     ALLEGRO_BITMAP *imagen_asteroide = NULL;
     ALLEGRO_BITMAP *imagen_enemigo = NULL;
     ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS];
+    ALLEGRO_BITMAP *imagenes_jefes[NUM_TIPOS_JEFES];
 
     // Variables del menu principal
     ALLEGRO_BITMAP *imagen_menu = NULL;
@@ -56,7 +57,7 @@ int main()
     Jefe jefe_final;
     Jefe jefe_nivel;
     bool hay_jefe_en_nivel = false;
-    ALLEGRO_BITMAP *imagen_jefe = NULL;
+    //ALLEGRO_BITMAP *imagen_jefe = NULL;
     ALLEGRO_EVENT evento;
     bool recargar_nivel;
     bool juego_terminado;
@@ -180,16 +181,10 @@ int main()
         return -1;
     }
 
-    imagen_jefe = al_load_bitmap("jefe.png");
-    if (!imagen_jefe)
+    if (!cargar_imagenes_jefes(imagenes_jefes))
     {
-        printf("Advertencia: No se pudo cargar imagen del jefe, usando placeholder\n");
-        // Crear placeholder para jefe
-        imagen_jefe = al_create_bitmap(120, 80);
-        al_set_target_bitmap(imagen_jefe);
-        al_clear_to_color(al_map_rgb(150, 0, 150)); // Púrpura para jefe
-        al_draw_rectangle(0, 0, 119, 79, al_map_rgb(255, 255, 255), 3);
-        al_set_target_backbuffer(al_get_current_display());
+        printf("ERROR: No se pudieron cargar las imágenes de jefes\n");
+        return -1;
     }
 
     /*Inicializar los botones del menu*/
@@ -468,7 +463,7 @@ int main()
                     if (enemigos_mapa[i].tipo == 5 || enemigos_mapa[i].tipo == 6) 
                     {
                         tipo_jefe = enemigos_mapa[i].tipo == 5 ? 0 : 1; // 5=Destructor(0), 6=Supremo(1)
-                        init_jefe(&jefe_nivel, tipo_jefe, enemigos_mapa[i].x, enemigos_mapa[i].y, imagen_jefe);
+                        init_jefe(&jefe_nivel, tipo_jefe, enemigos_mapa[i].x, enemigos_mapa[i].y, imagenes_jefes[tipo_jefe]);
                         hay_jefe_en_nivel = true;
                         printf("Jefe encontrado en nivel %d: tipo %d\n", estado_nivel.nivel_actual, tipo_jefe);
                     
@@ -813,7 +808,7 @@ int main()
                                 if (enemigos_mapa[k].tipo == 5 || enemigos_mapa[k].tipo == 6)
                                 {
                                     tipo_jefe = enemigos_mapa[k].tipo == 5 ? 0 : 1;
-                                    init_jefe(&jefe_nivel, tipo_jefe, enemigos_mapa[k].x, enemigos_mapa[k].y, imagen_jefe);
+                                    init_jefe(&jefe_nivel, tipo_jefe, enemigos_mapa[k].x, enemigos_mapa[k].y, imagenes_jefes[tipo_jefe]);
                                     hay_jefe_en_nivel = true;
                                     printf("Jefe cargado en nivel %d: enemigo tipo %d -> jefe tipo %d\n", estado_nivel.nivel_actual, enemigos_mapa[k].tipo, tipo_jefe);
 
@@ -1256,13 +1251,7 @@ int main()
     }    
 
     liberar_imagenes_enemigos(imagenes_enemigos);
-
-    if (imagen_jefe)
-    {
-        al_destroy_bitmap(imagen_jefe);
-        imagen_jefe = NULL;
-    }
-    
+    liberar_imagenes_jefes(imagenes_jefes);
     destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide, imagen_enemigo, imagen_menu);
 
     al_uninstall_system(); // Esto evita fugas de memoria y libera recursos evitando el segmentation fault en WSL
