@@ -6006,9 +6006,9 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
             al_draw_text(fuente, al_map_rgb(200, 200, 200), 400, 380, ALLEGRO_ALIGN_CENTER, 
                         "Usa las flechas o stick para navegar");
             al_draw_text(fuente, al_map_rgb(200, 200, 200), 400, 410, ALLEGRO_ALIGN_CENTER, 
-                        "Presiona ENTER, ESPACIO o botón A para seleccionar");
+                        "Presiona ENTER, ESPACIO o botón X/Cuadrado para seleccionar");
             al_draw_text(fuente, al_map_rgb(200, 200, 200), 400, 440, ALLEGRO_ALIGN_CENTER, 
-                        "ESC o botón B para usar teclado por defecto");
+                        "ESC o botón Círculo para usar teclado por defecto");
             
             al_flip_display();
         }
@@ -6059,24 +6059,19 @@ void actualizar_nave_joystick(Nave* nave, ALLEGRO_JOYSTICK *joystick, Tile tilem
     float nueva_x = nave->x;
     float nueva_y = nave->y;
     
-    if (nave->tipo == 0) // Movimiento directo
+    if (nave->tipo == 0) // Movimiento Space Invaders
     {
-        // ✅ STICK IZQUIERDO PARA MOVIMIENTO - USAR stick[0].axis[0] y stick[0].axis[1]
+        // ✅ STICK IZQUIERDO PARA MOVIMIENTO: ARRIBA, IZQUIERDA, DERECHA (NO ABAJO)
         float stick_x = estado_joystick.stick[0].axis[0]; // Horizontal del stick izquierdo
         float stick_y = estado_joystick.stick[0].axis[1]; // Vertical del stick izquierdo
         
-        // Aplicar zona muerta
+        // Movimiento horizontal (izquierda/derecha)
         if (fabs(stick_x) > DEADZONE_JOYSTICK)
         {
-            nueva_x += stick_x * 5.0f; // Velocidad de movimiento
+            nueva_x += stick_x * 5.0f;
         }
         
-        if (fabs(stick_y) > DEADZONE_JOYSTICK)
-        {
-            nueva_y += stick_y * 5.0f;
-        }
-        
-        // Límites de pantalla
+        // Verificar límites de pantalla
         if (nueva_x >= 0 && nueva_x <= 800 - nave->ancho)
         {
             nave->x = nueva_x;
@@ -6092,43 +6087,50 @@ void actualizar_nave_joystick(Nave* nave, ALLEGRO_JOYSTICK *joystick, Tile tilem
         const float velocidad_rotacion = 0.08f;
         const float velocidad_movimiento = 4.0f;
         
-        // ✅ STICK DERECHO PARA ROTACIÓN - stick[1] si existe, sino usar botones
-        float stick_rx = 0.0f;
-        if (al_get_joystick_num_sticks(joystick) > 1) 
-        {
-            stick_rx = estado_joystick.stick[1].axis[0]; // Stick derecho horizontal
-        }
+        // ✅ STICK DERECHO PARA ROTACIÓN (CORRECCIÓN PRINCIPAL)
+        float stick_rx = estado_joystick.stick[1].axis[0]; // ✅ STICK DERECHO HORIZONTAL (era el error)
         
         // Botones de hombro como alternativa para rotación
         bool boton_L = false;
         bool boton_R = false;
         
-        if (al_get_joystick_num_buttons(joystick) > 5) 
+        // Verificar si hay suficientes botones antes de acceder
+        if (al_get_joystick_num_buttons(joystick) > 4)
         {
             boton_L = estado_joystick.button[4]; // L1/LB
+        }
+        if (al_get_joystick_num_buttons(joystick) > 5)
+        {
             boton_R = estado_joystick.button[5]; // R1/RB
         }
         
+        // ✅ ROTACIÓN CON STICK DERECHO (PRIORIDAD ALTA)
         if (fabs(stick_rx) > DEADZONE_JOYSTICK)
         {
             nave->angulo += stick_rx * velocidad_rotacion;
+            printf("Rotando con stick derecho: %.2f\n", stick_rx); // Debug
         }
+        // Botones de hombro como backup
         else if (boton_L)
         {
             nave->angulo -= velocidad_rotacion;
+            printf("Rotando con L1\n"); // Debug
         }
         else if (boton_R)
         {
             nave->angulo += velocidad_rotacion;
+            printf("Rotando con R1\n"); // Debug
         }
         
-        // ✅ STICK IZQUIERDO PARA AVANZAR/RETROCEDER
-        float stick_y = estado_joystick.stick[0].axis[1];
+        // ✅ STICK IZQUIERDO PARA MOVIMIENTO (SOLO HACIA ADELANTE)
+        float stick_y = estado_joystick.stick[0].axis[1]; // Stick izquierdo vertical
         
-        if (fabs(stick_y) > DEADZONE_JOYSTICK)
+        // Solo permitir movimiento hacia adelante (valores negativos)
+        if (stick_y < -DEADZONE_JOYSTICK)
         {
             nueva_x = nave->x + cos(nave->angulo - ALLEGRO_PI/2) * (-stick_y * velocidad_movimiento);
             nueva_y = nave->y + sin(nave->angulo - ALLEGRO_PI/2) * (-stick_y * velocidad_movimiento);
+            printf("Moviendo hacia adelante: %.2f\n", stick_y); // Debug
         }
         
         // Verificar colisiones y límites
@@ -6157,59 +6159,180 @@ bool obtener_boton_joystick_disparar(ALLEGRO_JOYSTICK *joystick)
     
     if (!joystick) return false;
     
-    // ✅ OBTENER ESTADO CORRECTAMENTE
     al_get_joystick_state(joystick, &estado_joystick);
     
-    // ✅ BOTÓN A/X (botón 0) o GATILLO DERECHO (si hay suficientes botones)
-    bool boton_disparar = estado_joystick.button[0]; // Botón principal (A/X)
+    // ✅ BOTÓN X/CUADRADO (botón 2 en PlayStation, botón 0 en Xbox)
+    bool boton_x = false;
+    bool gatillo_derecho = false;
     
-    // Verificar gatillo derecho si el controlador tiene suficientes botones/ejes
-    if (al_get_joystick_num_buttons(joystick) > 7) 
+    // Verificar botón X/Cuadrado según el tipo de controlador
+    if (al_get_joystick_num_buttons(joystick) > 2)
     {
-        boton_disparar = boton_disparar || estado_joystick.button[7]; // RT como botón
+        boton_x = estado_joystick.button[2]; // PlayStation: X/Cuadrado
+    }
+    if (al_get_joystick_num_buttons(joystick) > 0)
+    {
+        boton_x = boton_x || estado_joystick.button[0]; // Xbox: A
     }
     
-    return boton_disparar;
+    // Verificar gatillo derecho (RT/R2)
+    if (al_get_joystick_num_sticks(joystick) > 1)
+    {
+        // En algunos controladores, los gatillos son ejes
+        if (al_get_joystick_num_axes(joystick, 0) > 5)
+        {
+            gatillo_derecho = estado_joystick.stick[0].axis[5] > 0.5f; // RT/R2 como eje
+        }
+    }
+    
+    return boton_x || gatillo_derecho;
 }
 
 /**
- * @brief Maneja el cambio de armas con joystick.
+ * @brief Maneja el cambio de armas con joystick (VERSIÓN CORREGIDA).
  * 
  * @param nave Puntero a la nave.
  * @param joystick Puntero al joystick.
  */
 void cambiar_arma_joystick(Nave *nave, ALLEGRO_JOYSTICK *joystick)
 {
-    ALLEGRO_JOYSTICK_STATE estado_joystick; // ✅ VARIABLE LOCAL
+    ALLEGRO_JOYSTICK_STATE estado_joystick;
     static double ultimo_cambio = 0;
     double tiempo_actual = al_get_time();
     
     if (!joystick) return;
     
-    // ✅ OBTENER ESTADO CORRECTAMENTE
     al_get_joystick_state(joystick, &estado_joystick);
+    
+    // ✅ LLAMAR A FUNCIÓN DE DEBUG (TEMPORAL)
+    debug_joystick_completo(joystick);
     
     if (tiempo_actual - ultimo_cambio > 0.3) // Evitar cambios muy rápidos
     {
-        // D-pad o botones Y, X, B para cambiar armas
-        if (estado_joystick.button[2]) // Botón Y/Triangle - Arma 1
+        bool cambio_realizado = false;
+        
+        // ✅ MÉTODO 1: D-PAD COMO EJES (PlayStation típico)
+        // Verificar si hay sticks disponibles
+        if (al_get_joystick_num_sticks(joystick) >= 1)
         {
-            cambiar_arma(nave, Arma_normal);
-            ultimo_cambio = tiempo_actual;
+            // Algunos controladores usan stick adicional para D-pad
+            int num_ejes = al_get_joystick_num_axes(joystick, 0);
+            
+            // D-pad horizontal (generalmente eje 6 o 4)
+            if (num_ejes > 6)
+            {
+                float dpad_x = estado_joystick.stick[0].axis[6]; // Eje 6 para D-pad horizontal
+                float dpad_y = estado_joystick.stick[0].axis[7]; // Eje 7 para D-pad vertical
+                
+                if (fabs(dpad_x) > 0.5f || fabs(dpad_y) > 0.5f)
+                {
+                    if (dpad_y < -0.5f) // Arriba
+                    {
+                        cambiar_arma(nave, Arma_normal);
+                        cambio_realizado = true;
+                        printf("Arma cambiada a Normal (D-pad Arriba)\n");
+                    }
+                    else if (dpad_x > 0.5f) // Derecha
+                    {
+                        cambiar_arma(nave, Arma_laser);
+                        cambio_realizado = true;
+                        printf("Arma cambiada a Láser (D-pad Derecha)\n");
+                    }
+                    else if (dpad_y > 0.5f) // Abajo
+                    {
+                        cambiar_arma(nave, Arma_explosiva);
+                        cambio_realizado = true;
+                        printf("Arma cambiada a Explosiva (D-pad Abajo)\n");
+                    }
+                    else if (dpad_x < -0.5f) // Izquierda
+                    {
+                        cambiar_arma(nave, Arma_misil);
+                        cambio_realizado = true;
+                        printf("Arma cambiada a Misil (D-pad Izquierda)\n");
+                    }
+                }
+            }
         }
-        else if (estado_joystick.button[3]) // Botón X/Square - Arma 2
+        
+        // ✅ MÉTODO 2: D-PAD COMO BOTONES (Xbox típico)
+        if (!cambio_realizado && al_get_joystick_num_buttons(joystick) >= 16)
         {
-            cambiar_arma(nave, Arma_laser);
-            ultimo_cambio = tiempo_actual;
+            // Xbox Controller: D-pad suele estar en botones 12-15
+            if (estado_joystick.button[12]) // D-pad Arriba
+            {
+                cambiar_arma(nave, Arma_normal);
+                cambio_realizado = true;
+                printf("Arma cambiada a Normal (D-pad Botón Arriba)\n");
+            }
+            else if (estado_joystick.button[13]) // D-pad Abajo
+            {
+                cambiar_arma(nave, Arma_explosiva);
+                cambio_realizado = true;
+                printf("Arma cambiada a Explosiva (D-pad Botón Abajo)\n");
+            }
+            else if (estado_joystick.button[14]) // D-pad Izquierda
+            {
+                cambiar_arma(nave, Arma_misil);
+                cambio_realizado = true;
+                printf("Arma cambiada a Misil (D-pad Botón Izquierda)\n");
+            }
+            else if (estado_joystick.button[15]) // D-pad Derecha
+            {
+                cambiar_arma(nave, Arma_laser);
+                cambio_realizado = true;
+                printf("Arma cambiada a Láser (D-pad Botón Derecha)\n");
+            }
         }
-        else if (estado_joystick.button[1]) // Botón B/Circle - Arma 3
+        
+        // ✅ MÉTODO 3: BOTONES DE ACCIÓN COMO BACKUP (más confiable)
+        if (!cambio_realizado)
         {
-            cambiar_arma(nave, Arma_explosiva);
-            ultimo_cambio = tiempo_actual;
+            // PlayStation: Triangle(3), Square(2), X(0), Circle(1)
+            // Xbox: Y(3), X(2), A(0), B(1)
+            
+            if (al_get_joystick_num_buttons(joystick) > 3)
+            {
+                if (estado_joystick.button[3]) // Triangle/Y - Arma Normal
+                {
+                    cambiar_arma(nave, Arma_normal);
+                    cambio_realizado = true;
+                    printf("Arma cambiada a Normal (Botón Triangle/Y)\n");
+                }
+                else if (estado_joystick.button[1]) // Circle/B - Arma Láser
+                {
+                    cambiar_arma(nave, Arma_laser);
+                    cambio_realizado = true;
+                    printf("Arma cambiada a Láser (Botón Circle/B)\n");
+                }
+                // Nota: Botón 2 (Square/X) se reserva para disparar
+                // Usamos botón 0 (X/A) temporalmente para explosiva
+                else if (estado_joystick.button[0] && estado_joystick.button[1]) // Combinación X+Circle o A+B
+                {
+                    cambiar_arma(nave, Arma_explosiva);
+                    cambio_realizado = true;
+                    printf("Arma cambiada a Explosiva (Combinación)\n");
+                }
+            }
         }
-        else if (estado_joystick.button[0] && estado_joystick.button[1]) // A+B - Arma 4
+        
+        // ✅ MÉTODO 4: BOTONES DE HOMBRO COMO ALTERNATIVA
+        if (!cambio_realizado && al_get_joystick_num_buttons(joystick) > 5)
         {
-            cambiar_arma(nave, Arma_misil);
+            // L1 + R1 para cambiar arma
+            static int arma_actual_idx = 0;
+            
+            if (estado_joystick.button[4] && estado_joystick.button[5]) // L1 + R1
+            {
+                arma_actual_idx = (arma_actual_idx + 1) % 4;
+                TipoArma armas[4] = {Arma_normal, Arma_laser, Arma_explosiva, Arma_misil};
+                cambiar_arma(nave, armas[arma_actual_idx]);
+                cambio_realizado = true;
+                printf("Arma cambiada cíclicamente a: %d (L1+R1)\n", arma_actual_idx);
+            }
+        }
+        
+        if (cambio_realizado)
+        {
             ultimo_cambio = tiempo_actual;
         }
     }

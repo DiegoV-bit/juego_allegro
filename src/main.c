@@ -499,6 +499,23 @@ int main()
 
             // Inicializar Mensajes
             init_cola_mensajes(&cola_mensajes);
+            
+            // ✅ MOSTRAR INSTRUCCIONES INICIALES SEGÚN TIPO DE CONTROL
+            if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick_disponible)
+            {
+                agregar_mensaje_cola(&cola_mensajes, "¡Controles de Joystick Activados!", 4.0, al_map_rgb(0, 255, 0), true);
+                agregar_mensaje_cola(&cola_mensajes, "Stick izquierdo: Mover", 3.0, al_map_rgb(255, 255, 255), true);
+                agregar_mensaje_cola(&cola_mensajes, "Stick derecho: Rotar", 3.0, al_map_rgb(255, 255, 255), true);
+                agregar_mensaje_cola(&cola_mensajes, "Botón X/Cuadrado: Disparar", 3.0, al_map_rgb(255, 255, 255), true);
+                agregar_mensaje_cola(&cola_mensajes, "Cruceta: Cambiar Arma", 3.0, al_map_rgb(255, 255, 255), true);
+            }
+            else
+            {
+                agregar_mensaje_cola(&cola_mensajes, "¡Bienvenido al juego!", 3.0, al_map_rgb(0, 255, 0), true);
+                agregar_mensaje_cola(&cola_mensajes, "Flechas: Mover/Rotar", 3.0, al_map_rgb(255, 255, 255), true);
+                agregar_mensaje_cola(&cola_mensajes, "ESPACIO: Disparar", 3.0, al_map_rgb(255, 255, 255), true);
+                agregar_mensaje_cola(&cola_mensajes, "Q/E: Cambiar Arma", 3.0, al_map_rgb(255, 255, 255), true);
+            }
 
             tiempo_cache = 0;
 
@@ -839,9 +856,18 @@ int main()
                             teclas[k] = false; // Reiniciar teclas para evitar problemas de movimiento
                         }
                         
-                        agregar_mensaje_cola(&cola_mensajes, "¡Nueva Movilidad Desbloqueada!", 4.0, al_map_rgb(0, 255, 0), true); // Centrado
+                        agregar_mensaje_cola(&cola_mensajes, "¡Nueva Movilidad Desbloqueada!", 4.0, al_map_rgb(0, 255, 0), true);
                         
-                        agregar_mensaje_cola(&cola_mensajes, "Usa las flechas para rotar y avanzar", 3.0, al_map_rgb(255, 255, 255), true); // Centrado
+                        // ✅ MOSTRAR INSTRUCCIONES SEGÚN TIPO DE CONTROL
+                        if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick_disponible)
+                        {
+                            agregar_mensaje_cola(&cola_mensajes, "Stick izquierdo: Mover libremente", 3.5, al_map_rgb(255, 255, 255), true);
+                            agregar_mensaje_cola(&cola_mensajes, "Stick derecho: Rotar nave", 3.5, al_map_rgb(255, 255, 255), true);
+                        }
+                        else
+                        {
+                            agregar_mensaje_cola(&cola_mensajes, "Usa las flechas para rotar y avanzar", 3.0, al_map_rgb(255, 255, 255), true);
+                        }
                     }
 
                     hay_lasers_activos = false;
