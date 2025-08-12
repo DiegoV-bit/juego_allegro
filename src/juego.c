@@ -6094,16 +6094,6 @@ void actualizar_nave_joystick(Nave* nave, ALLEGRO_JOYSTICK *joystick, Tile tilem
         bool boton_L = false;
         bool boton_R = false;
         
-        // Verificar si hay suficientes botones antes de acceder
-        if (al_get_joystick_num_buttons(joystick) > 4)
-        {
-            boton_L = estado_joystick.button[4]; // L1/LB
-        }
-        if (al_get_joystick_num_buttons(joystick) > 5)
-        {
-            boton_R = estado_joystick.button[5]; // R1/RB
-        }
-        
         // ✅ ROTACIÓN CON STICK DERECHO (PRIORIDAD ALTA)
         if (fabs(stick_rx) > DEADZONE_JOYSTICK)
         {
@@ -6136,8 +6126,7 @@ void actualizar_nave_joystick(Nave* nave, ALLEGRO_JOYSTICK *joystick, Tile tilem
         // Verificar colisiones y límites
         if (!verificar_colision_nave_muro(nueva_x, nueva_y, nave->ancho, nave->largo, tilemap))
         {
-            if (nueva_x >= 0 && nueva_x <= 800 - nave->ancho &&
-                nueva_y >= 0 && nueva_y <= 600 - nave->largo)
+            if (nueva_x >= 0 && nueva_x <= 800 - nave->ancho && nueva_y >= 0 && nueva_y <= 600 - nave->largo)
             {
                 nave->x = nueva_x;
                 nave->y = nueva_y;
@@ -6163,7 +6152,6 @@ bool obtener_boton_joystick_disparar(ALLEGRO_JOYSTICK *joystick)
     
     // ✅ BOTÓN X/CUADRADO (botón 2 en PlayStation, botón 0 en Xbox)
     bool boton_x = false;
-    bool gatillo_derecho = false;
     
     // Verificar botón X/Cuadrado según el tipo de controlador
     if (al_get_joystick_num_buttons(joystick) > 2)
@@ -6175,17 +6163,7 @@ bool obtener_boton_joystick_disparar(ALLEGRO_JOYSTICK *joystick)
         boton_x = boton_x || estado_joystick.button[0]; // Xbox: A
     }
     
-    // Verificar gatillo derecho (RT/R2)
-    if (al_get_joystick_num_sticks(joystick) > 1)
-    {
-        // En algunos controladores, los gatillos son ejes
-        if (al_get_joystick_num_axes(joystick, 0) > 5)
-        {
-            gatillo_derecho = estado_joystick.stick[0].axis[5] > 0.5f; // RT/R2 como eje
-        }
-    }
-    
-    return boton_x || gatillo_derecho;
+    return boton_x;
 }
 
 /**
@@ -6203,9 +6181,6 @@ void cambiar_arma_joystick(Nave *nave, ALLEGRO_JOYSTICK *joystick)
     if (!joystick) return;
     
     al_get_joystick_state(joystick, &estado_joystick);
-    
-    // ✅ LLAMAR A FUNCIÓN DE DEBUG (TEMPORAL)
-    debug_joystick_completo(joystick);
     
     if (tiempo_actual - ultimo_cambio > 0.3) // Evitar cambios muy rápidos
     {
