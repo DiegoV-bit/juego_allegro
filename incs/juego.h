@@ -674,5 +674,6 @@ void actualizar_nave_joystick(Nave* nave, ALLEGRO_JOYSTICK *joystick, Tile tilem
 bool obtener_boton_joystick_disparar(ALLEGRO_JOYSTICK *joystick);
 void cambiar_arma_joystick(Nave *nave, ALLEGRO_JOYSTICK *joystick);
 void dibujar_indicador_control(ConfiguracionControl config, ALLEGRO_FONT *fuente);
+void debug_joystick_estado(ALLEGRO_JOYSTICK *joystick);
 
 #endif

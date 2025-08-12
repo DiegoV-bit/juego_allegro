@@ -506,15 +506,14 @@ int main()
                 agregar_mensaje_cola(&cola_mensajes, "¡Controles de Joystick Activados!", 4.0, al_map_rgb(0, 255, 0), true);
                 agregar_mensaje_cola(&cola_mensajes, "Stick izquierdo: Mover", 3.0, al_map_rgb(255, 255, 255), true);
                 agregar_mensaje_cola(&cola_mensajes, "Stick derecho: Rotar", 3.0, al_map_rgb(255, 255, 255), true);
-                agregar_mensaje_cola(&cola_mensajes, "Botón X/Cuadrado: Disparar", 3.0, al_map_rgb(255, 255, 255), true);
-                agregar_mensaje_cola(&cola_mensajes, "Cruceta: Cambiar Arma", 3.0, al_map_rgb(255, 255, 255), true);
+                agregar_mensaje_cola(&cola_mensajes, "Botón A/X: DISPARAR", 3.0, al_map_rgb(255, 255, 0), true);
+                agregar_mensaje_cola(&cola_mensajes, "Cruceta/D-pad: Cambiar Arma", 3.0, al_map_rgb(255, 255, 255), true);
             }
             else
             {
-                agregar_mensaje_cola(&cola_mensajes, "¡Bienvenido al juego!", 3.0, al_map_rgb(0, 255, 0), true);
-                agregar_mensaje_cola(&cola_mensajes, "Flechas: Mover/Rotar", 3.0, al_map_rgb(255, 255, 255), true);
-                agregar_mensaje_cola(&cola_mensajes, "ESPACIO: Disparar", 3.0, al_map_rgb(255, 255, 255), true);
-                agregar_mensaje_cola(&cola_mensajes, "Q/E: Cambiar Arma", 3.0, al_map_rgb(255, 255, 255), true);
+                agregar_mensaje_cola(&cola_mensajes, "Stick izquierdo: Mover libremente", 3.5, al_map_rgb(255, 255, 255), true);
+                agregar_mensaje_cola(&cola_mensajes, "Stick derecho: Rotar nave", 3.5, al_map_rgb(255, 255, 255), true);
+                agregar_mensaje_cola(&cola_mensajes, "A/X: Disparo, D-pad: Cambiar Arma", 3.5, al_map_rgb(255, 255, 0), true);
             }
 
             tiempo_cache = 0;
@@ -572,6 +571,7 @@ int main()
                             manejar_eventos(evento, &nave, teclas);
                         }
                     }
+                }
                     
                     if (evento.type == ALLEGRO_EVENT_KEY_UP && evento.keyboard.keycode == ALLEGRO_KEY_SPACE)
                     {
@@ -596,20 +596,18 @@ int main()
                                 printf("No hay lasers activos para desactivar\n");
                             }
                         }
-                    }
+                    
 
-                    // ✅ NUEVOS EVENTOS DE JOYSTICK
-                    if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick)
-                    {
-                        if (evento.type == ALLEGRO_EVENT_JOYSTICK_AXIS || evento.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN || evento.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_UP)
+                        if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick)
                         {
+                            if (evento.type == ALLEGRO_EVENT_JOYSTICK_AXIS || evento.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_DOWN || evento.type == ALLEGRO_EVENT_JOYSTICK_BUTTON_UP)
+                            {
                                 if (!estado_nivel.mostrar_transicion)
                                 {
                                     manejar_eventos_joystick(evento, &nave, teclas);
-                                    cambiar_arma_joystick(&nave, config_control.joystick);
                                 }
+                            }
                         }
-                    }
 
                     // Manejo de eventos de debug
                     if (evento.type == ALLEGRO_EVENT_KEY_DOWN && evento.keyboard.keycode == ALLEGRO_KEY_F1)
@@ -626,6 +624,9 @@ int main()
                     // ✅ DISPARO CON JOYSTICK
                     if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick)
                     {
+                        debug_joystick_estado(config_control.joystick);
+                        cambiar_arma_joystick(&nave, config_control.joystick);
+
                         static bool boton_disparar_presionado = false;
                         bool boton_actual = obtener_boton_joystick_disparar(config_control.joystick);
                 
