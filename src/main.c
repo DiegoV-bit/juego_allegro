@@ -575,7 +575,7 @@ int main()
             // ✅ MOSTRAR INSTRUCCIONES INICIALES SEGÚN TIPO DE CONTROL
             if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick_disponible)
             {
-                agregar_mensaje_cola(&cola_mensajes, "¡Controles de Joystick Activados!", 4.0, al_map_rgb(0, 255, 0), true);
+                agregar_mensaje_cola(&cola_mensajes, "Controles de Joystick Activados!", 4.0, al_map_rgb(0, 255, 0), true);
                 agregar_mensaje_cola(&cola_mensajes, "Stick izquierdo: Mover", 3.0, al_map_rgb(255, 255, 255), true);
                 agregar_mensaje_cola(&cola_mensajes, "Stick derecho: Rotar", 3.0, al_map_rgb(255, 255, 255), true);
                 agregar_mensaje_cola(&cola_mensajes, "Botón A/X: DISPARAR", 3.0, al_map_rgb(255, 255, 0), true);
@@ -676,7 +676,7 @@ int main()
                             {
                                 if (!estado_nivel.mostrar_transicion)
                                 {
-                                    manejar_eventos_joystick(evento, &nave, teclas);
+                                    manejar_eventos_joystick(evento);
                                 }
                             }
                         }
@@ -693,7 +693,7 @@ int main()
                 {
                     tiempo_cache = al_get_time();
 
-                    // ✅ DISPARO CON JOYSTICK
+                    // DISPARO CON JOYSTICK
                     if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick)
                     {
                         debug_joystick_estado(config_control.joystick);
@@ -928,7 +928,7 @@ int main()
                             {
                                 // No hay más niveles
                             juego_terminado = true;
-                            printf("¡Felicidades! Has completado todos los niveles.\n");
+                            printf("Felicidades! Has completado todos los niveles.\n");
                             }
                         }
 
@@ -949,7 +949,7 @@ int main()
                             teclas[k] = false; // Reiniciar teclas para evitar problemas de movimiento
                         }
                         
-                        agregar_mensaje_cola(&cola_mensajes, "¡Nueva Movilidad Desbloqueada!", 4.0, al_map_rgb(0, 255, 0), true);
+                        agregar_mensaje_cola(&cola_mensajes, "Nueva Movilidad Desbloqueada!", 4.0, al_map_rgb(0, 255, 0), true);
                         
                         // ✅ MOSTRAR INSTRUCCIONES SEGÚN TIPO DE CONTROL
                         if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick_disponible)
@@ -1025,7 +1025,7 @@ int main()
                                 {
                                     nave.vida -= jefe_nivel.ataques[k].dano;
                                     printf("Jefe causo %.1f de daño. Vida restante: %.1f\n", jefe_nivel.ataques[k].dano, nave.vida);
-                                    agregar_mensaje_cola(&cola_mensajes, "¡Ataque del Jefe!", 2.0, al_map_rgb(255, 0, 0), false);
+                                    agregar_mensaje_cola(&cola_mensajes, "Ataque del Jefe!", 2.0, al_map_rgb(255, 0, 0), false);
                                 }
                                 jefe_nivel.ataques[k].activo = false;
                             }
@@ -1086,8 +1086,8 @@ int main()
                                     }
                                     else
                                     {
-                                        agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 3.0, al_map_rgb(255, 215, 0), true);
-                                        agregar_mensaje_cola(&cola_mensajes, "¡NIVEL COMPLETADO!", 3.0, al_map_rgb(0, 255, 0), true);
+                                        agregar_mensaje_cola(&cola_mensajes, "JEFE DERROTADO!", 3.0, al_map_rgb(255, 215, 0), true);
+                                        agregar_mensaje_cola(&cola_mensajes, "NIVEL COMPLETADO!", 3.0, al_map_rgb(0, 255, 0), true);
                                     }
                                 }
                                 disparos[j].activo = false;
@@ -1154,7 +1154,7 @@ int main()
                                         puntaje += 2000;
                                         hay_jefe_en_nivel = false;
                                         jefe_nivel.activo = false;
-                                        agregar_mensaje_cola(&cola_mensajes, "¡JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
+                                        agregar_mensaje_cola(&cola_mensajes, "JEFE DERROTADO!", 5.0, al_map_rgb(255, 215, 0), true);
                                     }
                                     explosivos[j].exploto = true;
                                     explosivos[j].tiempo_vida = al_get_time();

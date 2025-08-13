@@ -22,6 +22,8 @@
 #include <allegro5/allegro_primitives.h>
 #include <allegro5/allegro_font.h>
 #include <allegro5/joystick.h>
+#include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_acodec.h>
 
 /**
  * @def NUM_ASTEROIDES
@@ -538,6 +540,22 @@ typedef struct
     char nombre_joystick[100];
 } ConfiguracionControl;
 
+/**
+ * @struct EfectosSonido
+ * @brief Estructura que maneja todos los efectos de sonido del juego.
+ */
+typedef struct
+{
+    ALLEGRO_SAMPLE *disparo_normal;
+    ALLEGRO_SAMPLE *disparo_laser;
+    ALLEGRO_SAMPLE *disparo_explosivo;
+    ALLEGRO_SAMPLE *explosion;
+    ALLEGRO_SAMPLE *powerup;
+    ALLEGRO_SAMPLE *hit_enemigo;
+    bool audio_disponible;
+    float volumen_general;
+} EfectosSonido;
+
 
 /*Funciones*/
 Nave init_nave(float x, float y, float ancho, float largo, float vida, double tiempo_invulnerable, ALLEGRO_BITMAP* imagen_nave);
@@ -669,7 +687,7 @@ void dibujar_info_escudo(Nave nave, ALLEGRO_FONT *fuente);
 void init_configuracion_control(ConfiguracionControl *config);
 bool detectar_joysticks(ConfiguracionControl *config);
 void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *config, ALLEGRO_EVENT_QUEUE *cola_eventos);
-void manejar_eventos_joystick(ALLEGRO_EVENT evento, Nave* nave, bool teclas[]);
+void manejar_eventos_joystick(ALLEGRO_EVENT evento);
 void actualizar_nave_joystick(Nave* nave, ALLEGRO_JOYSTICK *joystick, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 bool obtener_boton_joystick_disparar(ALLEGRO_JOYSTICK *joystick);
 void cambiar_arma_joystick(Nave *nave, ALLEGRO_JOYSTICK *joystick);
@@ -678,5 +696,13 @@ void debug_joystick_estado(ALLEGRO_JOYSTICK *joystick);
 bool cargar_imagenes_jefes(ALLEGRO_BITMAP *imagenes_jefes[NUM_TIPOS_JEFES]);
 void liberar_imagenes_jefes(ALLEGRO_BITMAP *imagenes_jefes[NUM_TIPOS_JEFES]);
 void asignar_imagen_jefe(Jefe *jefe, ALLEGRO_BITMAP *imagenes_jefes[NUM_TIPOS_JEFES]);
+bool cargar_efectos_sonido(EfectosSonido *efectos);
+void liberar_efectos_sonido(EfectosSonido *efectos);
+void reproducir_sonido_disparo_normal(EfectosSonido *efectos);
+void reproducir_sonido_disparo_laser(EfectosSonido *efectos);
+void reproducir_sonido_disparo_explosivo(EfectosSonido *efectos);
+void reproducir_sonido_explosion(EfectosSonido *efectos);
+void reproducir_sonido_hit_enemigo(EfectosSonido *efectos);
+void ajustar_volumen_efectos(EfectosSonido *efectos, float volumen);
 
 #endif

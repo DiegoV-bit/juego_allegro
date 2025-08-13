@@ -2622,7 +2622,7 @@ void dibujar_powerups(Powerup powerups[], int max_powerups, int *contador_parpad
                 
                 if (*contador_parpadeo < 15)
                 {
-                    al_draw_text(fuente, al_map_rgb(255, 200, 200), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "LÁSER");
+                    al_draw_text(fuente, al_map_rgb(255, 200, 200), cx, cy + 20, ALLEGRO_ALIGN_CENTER, "LASER");
                 }
             }
             else if (powerups[i].tipo == 3) // Explosivo
@@ -2698,13 +2698,13 @@ void recoger_powerup(Nave *nave, Powerup *powerup, ColaMensajes *cola_mensajes)
         {
             nave->armas[Arma_laser].desbloqueado = true;
             agregar_mensaje_cola(cola_mensajes, "NUEVO ARMA DESBLOQUEADA!", 3.0, al_map_rgb(255, 215, 0), true);
-            agregar_mensaje_cola(cola_mensajes, "Láser Continuo", 2.5, al_map_rgb(0, 255, 255), true);
+            agregar_mensaje_cola(cola_mensajes, "Laser Continuo", 2.5, al_map_rgb(0, 255, 255), true);
             agregar_mensaje_cola(cola_mensajes, "Presiona [2] para usar", 3.0, al_map_rgb(255, 255, 255), true);
-            printf("Arma láser desbloqueada!\n");
+            printf("Arma laser desbloqueada!\n");
         }
         else
         {
-            agregar_mensaje_cola(cola_mensajes, "Arma Láser ya desbloqueada", 2.0, al_map_rgb(255, 255, 0), true);
+            agregar_mensaje_cola(cola_mensajes, "Arma Laser ya desbloqueada", 2.0, al_map_rgb(255, 255, 0), true);
         }
     }
     else if (powerup->tipo == 3) 
@@ -3249,7 +3249,7 @@ void crear_powerup_aleatorio(Powerup powerups[], int max_powerups, float x, floa
     else if (probabilidad < POWERUP_ESCUDO_PROB + POWERUP_VIDA_PROB + POWERUP_LASER_PROB)
     {
         crear_powerup_laser(powerups, max_powerups, x, y);
-        printf("Powerup aleatorio: LÁSER\n");
+        printf("Powerup aleatorio: LASER\n");
     }
     else if (probabilidad < POWERUP_ESCUDO_PROB + POWERUP_VIDA_PROB + POWERUP_LASER_PROB + 30)
     {
@@ -3287,8 +3287,8 @@ void init_sistema_armas(Nave *nave)
 {
     nave->armas[0] = (SistemaArma){Arma_normal, 1, 0, 0, true, 0.0, "Cañon normal", "Disparo en linea recta"};
 
-    nave->armas[1] = (SistemaArma){Arma_laser, 1, 0, 10, false, 0.0, "Láser Continuo", "Rayo de energía sostenido"};
-    nave->armas[2] = (SistemaArma){Arma_explosiva, 1, 0, 15, false, 0.0, "Cañón Explosivo", "Proyectiles con daño en área"};
+    nave->armas[1] = (SistemaArma){Arma_laser, 1, 0, 10, false, 0.0, "Laser Continuo", "Rayo de energía sostenido"};
+    nave->armas[2] = (SistemaArma){Arma_explosiva, 1, 0, 15, false, 0.0, "Cañon Explosivo", "Proyectiles con daño en área"};
     nave->armas[3] = (SistemaArma){Arma_misil, 1, 0, 20, false, 0.0, "Misiles Teledirigidos", "Misiles que persiguen enemigos"};
 
     nave->arma_actual = Arma_normal;
@@ -3375,25 +3375,25 @@ void verificar_mejora_arma(Nave *nave, TipoArma tipo_arma, ColaMensajes *cola_me
         switch (tipo_arma)
         {
             case Arma_laser:
-                sprintf(mensaje_principal, "¡Láser mejorado a Nivel %d!", arma->nivel);
+                sprintf(mensaje_principal, "Laser mejorado a Nivel %d!", arma->nivel);
                 sprintf(mensaje_secundario, "Mayor potencia y alcance");
                 color_principal = al_map_rgb(0, 255, 255);
                 break;
                 
             case Arma_explosiva:
-                sprintf(mensaje_principal, "¡Explosivos mejorados a Nivel %d!", arma->nivel);
+                sprintf(mensaje_principal, "Explosivos mejorados a Nivel %d!", arma->nivel);
                 sprintf(mensaje_secundario, "Mayor radio de explosión");
                 color_principal = al_map_rgb(255, 128, 0);
                 break;
                 
             case Arma_misil:
-                sprintf(mensaje_principal, "¡Misiles mejorados a Nivel %d!", arma->nivel);
+                sprintf(mensaje_principal, "Misiles mejorados a Nivel %d!", arma->nivel);
                 sprintf(mensaje_secundario, "Mejor seguimiento y daño");
                 color_principal = al_map_rgb(255, 0, 255);
                 break;
                 
             default:
-                sprintf(mensaje_principal, "¡Arma mejorada a Nivel %d!", arma->nivel);
+                sprintf(mensaje_principal, "Arma mejorada a Nivel %d!", arma->nivel);
                 sprintf(mensaje_secundario, "Mejor rendimiento");
                 color_principal = al_map_rgb(255, 255, 0);
                 break;
@@ -3471,7 +3471,7 @@ void dibujar_info_armas(Nave nave, ALLEGRO_FONT *fuente)
     switch (nave.arma_seleccionada)
     {
         case 0: strcpy(nombre_corto, "NORMAL"); break;
-        case 1: strcpy(nombre_corto, "LÁSER"); break;
+        case 1: strcpy(nombre_corto, "LASER"); break;
         case 2: strcpy(nombre_corto, "EXPLOSIVO"); break;
         case 3: strcpy(nombre_corto, "MISIL"); break;
         default: strcpy(nombre_corto, "DESCONOCIDO"); break;
@@ -3702,12 +3702,12 @@ void disparar_laser(DisparoLaser lasers[], int max_lasers, Nave nave)
             }
 
             nave.armas[Arma_laser].ultimo_uso = tiempo_actual;
-            printf("Láser disparado - Nivel %d, Poder %d, Duración %.1fs\n", arma_laser.nivel, lasers[i].poder, lasers[i].duracion_max);
+            printf("Laser disparado - Nivel %d, Poder %d, Duración %.1fs\n", arma_laser.nivel, lasers[i].poder, lasers[i].duracion_max);
             return;
         }   
     }
 
-    printf("No hay espacio para más láseres activos.\n");
+    printf("No hay espacio para más laseres activos.\n");
 }
 
 
@@ -3754,7 +3754,7 @@ void actualizar_lasers(DisparoLaser lasers[], int max_lasers, Enemigo enemigos[]
         {
             if (lasers[k].activo) lasers_activos++;
         }
-        printf("DEBUG: %d láseres activos\n", lasers_activos);
+        printf("DEBUG: %d laseres activos\n", lasers_activos);
     }
 
     for (i = 0; i < max_lasers; i++)
@@ -3880,7 +3880,7 @@ void crear_powerup_laser(Powerup powerups[], int max_powerups, float x, float y)
             powerups[i].duracion_vida = 20.0;
             powerups[i].color = al_map_rgb(255, 0, 0);
 
-            printf("POWERUP DE LÁSER CREADO en (%.1f, %.1f)\n", x, y);
+            printf("POWERUP DE LASER CREADO en (%.1f, %.1f)\n", x, y);
             return;
         }
     }
@@ -5426,6 +5426,7 @@ void dibujar_jefe(Jefe jefe)
     
     // Efecto de parpadeo cuando está herido
     bool mostrar_sprite = true;
+    
     if (porcentaje_vida < 0.3f)
     {
         // Parpadeo más rápido cuando tiene poca vida
@@ -6352,7 +6353,7 @@ void cambiar_arma_joystick(Nave *nave, ALLEGRO_JOYSTICK *joystick)
             case 2: // Derecha
                 cambiar_arma(nave, Arma_laser);
                 cambio_realizado = true;
-                printf("Arma cambiada a Láser (D-pad Derecha)\n");
+                printf("Arma cambiada a Laser (D-pad Derecha)\n");
                 break;
                 
             case 3: // Abajo
