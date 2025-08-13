@@ -548,7 +548,7 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int ni
 void actualizar_nave(Nave* nave, bool teclas[], Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 void dibujar_barra_vida(Nave nave, ALLEGRO_FONT *fuente);
 void init_disparos(Disparo disparos[], int num_disparos);
-void actualizar_disparos(Disparo disparos[], int num_disparos);
+void actualizar_disparos(Disparo disparos[], int num_disparos, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS]);
 void dibujar_disparos(Disparo disparos[], int num_disparos);
 void disparar(Disparo disparos[], int num_disparos, Nave nave);
 bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo);

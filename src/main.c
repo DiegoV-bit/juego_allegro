@@ -57,7 +57,7 @@ int main()
     Jefe jefe_final;
     Jefe jefe_nivel;
     bool hay_jefe_en_nivel = false;
-    //ALLEGRO_BITMAP *imagen_jefe = NULL;
+    ALLEGRO_EVENT evento_temp;
     ALLEGRO_EVENT evento;
     bool recargar_nivel;
     bool juego_terminado;
@@ -112,7 +112,7 @@ int main()
 
     printf("Estado del joystick: %s\n", config_control.joystick_disponible ? "Disponible" : "No disponible");
 
-    // ✅ MOSTRAR MENÚ DE SELECCIÓN DE CONTROL
+    // MOSTRAR MENÚ DE SELECCIÓN DE CONTROL
     if (config_control.joystick_disponible)
     {
         printf("Mostrando menú de selección de control...\n");
@@ -141,25 +141,21 @@ int main()
         bool necesita_redibujado = true;
         while (esperando)
         {
-            ALLEGRO_EVENT evento_temp;
             al_wait_for_event(cola_eventos, &evento_temp);
             if (evento_temp.type == ALLEGRO_EVENT_KEY_DOWN || evento_temp.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
             {
                 esperando = false;
             }
 
-            // ✅ REDIBUJADO OPTIMIZADO
+            // REDIBUJADO OPTIMIZADO
             if (evento_temp.type == ALLEGRO_EVENT_TIMER && necesita_redibujado)
             {
                 necesita_redibujado = false;
             
                 al_clear_to_color(al_map_rgb(0, 0, 0));
-                al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 250, ALLEGRO_ALIGN_CENTER, 
-                        "No se detectaron controladores");
-                al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 300, ALLEGRO_ALIGN_CENTER, 
-                        "Usando teclado como control predeterminado");
-                al_draw_text(fuente, al_map_rgb(200, 200, 200), 400, 350, ALLEGRO_ALIGN_CENTER, 
-                        "Presiona cualquier tecla para continuar...");
+                al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 250, ALLEGRO_ALIGN_CENTER, "No se detectaron controladores");
+                al_draw_text(fuente, al_map_rgb(255, 255, 255), 400, 300, ALLEGRO_ALIGN_CENTER, "Usando teclado como control predeterminado");
+                al_draw_text(fuente, al_map_rgb(200, 200, 200), 400, 350, ALLEGRO_ALIGN_CENTER, "Presiona cualquier tecla para continuar...");
                 al_flip_display();
             }
         }
@@ -169,7 +165,7 @@ int main()
         al_destroy_timer(timer_aviso);
     }
     
-    // ✅ REGISTRAR EVENTOS DE JOYSTICK SI ES NECESARIO
+    // REGISTRAR EVENTOS DE JOYSTICK SI ES NECESARIO
     if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick)
     {
         al_register_event_source(cola_eventos, al_get_joystick_event_source());
@@ -197,6 +193,8 @@ int main()
 
     cursor_x = 0;
     cursor_y = 0;
+
+    al_flush_event_queue(cola_eventos);
 
     while (true)
     {
@@ -240,7 +238,7 @@ int main()
                 cursor_y = evento.mouse.y;
             }
 
-            // ✅ AGREGAR NAVEGACIÓN CON TECLADO Y JOYSTICK AL MENÚ PRINCIPAL
+            // AGREGAR NAVEGACIÓN CON TECLADO Y JOYSTICK AL MENÚ PRINCIPAL
             if (evento.type == ALLEGRO_EVENT_KEY_DOWN)
             {
                 static int opcion_menu = 0;
@@ -289,7 +287,7 @@ int main()
                 }
             }
 
-            // ✅ SOPORTE PARA JOYSTICK EN EL MENÚ PRINCIPAL
+            // SOPORTE PARA JOYSTICK EN EL MENÚ PRINCIPAL
             if (config_control.tipo_control == CONTROL_JOYSTICK && config_control.joystick)
             {
                 static int opcion_menu_joy = 0;
@@ -298,7 +296,7 @@ int main()
         
                 if (evento.type == ALLEGRO_EVENT_JOYSTICK_AXIS)
                 {
-                    double tiempo_actual = al_get_time();
+                    tiempo_actual = al_get_time();
             
                     if (evento.joystick.axis == 1 && tiempo_actual - ultimo_input_menu > delay_menu)
                     {
@@ -351,7 +349,7 @@ int main()
 
             if (evento.type == ALLEGRO_EVENT_TIMER)
             {
-                // ✅ USAR BACKBUFFER PARA MEJOR RENDIMIENTO
+                // USAR BACKBUFFER PARA MEJOR RENDIMIENTO
                 al_set_target_backbuffer(al_get_current_display());
 
                 if (imagen_menu)
@@ -365,7 +363,7 @@ int main()
                 
                 dibujar_botones(botones, 3, fuente, cursor_x, cursor_y);
 
-                // ✅ MOSTRAR CONTROLES DISPONIBLES
+                // MOSTRAR CONTROLES DISPONIBLES
                 if (config_control.joystick_disponible)
                 {
                     al_draw_text(fuente, al_map_rgb(255, 255, 255), 10, 570, ALLEGRO_ALIGN_LEFT, "Usa flechas/stick para navegar, Enter/A para seleccionar");
@@ -976,7 +974,7 @@ int main()
                         actualizar_nave_joystick(&nave, config_control.joystick, tilemap);
                     }
 
-                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, 10, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &cola_mensajes, &estado_nivel, tiempo_cache, powerups, MAX_POWERUPS);
+                    actualizar_juego(&nave, teclas, asteroides, 10, disparos, MAX_DISPAROS, &puntaje, tilemap, enemigos, num_enemigos_cargados, disparos_enemigos, NUM_DISPAROS_ENEMIGOS, &cola_mensajes, &estado_nivel, tiempo_cache, powerups, MAX_POWERUPS);
                     
                     if (hay_jefe_en_nivel && jefe_nivel.activo)
                     {

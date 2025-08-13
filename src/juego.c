@@ -448,14 +448,18 @@ void init_disparos(Disparo disparos[], int num_disparos)
 /**
  * @brief Actualiza la posición de todos los disparos activos.
  * 
- * Mueve cada disparo activo en la dirección de su ángulo y desactiva los disparos que salen de la pantalla.
+ * Mueve cada disparo activo en la dirección de su ángulo, verifica colisiones con bloques sólidos
+ * y desactiva los disparos que salen de la pantalla o impactan bloques sólidos.
  * 
  * @param disparos Arreglo de disparos.
  * @param num_disparos Número total de disparos.
+ * @param tilemap Mapa de tiles para verificar colisiones con bloques sólidos.
  */
-void actualizar_disparos(Disparo disparos[], int num_disparos)
+void actualizar_disparos(Disparo disparos[], int num_disparos, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {
     int i;
+    int col_izq, col_der, fila_sup, fila_inf;
+    int fila, col;
 
     for (i = 0; i < num_disparos; i++)
     {
@@ -463,10 +467,46 @@ void actualizar_disparos(Disparo disparos[], int num_disparos)
         {
             disparos[i].x += cos(disparos[i].angulo) * disparos[i].velocidad;
             disparos[i].y += sin(disparos[i].angulo) * disparos[i].velocidad;
+            
+            // Verificar si sale de la pantalla
             if (disparos[i].x < 0 || disparos[i].x > 800 || disparos[i].y < 0 || disparos[i].y > 600)
             {
                 disparos[i].activo = false;
+                continue;
             }
+
+            // Verificar colisión con bloques sólidos del tilemap
+            col_izq = (int)(disparos[i].x / TILE_ANCHO);
+            col_der = (int)((disparos[i].x + 5 - 1) / TILE_ANCHO); // 5 es el ancho del disparo
+            fila_sup = (int)(disparos[i].y / TILE_ALTO);
+            fila_inf = (int)((disparos[i].y + 10 - 1) / TILE_ALTO); // 10 es el alto del disparo
+
+            // Asegurar que estamos dentro de los límites
+            if (col_izq < 0) col_izq = 0;
+            if (col_der >= MAPA_COLUMNAS) col_der = MAPA_COLUMNAS - 1;
+            if (fila_sup < 0) fila_sup = 0;
+            if (fila_inf >= MAPA_FILAS) fila_inf = MAPA_FILAS - 1;
+            
+            for (fila = fila_sup; fila <= fila_inf; fila++)
+            {
+                for (col = col_izq; col <= col_der; col++)
+                {
+                    // Los disparos normales NO pueden atravesar bloques sólidos (tipo 1) ni indestructibles (tipo 3)
+                    if (tilemap[fila][col].tipo == 1 || tilemap[fila][col].tipo == 3)
+                    {
+                        disparos[i].activo = false;
+                        goto siguiente_disparo; // Salir de ambos bucles for
+                    }
+
+                    // Los disparos pueden atravesar escudos destructibles (tipo 2) pero los dañan
+                    if (tilemap[fila][col].tipo == 2 && tilemap[fila][col].vida > 0)
+                    {    
+                        printf("Disparo impactó escudo en (%d, %d). Vida restante: %d\n", col, fila, tilemap[fila][col].vida);
+                    }
+                }
+            }
+            
+            siguiente_disparo:;
         }
     }
 }
@@ -578,7 +618,7 @@ void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num
     }
 
     actualizar_nave(nave, teclas, tilemap);
-    actualizar_disparos(disparos, num_disparos);
+    actualizar_disparos(disparos, num_disparos, tilemap);
     actualizar_enemigos(enemigos, num_enemigos, disparos_enemigos, num_disparos_enemigos, tiempo_actual, *nave);
     actualizar_disparos_enemigos(disparos_enemigos, num_disparos_enemigos);
 
@@ -4046,9 +4086,7 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
             // Verificar colisiones con enemigos
             for (j = 0; j < num_enemigos; j++)
             {
-                if (enemigos[j].activo && detectar_colision_generica(
-                    explosivos[i].x, explosivos[i].y, explosivos[i].ancho, explosivos[i].alto,
-                    enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
+                if (enemigos[j].activo && detectar_colision_generica(explosivos[i].x, explosivos[i].y, explosivos[i].ancho, explosivos[i].alto, enemigos[j].x, enemigos[j].y, enemigos[j].ancho, enemigos[j].alto))
                 {
                     printf("Explosivo impactó enemigo tipo %d\n", enemigos[j].tipo);
                     
@@ -4082,6 +4120,16 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
                             explosivos[i].dano_aplicado = false;
                             goto colision_detectada;
                         }
+                        else if (tilemap[fila][col].tipo == 3) // BLOQUE INDESTRUCTIBLE
+                        {
+                            printf("Explosivo impactó bloque INDESTRUCTIBLE en (%d,%d) - Solo explota, no lo afecta\n", col, fila);
+                            
+                            // ACTIVAR EXPLOSIÓN PERO NO DAÑAR EL BLOQUE INDESTRUCTIBLE
+                            explosivos[i].exploto = true;
+                            explosivos[i].tiempo_vida = tiempo_actual;
+                            explosivos[i].dano_aplicado = false;
+                            goto colision_detectada;
+                        }
                         else if (tilemap[fila][col].tipo == 2) // ESCUDO DESTRUCTIBLE
                         {
                             printf("Explosivo impactó escudo DESTRUCTIBLE en (%d,%d) - Explota y lo daña\n", col, fila);
@@ -4107,8 +4155,7 @@ void actualizar_explosivos(DisparoExplosivo explosivos[], int max_explosivos, En
             colision_detectada:
             
             // Verificar si el explosivo salió de la pantalla
-            if (explosivos[i].x < -20 || explosivos[i].x > 820 || 
-                explosivos[i].y < -20 || explosivos[i].y > 620)
+            if (explosivos[i].x < -20 || explosivos[i].x > 820 || explosivos[i].y < -20 || explosivos[i].y > 620)
             {
                 explosivos[i].activo = false;
                 printf("Explosivo salió de pantalla\n");
@@ -4688,23 +4735,26 @@ float verificar_colision_laser_tilemap(DisparoLaser laser, Tile tilemap[MAPA_FIL
     {
         x_actual = laser.x_nave + cos(laser.angulo) * distancia_actual;
         y_actual = laser.y_nave + sin(laser.angulo) * distancia_actual;
-        
+
         col = (int)(x_actual / TILE_ANCHO);
         fila = (int)(y_actual / TILE_ALTO);
 
-        if (fila >= 0 && fila < MAPA_FILAS && col >= 0 && col < MAPA_COLUMNAS)
+        if (col < 0 || col >= MAPA_COLUMNAS || fila < 0 || fila >= MAPA_FILAS)
         {
-            if (tilemap[fila][col].tipo == 1 || tilemap[fila][col].tipo == 3)
-            {
-                printf("Laser bloqueado por un tile solido\n");
-                return distancia_actual;
-            }
+            break;
+        }
+
+        // SOLO detener el láser en bloques sólidos (tipo 1) e indestructibles (tipo 3)
+        // Los escudos destructibles (tipo 2) permiten que el láser los atraviese
+        if (tilemap[fila][col].tipo == 1 || tilemap[fila][col].tipo == 3)
+        {
+            return distancia_actual; // Devolver distancia hasta el obstáculo
         }
 
         distancia_actual += paso;
     }
 
-    return laser.alcance;
+    return laser.alcance; // Sin obstáculos, devolver alcance completo
 }
 
 
