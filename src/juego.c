@@ -2097,7 +2097,8 @@ void mostrar_pantalla_transicion(int nivel_completado, int siguiente_nivel, ALLE
     // Textos de transición
     char texto_titulo[100];
     char texto_subtitulo[100];
-    char texto_progreso[100];
+    //char texto_progreso[100];
+    char texto_porcentaje[10];
 
     float barra_ancho;
     float barra_alto;
@@ -2156,7 +2157,7 @@ void mostrar_pantalla_transicion(int nivel_completado, int siguiente_nivel, ALLE
         sprintf(texto_subtitulo, "Preparando Nivel %d...", siguiente_nivel);
     }
     
-    sprintf(texto_progreso, "%.0f%%", progreso * 100);
+    //sprintf(texto_progreso, "%.0f%%", progreso * 100);
     
     // Dibujar textos centrados
     al_draw_text(fuente, color_titulo, 400, 250, ALLEGRO_ALIGN_CENTER, texto_titulo);
@@ -2164,7 +2165,7 @@ void mostrar_pantalla_transicion(int nivel_completado, int siguiente_nivel, ALLE
     
     // Barra de progreso
     barra_ancho = 300;
-    barra_alto = 20;
+    barra_alto = 30;
     barra_x = 400 - barra_ancho / 2;
     barra_y = 380;
     
@@ -2179,7 +2180,16 @@ void mostrar_pantalla_transicion(int nivel_completado, int siguiente_nivel, ALLE
     al_draw_rectangle(barra_x, barra_y, barra_x + barra_ancho, barra_y + barra_alto, color_progreso, 2);
     
     // Texto de progreso
-    al_draw_text(fuente, color_progreso, 400, 380, ALLEGRO_ALIGN_CENTER, texto_progreso);
+    //al_draw_text(fuente, color_progreso, 400, 380, ALLEGRO_ALIGN_CENTER, texto_progreso);
+
+    // Porcentaje de progreso en la barra de carga de nivel
+    sprintf(texto_porcentaje, "%.0f%%", progreso * 100);
+    float centro_barra_x = barra_x + (barra_ancho / 2);
+    float centro_barra_y = barra_y + (barra_alto / 2) - (al_get_font_line_height(fuente) / 2);
+    
+    // Dibujar texto con sombra para mejor legibilidad
+    al_draw_text(fuente, al_map_rgba(0, 0, 0, (int)alpha_texto), centro_barra_x + 1, centro_barra_y + 1, ALLEGRO_ALIGN_CENTER, texto_porcentaje);
+    al_draw_text(fuente, color_progreso, centro_barra_x, centro_barra_y, ALLEGRO_ALIGN_CENTER, texto_porcentaje);
 }
 
 
