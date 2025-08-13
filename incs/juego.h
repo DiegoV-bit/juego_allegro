@@ -696,13 +696,5 @@ void debug_joystick_estado(ALLEGRO_JOYSTICK *joystick);
 bool cargar_imagenes_jefes(ALLEGRO_BITMAP *imagenes_jefes[NUM_TIPOS_JEFES]);
 void liberar_imagenes_jefes(ALLEGRO_BITMAP *imagenes_jefes[NUM_TIPOS_JEFES]);
 void asignar_imagen_jefe(Jefe *jefe, ALLEGRO_BITMAP *imagenes_jefes[NUM_TIPOS_JEFES]);
-bool cargar_efectos_sonido(EfectosSonido *efectos);
-void liberar_efectos_sonido(EfectosSonido *efectos);
-void reproducir_sonido_disparo_normal(EfectosSonido *efectos);
-void reproducir_sonido_disparo_laser(EfectosSonido *efectos);
-void reproducir_sonido_disparo_explosivo(EfectosSonido *efectos);
-void reproducir_sonido_explosion(EfectosSonido *efectos);
-void reproducir_sonido_hit_enemigo(EfectosSonido *efectos);
-void ajustar_volumen_efectos(EfectosSonido *efectos, float volumen);
 
 #endif

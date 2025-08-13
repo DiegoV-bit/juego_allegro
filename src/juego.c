@@ -310,17 +310,15 @@ void dibujar_juego(Nave nave, Asteroide asteroides[], int num_asteroides, int ni
 }
 
 /**
- * @brief Actualiza la posición y el ángulo de la nave según las teclas presionadas.
- * 
- * La nave rota con las teclas izquierda/derecha y avanza o retrocede en la dirección de su ángulo
- * cuando se presionan las teclas de arriba o abajo, respectivamente. El movimiento se ajusta para
- * que coincida con la orientación visual de la nave (punta hacia arriba). También gestiona la colisión
- * circular con los asteroides y aplica invulnerabilidad temporal tras recibir daño.
+ * @brief Actualiza el movimiento y estado de la nave según las teclas presionadas.
  *
- * @param nave Puntero a la nave que se va a mover.
- * @param teclas Arreglo de teclas presionadas.
- * @param asteroides Arreglo de asteroides.
- * @param tiempo_actual Tiempo actual en segundos.
+ * Esta función controla el movimiento de la nave basándose en las teclas presionadas por el usuario.
+ * Incluye validación de límites de pantalla y detección de colisiones con muros del tilemap.
+ * Soporta dos tipos de movimiento: tipo 0 (Space Invaders) y tipo 1 (libre con rotación).
+ *
+ * @param nave Puntero a la nave a actualizar.
+ * @param teclas Arreglo booleano que indica qué teclas están presionadas.
+ * @param tilemap Mapa de tiles del juego para detección de colisiones.
  */
 void actualizar_nave(Nave* nave, bool teclas[], Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {
@@ -431,10 +429,13 @@ void dibujar_barra_vida(Nave nave, ALLEGRO_FONT *fuente)
 }
 
 /**
- * @brief 
+ * @brief Inicializa el arreglo de disparos.
  * 
- * @param disparos Arreglo de disparos
- * @param num_disparos Cantidad de disparos definida
+ * Esta función inicializa todos los disparos del arreglo como inactivos,
+ * preparándolos para su uso posterior en el juego.
+ * 
+ * @param disparos Arreglo de disparos a inicializar.
+ * @param num_disparos Cantidad total de disparos en el arreglo.
  */
 void init_disparos(Disparo disparos[], int num_disparos)
 {
@@ -572,9 +573,12 @@ void disparar(Disparo disparos[], int num_disparos, Nave nave)
 /**
  * @brief Detecta colisiones entre un asteroide y un disparo.
  * 
- * @param asteroide Asteroide a verificar.
- * @param disparo Disparo a verificar.
+ * Esta función verifica si hay una colisión rectangular básica entre
+ * un disparo y un asteroide utilizando las dimensiones de ambos objetos.
  * 
+ * @param asteroide Asteroide a verificar colisión.
+ * @param disparo Disparo a verificar colisión.
+ * @return true si hay colisión, false en caso contrario.
  */
 bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo)
 {
@@ -582,16 +586,32 @@ bool detectar_colision_disparo(Asteroide asteroide, Disparo disparo)
 }
 
 /**
- * @brief Actualiza la posición de la nave, los asteroides y los disparos.
+ * @brief Actualiza todos los elementos del juego en cada frame.
  * 
- * @param nave Puntero a la nave que se va a mover
- * @param teclas Arreglo de teclas presionadas
- * @param asteroides Arreglo de asteroides
- * @param num_asteroides Número de asteroides en el arreglo
- * @param disparos Arreglo de disparos
- * @param num_disparos Número de disparos en el arreglo
- * @param puntaje Puntero al puntaje del jugador
+ * Esta función es el motor principal del juego que coordina la actualización de:
+ * - Movimiento de la nave y validación de colisiones
+ * - Actualización de asteroides y powerups
+ * - Procesamiento de disparos de jugador y enemigos
+ * - Detección de colisiones entre todos los elementos
+ * - Manejo del escudo de la nave y sistema de mensajes
  * 
+ * @param nave Puntero a la nave del jugador.
+ * @param teclas Arreglo de teclas presionadas.
+ * @param asteroides Arreglo de asteroides del juego.
+ * @param num_asteroides Número total de asteroides.
+ * @param disparos Arreglo de disparos del jugador.
+ * @param num_disparos Número total de disparos del jugador.
+ * @param puntaje Puntero al puntaje actual del jugador.
+ * @param tilemap Mapa de tiles del nivel actual.
+ * @param enemigos Arreglo de enemigos del juego.
+ * @param num_enemigos Número total de enemigos.
+ * @param disparos_enemigos Arreglo de disparos de los enemigos.
+ * @param num_disparos_enemigos Número total de disparos enemigos.
+ * @param cola_mensajes Cola de mensajes para mostrar al jugador.
+ * @param estado_nivel Estado actual del nivel.
+ * @param tiempo_actual Tiempo actual del juego en segundos.
+ * @param powerups Arreglo de powerups disponibles.
+ * @param max_powerups Número máximo de powerups simultáneos.
  */
 void actualizar_juego(Nave *nave, bool teclas[], Asteroide asteroides[], int num_asteroides, Disparo disparos[], int num_disparos, int* puntaje, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS], Enemigo enemigos[], int num_enemigos, Disparo disparos_enemigos[], int num_disparos_enemigos, ColaMensajes *cola_mensajes, EstadoJuego *estado_nivel, double tiempo_actual, Powerup powerups[], int max_powerups)
 {
@@ -1786,6 +1806,22 @@ bool detectar_colision_disparo_enemigo_nave(Nave nave, Disparo disparo)
 }
 
 
+/**
+ * @brief Ejecuta un disparo radial múltiple desde la nave.
+ * 
+ * Esta función permite a la nave disparar múltiples proyectiles simultáneamente
+ * en un patrón radial. El número y dispersión de los disparos depende del nivel
+ * de mejora del disparo radial de la nave.
+ * 
+ * Niveles de disparo radial:
+ * - Nivel 0: Disparo simple normal
+ * - Nivel 1: 3 disparos con separación de 22.5 grados
+ * - Nivel 2: 5 disparos con separación de 15 grados
+ * 
+ * @param disparos Arreglo de disparos disponibles.
+ * @param num_disparos Número total de disparos en el arreglo.
+ * @param nave Nave que ejecuta el disparo radial.
+ */
 void disparar_radial(Disparo disparos[], int num_disparos, Nave nave)
 {
     float centro_x;
@@ -3283,6 +3319,22 @@ void obtener_centro_nave(Nave nave, float* centro_x, float* centro_y)
 }
 
 
+/**
+ * @brief Inicializa el sistema de armas de la nave.
+ * 
+ * Esta función configura todas las armas disponibles en el juego con sus
+ * características iniciales, incluyendo daño, nivel, requisitos de kills
+ * para mejoras y estado de desbloqueado. Por defecto, solo el cañón normal
+ * está desbloqueado al inicio.
+ * 
+ * Armas inicializadas:
+ * - Cañón normal: Desbloqueado desde el inicio
+ * - Láser continuo: Requiere 10 kills para desbloquearse
+ * - Cañón explosivo: Requiere 15 kills para desbloquearse  
+ * - Misiles teledirigidos: Requiere 20 kills para desbloquearse
+ * 
+ * @param nave Puntero a la nave a la cual inicializar el sistema de armas.
+ */
 void init_sistema_armas(Nave *nave)
 {
     nave->armas[0] = (SistemaArma){Arma_normal, 1, 0, 0, true, 0.0, "Cañon normal", "Disparo en linea recta"};
@@ -3298,6 +3350,16 @@ void init_sistema_armas(Nave *nave)
 }
 
 
+/**
+ * @brief Cambia el arma activa de la nave.
+ * 
+ * Esta función permite cambiar el arma actualmente seleccionada de la nave,
+ * siempre y cuando el arma objetivo esté desbloqueada. Si el arma no está
+ * desbloqueada, muestra un mensaje de advertencia.
+ * 
+ * @param nave Puntero a la nave cuya arma se desea cambiar.
+ * @param nueva_arma Tipo de arma al que se quiere cambiar.
+ */
 void cambiar_arma(Nave *nave, TipoArma nueva_arma)
 {
     if (nueva_arma < 0 || nueva_arma > 3)
@@ -4729,6 +4791,17 @@ bool linea_intersecta_linea(float x1, float y1, float x2, float y2, float x3, fl
 }
 
 
+/**
+ * @brief Verifica y calcula el alcance real de un láser considerando obstáculos en el tilemap.
+ * 
+ * Esta función traza el recorrido del láser desde su origen hasta su alcance máximo,
+ * verificando colisiones con bloques sólidos e indestructibles. Los escudos destructibles
+ * no detienen el láser, permitiendo que los atraviese.
+ * 
+ * @param laser Estructura del disparo láser con posición, ángulo y alcance.
+ * @param tilemap Mapa de tiles del nivel actual.
+ * @return float Distancia real que puede alcanzar el láser antes de ser bloqueado.
+ */
 float verificar_colision_laser_tilemap(DisparoLaser laser, Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS])
 {
     float paso;
@@ -4770,6 +4843,14 @@ float verificar_colision_laser_tilemap(DisparoLaser laser, Tile tilemap[MAPA_FIL
 
 /**
  * @brief Verifica si el láser intersecta con un enemigo dentro del alcance limitado.
+ * 
+ * Esta función determina si un láser con alcance limitado por obstáculos
+ * intersecta con un enemigo específico utilizando detección de línea-rectángulo.
+ * 
+ * @param laser Estructura del disparo láser.
+ * @param enemigo Enemigo a verificar intersección.
+ * @param alcance_real Alcance real del láser considerando obstáculos.
+ * @return true si el láser intersecta con el enemigo, false en caso contrario.
  */
 bool laser_intersecta_enemigo_limitado(DisparoLaser laser, Enemigo enemigo, float alcance_real)
 {
@@ -6124,7 +6205,7 @@ void mostrar_menu_seleccion_control(ALLEGRO_FONT *fuente, ConfiguracionControl *
  * @param nave Puntero a la nave.
  * @param teclas Arreglo de estados de teclas (para compatibilidad).
  */
-void manejar_eventos_joystick(ALLEGRO_EVENT evento, Nave* nave, bool teclas[])
+void manejar_eventos_joystick(ALLEGRO_EVENT evento)
 {
     // Esta función procesa eventos de joystick, pero el movimiento real
     // se maneja en actualizar_nave_joystick()
