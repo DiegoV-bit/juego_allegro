@@ -34,6 +34,8 @@ int main()
     ALLEGRO_BITMAP *imagen_enemigo = NULL;
     ALLEGRO_BITMAP *imagenes_enemigos[NUM_TIPOS_ENEMIGOS];
     ALLEGRO_BITMAP *imagenes_jefes[NUM_TIPOS_JEFES];
+    ALLEGRO_SAMPLE *musica_menu = NULL;
+    ALLEGRO_SAMPLE_INSTANCE *instancia_musica = NULL;
 
     // Variables del menu principal
     ALLEGRO_BITMAP *imagen_menu = NULL;
@@ -45,6 +47,7 @@ int main()
     int cursor_x;
     int cursor_y;
     int boton_clicado;
+    bool musica_activa = false;
 
     Tile tilemap[MAPA_FILAS][MAPA_COLUMNAS];
 
@@ -103,9 +106,27 @@ int main()
     int num_jugadores;
     ConfiguracionControl config_control;
 
-    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo, &imagen_menu) != 0)
+    if (init_juego(&ventana, &cola_eventos, &temporizador, &fuente, &fondo_juego, &imagen_nave, &imagen_asteroide, &imagen_enemigo, &imagen_menu, &musica_menu) != 0)
     {
         return -1;
+    }
+
+    if (musica_menu)
+    {
+        // Crear instancia para mejor control de reproducción
+        instancia_musica = al_create_sample_instance(musica_menu);
+        if (instancia_musica)
+        {
+            // Configuración optimizada para música de fondo
+            al_set_sample_instance_playmode(instancia_musica, ALLEGRO_PLAYMODE_LOOP);
+            al_set_sample_instance_gain(instancia_musica, 0.3f); // Volumen bajo para no molestar
+            al_attach_sample_instance_to_mixer(instancia_musica, al_get_default_mixer());
+            printf("Instancia de música del menú configurada correctamente.\n");
+        }
+        else
+        {
+            fprintf(stderr, "Advertencia: No se pudo crear la instancia de música.\n");
+        }
     }
 
     init_configuracion_control(&config_control);
@@ -183,6 +204,19 @@ int main()
         return -1;
     }
 
+    if (instancia_musica && !musica_activa)
+    {
+        if (al_play_sample_instance(instancia_musica))
+        {
+            musica_activa = true;
+            printf("Música del menú iniciada.\n");
+        }
+        else
+        {
+            fprintf(stderr, "Advertencia: No se pudo reproducir la música del menú.\n");
+        }
+    }
+
     /*Inicializar los botones del menu*/
     init_botones(botones);
 
@@ -201,6 +235,24 @@ int main()
         while (en_menu)
         {   
             al_wait_for_event(cola_eventos, &evento);
+
+            if (instancia_musica && musica_activa)
+            {
+                // Solo verificar cada cierto tiempo para evitar sobrecarga
+                static double ultimo_check_musica = 0;
+                double tiempo_actual = al_get_time();
+                
+                if (tiempo_actual - ultimo_check_musica > 5.0) // Verificar cada 5 segundos
+                {
+                    if (!al_get_sample_instance_playing(instancia_musica))
+                    {
+                        // Si se detuvo inesperadamente, reiniciarla
+                        al_play_sample_instance(instancia_musica);
+                        printf("Música del menú reiniciada.\n");
+                    }
+                    ultimo_check_musica = tiempo_actual;
+                }
+            }
 
             if (evento.type == ALLEGRO_EVENT_DISPLAY_CLOSE)
             {
@@ -373,12 +425,24 @@ int main()
                     al_draw_text(fuente, al_map_rgb(255, 255, 255), 10, 570, ALLEGRO_ALIGN_LEFT, "Usa flechas para navegar, Enter para seleccionar");
                 }
 
+                if (musica_activa && instancia_musica)
+                {
+                    al_draw_text(fuente, al_map_rgb(100, 255, 100), 700, 10, ALLEGRO_ALIGN_RIGHT, "♪");
+                }
+
                 al_flip_display();
             }
         }
     
         if (jugando)
-        {   
+        {
+            if (instancia_musica && musica_activa)
+            {
+                al_stop_sample_instance(instancia_musica);
+                musica_activa = false;
+                printf("Música del menú pausada durante el juego.\n");
+            }
+
             hay_jefe_en_nivel = false;
             memset(&jefe_final, 0, sizeof(Jefe));
             jefe_nivel.activo = false;
@@ -1264,6 +1328,15 @@ int main()
             volver_menu = false;
             en_menu = true;
 
+            if (instancia_musica && !musica_activa)
+            {
+                if (al_play_sample_instance(instancia_musica))
+                {
+                    musica_activa = true;
+                    printf("Música del menú reanudada.\n");
+                }
+            }
+
             hay_jefe_en_nivel = false;
             memset(&jefe_nivel, 0, sizeof(Jefe));
             jefe_nivel.activo = false;
@@ -1281,11 +1354,21 @@ int main()
         {
             break;
         }
-    }    
+    }
+
+    if (instancia_musica)
+    {
+        if (musica_activa)
+        {
+            al_stop_sample_instance(instancia_musica);
+        }
+        al_destroy_sample_instance(instancia_musica);
+        printf("Instancia de música destruida.\n");
+    }
 
     liberar_imagenes_enemigos(imagenes_enemigos);
     liberar_imagenes_jefes(imagenes_jefes);
-    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide, imagen_enemigo, imagen_menu);
+    destruir_recursos(ventana, cola_eventos, temporizador, fuente, fondo_juego, imagen_nave, imagen_asteroide, imagen_enemigo, imagen_menu, musica_menu);
 
     al_uninstall_system(); // Esto evita fugas de memoria y libera recursos evitando el segmentation fault en WSL
 

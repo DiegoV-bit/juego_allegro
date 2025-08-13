@@ -55,6 +55,33 @@ int init_allegro()
         }
     }
 
+    if (!al_install_audio())
+    {
+        fprintf(stderr, "Error: No se pudo inicializar el audio.\n");
+        return -1;
+    }
+    else
+    {
+        if (!al_reserve_samples(2))
+        {
+            fprintf(stderr, "No se pudo cargar");
+        }
+        else
+        {
+            printf("Audio inicializado correctamente.\n");
+        }
+    }
+    
+    if (!al_init_acodec_addon())
+    {
+        fprintf(stderr, "Error: No se pudo inicializar el addon de códec de audio.\n");
+        return -1;
+    }
+    else
+    {
+        printf("Addon de códec de audio inicializado correctamente.\n");
+    }
+
     if (!al_init_primitives_addon())
     {
         fprintf(stderr, "Error: No se pudo inicializar los primitivos.\n");
@@ -88,6 +115,7 @@ int init_allegro()
     printf("Allegro inicializado correctamente.\n");
     return 0;
 }
+
 
 /**
  * @brief Crea una ventana de visualización.
@@ -136,8 +164,15 @@ ALLEGRO_DISPLAY *crear_ventana(int ancho, int largo, const char *titulo)
  * @param imagen_menu Imagen de fondo del menú
  * @param musica_fondo Música de fondo del juego
  */
-void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, ALLEGRO_BITMAP* imagen_enemigo, ALLEGRO_BITMAP *imagen_menu)
+void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_eventos, ALLEGRO_TIMER* temporizador, ALLEGRO_FONT* fuente, ALLEGRO_BITMAP* imagen, ALLEGRO_BITMAP* imagen_nave, ALLEGRO_BITMAP* imagen_asteroide, ALLEGRO_BITMAP* imagen_enemigo, ALLEGRO_BITMAP *imagen_menu, ALLEGRO_SAMPLE *musica_menu)
 {
+    if (musica_menu)
+    {
+        al_destroy_sample(musica_menu);
+        musica_menu = NULL;
+        printf("Musica del menu destruida");
+    }
+    
     if (ventana) 
     {
         al_destroy_display(ventana);
@@ -192,6 +227,7 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
         imagen_menu = NULL;
     }
 
+    al_uninstall_audio();
     printf("Recursos destruidos con exito.\n");
 }
 
@@ -207,7 +243,7 @@ void destruir_recursos(ALLEGRO_DISPLAY* ventana, ALLEGRO_EVENT_QUEUE* cola_event
  * @param imagen_asteroide Puntero doble a la imagen del asteoride
  * @return int Si la inicializacion fue exitosa retorna 0, en caso contrario retorna -1
  */
-int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave, ALLEGRO_BITMAP **imagen_asteroide, ALLEGRO_BITMAP **imagen_enemigo, ALLEGRO_BITMAP **imagen_menu)
+int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, ALLEGRO_TIMER **temporizador, ALLEGRO_FONT **fuente, ALLEGRO_BITMAP **imagen_fondo, ALLEGRO_BITMAP **imagen_nave, ALLEGRO_BITMAP **imagen_asteroide, ALLEGRO_BITMAP **imagen_enemigo, ALLEGRO_BITMAP **imagen_menu, ALLEGRO_SAMPLE **musica_menu)
 {
     if (init_allegro() != 0)
      {
@@ -289,7 +325,7 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
         return -1;
     }
 
-        // Cargar imagen específica para enemigos
+    // Cargar imagen específica para enemigos
     *imagen_enemigo = al_load_bitmap("imagenes/enemigos/Enemigo1.png");
     if (!imagen_enemigo)
     {
@@ -313,6 +349,17 @@ int init_juego(ALLEGRO_DISPLAY **ventana, ALLEGRO_EVENT_QUEUE **cola_eventos, AL
     else
     {
         printf("Imagen de menú cargada correctamente.\n");
+    }
+
+    *musica_menu = al_load_sample("audio/Cosmic-Circuitry.ogg");
+    if (!*musica_menu)
+    {
+        fprintf(stderr, "Advertencia: no se pudo cargar la música del menú (audio/menu_music.ogg). El juego funcionará sin música.\n");
+        *musica_menu = NULL;
+    }
+    else
+    {
+        printf("Música del menú cargada correctamente.\n");
     }
 
     return 0;
